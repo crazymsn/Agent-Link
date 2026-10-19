@@ -68,8 +68,8 @@ func TestRenameLegacy(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(home, ".codex", "dial-models.json")); err == nil {
 		t.Fatal("dial-models.json still there")
 	}
-	if _, err := os.Stat(filepath.Join(home, ".codex", "agentlink-models.json")); err != nil {
-		t.Fatal("agentlink-models.json missing")
+	if _, err := os.Stat(filepath.Join(home, ".codex", "agent-link-models.json")); err != nil {
+		t.Fatal("agent-link-models.json missing")
 	}
 	if b := stashLoad(); b["codex.provider"] == "dial" {
 		t.Fatal("dial stashed as the provider to go back to")

@@ -46,7 +46,7 @@ func TestTypedWindowReachesCodexAndClaudeCode(t *testing.T) {
 				Max     int    `json:"max_context_window"`
 			} `json:"models"`
 		}
-		raw := readFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+		raw := readFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 		if err := json.Unmarshal([]byte(raw), &got); err != nil {
 			t.Fatalf("%v: %s", err, raw)
 		}

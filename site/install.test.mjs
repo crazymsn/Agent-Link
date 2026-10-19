@@ -20,7 +20,7 @@ function install(t, { termux = true, arch = "aarch64", override = false, prefixO
   const bin = override ? join(dir, "custom bin") : termux ? join(prefix, "bin") : join(home, ".local/bin");
   mkdirSync(tools, { recursive: true });
   mkdirSync(bin, { recursive: true });
-  writeFileSync(join(bin, "magpie"), "old installation");
+  writeFileSync(join(bin, "agentlink"), "old installation");
   const payload = "test binary\n";
   const cpu = arch === "aarch64" ? "arm64" : "amd64";
   const file = termux ? `agentlink-cli-android-${cpu}` : desktop ? `agentlink-linux-${cpu}` : `agentlink-cli-linux-${cpu}`;
@@ -71,13 +71,13 @@ else fs.writeFileSync(args[args.indexOf("-o") + 1], tamper && url.startsWith(tam
 test("Termux downloads Android arm64 into PREFIX/bin even with WebKit installed", (t) => {
   const r = install(t, { desktop: true });
   assert.equal(r.status, 0, r.stderr);
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), r.payload);
   // NTFS keeps no execute bit, so Windows reports none
-  if (process.platform !== "win32") assert.ok(statSync(join(r.bin, "magpie")).mode & 0o111);
+  if (process.platform !== "win32") assert.ok(statSync(join(r.bin, "agentlink")).mode & 0o111);
   assert.match(r.requests, /agentlink-cli-android-arm64/);
   assert.doesNotMatch(r.requests, /magpie-linux-|icon-256/);
-  assert.equal(existsSync(join(r.share, "applications/magpie.desktop")), false);
-  assert.match(r.stdout, /run it: magpie web/);
+  assert.equal(existsSync(join(r.share, "applications/agentlink.desktop")), false);
+  assert.match(r.stdout, /run it: agentlink web/);
   assert.doesNotMatch(r.stdout, /install WebKit/);
 });
 
@@ -90,14 +90,14 @@ test("Termux prefix detection and amd64 target", (t) => {
 test("Termux respects a custom bin directory containing spaces", (t) => {
   const r = install(t, { override: true });
   assert.equal(r.status, 0, r.stderr);
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), r.payload);
 });
 
 test("missing Android release never falls back to Linux", (t) => {
   const r = install(t, { missing: true });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /no agentlink-cli-android-arm64.*build in Termux/);
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), "old installation");
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), "old installation");
   assert.equal(r.requests.trim().split("\n").length, 1);
 });
 
@@ -105,7 +105,7 @@ test("a checksum mismatch leaves the existing installation intact", (t) => {
   const r = install(t, { corrupt: true });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /does not match its checksum/);
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), "old installation");
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), "old installation");
 });
 
 test("ordinary Linux still selects its CLI or desktop build", (t) => {
@@ -113,9 +113,9 @@ test("ordinary Linux still selects its CLI or desktop build", (t) => {
     const r = install(t, { termux: false, desktop });
     assert.equal(r.status, 0, r.stderr);
     assert.match(r.requests, desktop ? /agentlink-linux-arm64/ : /agentlink-cli-linux-arm64/);
-    assert.equal(existsSync(join(r.share, "applications/magpie.desktop")), desktop);
+    assert.equal(existsSync(join(r.share, "applications/agentlink.desktop")), desktop);
     // the dock binds the window (app_id/WM_CLASS "magpie") to the entry (#2626)
-    if (desktop) assert.match(readFileSync(join(r.share, "applications/magpie.desktop"), "utf8"), /^StartupWMClass=magpie$/m);
+    if (desktop) assert.match(readFileSync(join(r.share, "applications/agentlink.desktop"), "utf8"), /^StartupWMClass=Agent Link$/m);
   }
 });
 
@@ -151,7 +151,7 @@ test("--mirror fetches the file through the mirror, the feed and its checksum fr
   const [feed, file] = r.requests.trim().split("\n");
   assert.equal(feed, "https://useagentlink.ai/api/latest");
   assert.equal(file, "https://gh.mirror.example/https://github.com/crazymsn/Agent-Link/releases/download/vtest/agentlink-cli-linux-arm64");
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), r.payload);
   assert.match(r.stdout, /through https:\/\/gh\.mirror\.example\//);
 
   const env = install(t, { termux: false, github: true, env: { MAGPIE_MIRROR: "https://gh.mirror.example/" } });
@@ -163,7 +163,7 @@ test("a file the mirror changed is refused and the installed magpie kept", (t) =
   const r = install(t, { termux: false, github: true, args: ["--mirror", "https://gh.mirror.example/"], tamper: "https://gh.mirror.example/" });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /from https:\/\/gh\.mirror\.example\/ does not match its checksum from https:\/\/useagentlink\.ai; not installed/);
-  assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), "old installation");
+  assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), "old installation");
   const bad = install(t, { termux: false, args: ["--mirror", "gh.mirror.example"] });
   assert.notEqual(bad.status, 0);
   assert.match(bad.stderr, /--mirror is an http\(s\) address/);

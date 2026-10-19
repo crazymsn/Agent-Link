@@ -39,7 +39,7 @@ func TestCodexNewSessionEffortLastsModelSwitch(t *testing.T) {
 	cx := codex(home)
 	defaults := func() map[string]string {
 		t.Helper()
-		b, _ := os.ReadFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+		b, _ := os.ReadFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 		var cat struct {
 			Models []struct {
 				Slug    string  `json:"slug"`

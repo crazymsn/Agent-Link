@@ -18,7 +18,7 @@ import (
 // agentlink's.
 func TestCodexCatalogKeepsWhatTheUserAdded(t *testing.T) {
 	home, _ := codexHome(t, "", "")
-	list := filepath.Join(home, ".codex", "agentlink-models.json")
+	list := filepath.Join(home, ".codex", "agent-link-models.json")
 	cx := codex(home)
 	if err := cx.Fields[0].Set("fake/m1"); err != nil {
 		t.Fatal(err)
@@ -96,7 +96,7 @@ func TestCodexCatalogKeepsWhatTheUserAdded(t *testing.T) {
 // A list holding nothing of the user's still goes as agentlink steps out.
 func TestCodexCatalogRemovedWhenNothingAdded(t *testing.T) {
 	home, _ := codexHome(t, "", "")
-	list := filepath.Join(home, ".codex", "agentlink-models.json")
+	list := filepath.Join(home, ".codex", "agent-link-models.json")
 	cx := codex(home)
 	if err := cx.Fields[0].Set("fake/m1"); err != nil {
 		t.Fatal(err)

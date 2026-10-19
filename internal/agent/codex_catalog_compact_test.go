@@ -11,7 +11,7 @@ import (
 
 // Codex is told where to compact a long conversation (#876) both from the
 // gateway's /models (provider.CodexListed, which sets catalog.Model.Compact)
-// and from the list agentlink writes for it on disk (agentlink-models.json,
+// and from the list agentlink writes for it on disk (agent-link-models.json,
 // codex.go:593 -> codexcat.Catalog(agentlinkModels("codex"))).
 //
 // agentlinkModels left Compact unset, so codexcat fell back to the one for
@@ -43,7 +43,7 @@ func TestCodexCatalogCompactAtReachesDisk(t *testing.T) {
 				MaxContext    int    `json:"max_context_window"`
 			} `json:"models"`
 		}
-		raw := readFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+		raw := readFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 		if err := json.Unmarshal([]byte(raw), &got); err != nil {
 			t.Fatalf("%v: %s", err, raw)
 		}

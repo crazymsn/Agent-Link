@@ -28,7 +28,7 @@ func TestCodexWSLAppAddressKept(t *testing.T) {
 		t.Fatal(err)
 	}
 	// on Windows agentlink names the catalog as the app's WSL agent can read it
-	if c, _ := edit.GetTOMLTop(cx.Path, "model_catalog_json"); runtime.GOOS == "windows" && c != "agentlink-models.json" {
+	if c, _ := edit.GetTOMLTop(cx.Path, "model_catalog_json"); runtime.GOOS == "windows" && c != "agent-link-models.json" {
 		t.Fatalf("catalog named %q", c)
 	}
 	if c := cx.Check(); c != "" {
@@ -37,7 +37,7 @@ func TestCodexWSLAppAddressKept(t *testing.T) {
 
 	// the user's edit: Windows as WSL reaches it, the catalog by its name
 	wsl := "http://172.28.96.1:" + gateway.Port()
-	if err := edit.SetTOMLTop(cx.Path, edit.KV{Path: "model_catalog_json", Value: "agentlink-models.json"}, edit.KV{Path: "openai_base_url", Value: wsl + gateway.CodexPath}); err != nil {
+	if err := edit.SetTOMLTop(cx.Path, edit.KV{Path: "model_catalog_json", Value: "agent-link-models.json"}, edit.KV{Path: "openai_base_url", Value: wsl + gateway.CodexPath}); err != nil {
 		t.Fatal(err)
 	}
 	if err := edit.SetTOMLKey(cx.Path, "model_providers."+agentlinkID, "base_url", wsl+"/v1"); err != nil {
@@ -69,7 +69,7 @@ func TestCodexWSLAppAddressKept(t *testing.T) {
 		t.Fatal(err)
 	}
 	keep("sync")
-	if _, err := os.Stat(home + "/.codex/agentlink-models.json"); err != nil {
+	if _, err := os.Stat(home + "/.codex/agent-link-models.json"); err != nil {
 		t.Fatal(err)
 	}
 

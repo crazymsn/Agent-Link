@@ -23,7 +23,7 @@ func agentFiles(t *testing.T, home string) map[string]string {
 		}
 		rel, _ := filepath.Rel(home, p)
 		if e.IsDir() {
-			if rel == filepath.Join(".config", "agentlink") || rel == ".cache" {
+			if rel == filepath.Join(".config", "agent-link") || rel == ".cache" {
 				return filepath.SkipDir
 			}
 			return nil

@@ -29,7 +29,7 @@ func TestCodexAPIKeyUsesProvider(t *testing.T) {
 		!strings.Contains(cfg, `openai_base_url = "`+codexGatewayURL()+`"`) || !strings.Contains(cfg, "[model_providers.relay]") {
 		t.Fatalf("\n%s", cfg)
 	}
-	b, err := os.ReadFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+	b, err := os.ReadFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 	if err != nil || !strings.Contains(string(b), `"fake/m1"`) || !strings.Contains(string(b), `"fake/m2"`) {
 		t.Fatalf("catalog: %v %s", err, b)
 	}

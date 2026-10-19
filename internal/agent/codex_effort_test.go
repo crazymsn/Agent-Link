@@ -34,7 +34,7 @@ func TestCodexCustomProviderModelHasEfforts(t *testing.T) {
 	if cfg := read(); !strings.Contains(cfg, `model_reasoning_effort = "low"`) {
 		t.Fatalf("effort not settled on the nearest level:\n%s", cfg)
 	}
-	b, _ := os.ReadFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+	b, _ := os.ReadFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 	var cat struct {
 		Models []struct {
 			Slug    string  `json:"slug"`

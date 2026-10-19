@@ -50,7 +50,7 @@ func TestCodexAdviceNamesTheSharedAppServer(t *testing.T) {
 func TestCodexNoticeKeepsTheDaemonCurrent(t *testing.T) {
 	home, _ := codexHome(t, "", "")
 	dir := filepath.Join(home, ".codex")
-	cfg, list := filepath.Join(dir, "config.toml"), filepath.Join(dir, "agentlink-models.json")
+	cfg, list := filepath.Join(dir, "config.toml"), filepath.Join(dir, "agent-link-models.json")
 	os.WriteFile(cfg, []byte("model_provider = \"agentlink\"\nmodel_catalog_json = \""+list+"\"\n"), 0o600)
 	os.WriteFile(list, []byte(`{"models":[{"slug":"agentlink/a"}]}`), 0o644)
 	then := time.Now().Add(-2 * time.Hour)

@@ -18,7 +18,7 @@ func TestCodexAPIKeepsAgentLinkOnOwnModel(t *testing.T) {
 	os.WriteFile(filepath.Join(dir, "models_cache.json"), []byte(`{"models":[
 		{"slug":"gpt-a","display_name":"A","priority":1},
 		{"slug":"gpt-b","display_name":"B","priority":2}]}`), 0o644)
-	catalogPath := filepath.Join(dir, "agentlink-models.json")
+	catalogPath := filepath.Join(dir, "agent-link-models.json")
 	wired := func(model string) {
 		t.Helper()
 		cfg := read()

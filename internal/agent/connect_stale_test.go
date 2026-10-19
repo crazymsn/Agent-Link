@@ -35,7 +35,7 @@ func TestCodexStaleOnlyForAgentLinksChange(t *testing.T) {
 	dir := filepath.Join(home, ".codex")
 	os.MkdirAll(dir, 0o755)
 	cfg := filepath.Join(dir, "config.toml")
-	list := filepath.Join(dir, "agentlink-models.json")
+	list := filepath.Join(dir, "agent-link-models.json")
 	conf := "model = \"agentlink/gpt-6-luna\"\nmodel_provider = \"agentlink\"\nmodel_catalog_json = \"" + tomlString(list) + "\"\n\n" +
 		"[model_providers.agentlink]\nname = \"agentlink\"\nbase_url = \"http://127.0.0.1:3425/v1\"\n"
 	os.WriteFile(cfg, []byte(conf), 0o600)
@@ -198,7 +198,7 @@ func TestCodexDaemonHelperIsNoStaleCopy(t *testing.T) {
 func TestCodexStaleOnWindowsIsTheDaemonsLastCheck(t *testing.T) {
 	home, _ := codexHome(t, "", "")
 	dir := filepath.Join(home, ".codex")
-	cfg, list := filepath.Join(dir, "config.toml"), filepath.Join(dir, "agentlink-models.json")
+	cfg, list := filepath.Join(dir, "config.toml"), filepath.Join(dir, "agent-link-models.json")
 	os.WriteFile(cfg, []byte("model_provider = \"agentlink\"\nmodel_catalog_json = \""+tomlString(list)+"\"\n"), 0o600)
 	os.WriteFile(list, []byte(`{"models":[{"slug":"agentlink/a"}]}`), 0o644)
 	wasKeep, wasRunning := keepCodexDaemon, running

@@ -127,10 +127,10 @@ func TestFolders(t *testing.T) {
 	t.Cleanup(func() { UseExecutable("") })
 
 	UseExecutable("")
-	if Portable() != "" || Config() != filepath.Join(r, "cfg", "agentlink") || Cache() != filepath.Join(r, "cache", "agentlink") {
+	if Portable() != "" || Config() != filepath.Join(r, "cfg", "agent-link") || Cache() != filepath.Join(r, "cache", "agent-link") {
 		t.Errorf("installed: portable %q, config %q, cache %q", Portable(), Config(), Cache())
 	}
-	if d, _ := SystemCache(); filepath.Base(d) != "agentlink" {
+	if d, _ := SystemCache(); filepath.Base(d) != "agent-link" {
 		t.Errorf("installed system cache %q", d)
 	}
 
@@ -196,7 +196,7 @@ func TestResolveSharedFolder(t *testing.T) {
 		t.Errorf("nothing installed: Passed %q", got)
 	}
 	// installed agentlink has its files: the data folder isn't taken
-	touch(t, filepath.Join(r, "cfg", "agentlink", "providers.json"))
+	touch(t, filepath.Join(r, "cfg", "agent-link", "providers.json"))
 	if got := Resolve(exe); got != "" {
 		t.Errorf("installed has files: %q, want installed", got)
 	}
@@ -205,7 +205,7 @@ func TestResolveSharedFolder(t *testing.T) {
 	}
 	t.Cleanup(func() { UseExecutable("") })
 	UseExecutable(exe)
-	if Config() != filepath.Join(r, "cfg", "agentlink") {
+	if Config() != filepath.Join(r, "cfg", "agent-link") {
 		t.Errorf("Config %q, want the installed folder", Config())
 	}
 	// asked for with .portable: portable
@@ -248,7 +248,7 @@ func TestResolveDownloads(t *testing.T) {
 	if got := Resolve(exe); got != data {
 		t.Errorf("portable run before: %q, want %q", got, data)
 	}
-	touch(t, filepath.Join(h, ".config", "agentlink", "logins.json"))
+	touch(t, filepath.Join(h, ".config", "agent-link", "logins.json"))
 	if got := Resolve(exe); got != "" {
 		t.Errorf("installed has files: %q, want installed", got)
 	}
@@ -268,7 +268,7 @@ func TestSharedFolders(t *testing.T) {
 			t.Errorf("%s not shared", d)
 		}
 	}
-	for _, d := range []string{filepath.Join(h, "Downloads", "agentlink"), filepath.Join(h, "tools")} {
+	for _, d := range []string{filepath.Join(h, "Downloads", "agent-link"), filepath.Join(h, "tools")} {
 		if sharedFolder(d) {
 			t.Errorf("%s shared", d)
 		}

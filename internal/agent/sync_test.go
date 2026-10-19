@@ -223,7 +223,7 @@ func TestSyncCatalogRewritesAgentLists(t *testing.T) {
 	crushBody := `{"providers":{"mine":{"base_url":"http://x"}}}`
 	writeFile(t, crushCfg, crushBody)
 	codexDir := filepath.Join(home, ".codex")
-	codexCat := filepath.Join(codexDir, "agentlink-models.json")
+	codexCat := filepath.Join(codexDir, "agent-link-models.json")
 	writeFile(t, filepath.Join(codexDir, "config.toml"), "model = \"relay/glm-4.6\"\nmodel_provider = \"agentlink\"\nmodel_catalog_json = '"+codexCat+"'\n")
 	writeFile(t, codexCat, `{"models":[]}`)
 
@@ -328,23 +328,23 @@ func TestOpenCodeKeepsItsOwnGatewayProviders(t *testing.T) {
 	cfg := filepath.Join(home, ".config", "opencode", "opencode.json")
 	writeFile(t, cfg, `{
   "provider": {
-    "agentlink-relay": {"npm": "@ai-sdk/openai-compatible", "options": {"baseURL": "http://localhost:3425/v1/"}, "models": {"relay/glm-4.6": {}}},
+    "agentlink": {"npm": "@ai-sdk/openai-compatible", "options": {"baseURL": "http://localhost:3425/v1/"}, "models": {"relay/glm-4.6": {}}},
     "elsewhere": {"options": {"baseURL": "https://example.com/v1"}, "models": {"relay/glm-4.6": {}}}
   },
-  "model": "agentlink-relay/relay/glm-4.6"
+  "model": "agentlink/relay/glm-4.6"
 }`)
 	oc := opencode(home, filepath.Join(home, ".config"))
 	if err := oc.Fields[0].Set("agentlink/relay/glm-4.6"); err != nil {
 		t.Fatal(err)
 	}
-	if v, _ := edit.GetJSON(cfg, "model"); v != "agentlink-relay/relay/glm-4.6" {
+	if v, _ := edit.GetJSON(cfg, "model"); v != "agentlink/relay/glm-4.6" {
 		t.Fatalf("model = %q", v)
 	}
-	if _, ok := edit.GetJSON(cfg, "provider.agentlink"); ok {
-		t.Fatal("agentlink's provider added beside the file's own")
+	if _, ok := edit.GetJSON(cfg, "provider.agentlink"); !ok {
+		t.Fatal("agentlink's existing provider was lost")
 	}
 	// a model none of them lists still gets agentlink's provider
-	os.WriteFile(cfg, []byte(`{"provider": {"agentlink-relay": {"options": {"baseURL": "http://127.0.0.1:3425/v1"}, "models": {}}}}`), 0o644)
+	os.WriteFile(cfg, []byte(`{"provider": {"agentlink": {"options": {"baseURL": "http://127.0.0.1:3425/v1"}, "models": {}}}}`), 0o644)
 	if err := oc.Fields[0].Set("agentlink/relay/glm-4.6"); err != nil {
 		t.Fatal(err)
 	}

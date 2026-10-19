@@ -34,10 +34,10 @@ func TestConfigNeverRelative(t *testing.T) {
 	t.Setenv(homeVar(), home)
 	t.Setenv("XDG_CONFIG_HOME", "relative/cfg")
 	t.Setenv("XDG_CACHE_HOME", "relative/cache")
-	if got, want := Config(), filepath.Join(home, ".config", "agentlink"); got != want {
+	if got, want := Config(), filepath.Join(home, ".config", "agent-link"); got != want {
 		t.Errorf("Config() = %q, want %q", got, want)
 	}
-	if got, want := Cache(), filepath.Join(home, ".cache", "agentlink"); got != want {
+	if got, want := Cache(), filepath.Join(home, ".cache", "agent-link"); got != want {
 		t.Errorf("Cache() = %q, want %q", got, want)
 	}
 	t.Setenv(homeVar(), "")
@@ -69,7 +69,7 @@ func TestRelativeFolderVariablesIgnoredNotUnset(t *testing.T) {
 		t.Fatal(err)
 	}
 	slices.Sort(ignored)
-	if want := []string{"CODEX_HOME", "AGENT_LINK_ZED_CONFIG_DIR", "XDG_DATA_HOME"}; !slices.Equal(ignored, want) {
+	if want := []string{"AGENT_LINK_ZED_CONFIG_DIR", "CODEX_HOME", "XDG_DATA_HOME"}; !slices.Equal(ignored, want) {
 		t.Errorf("ignored %v, want %v", ignored, want)
 	}
 	for v, want := range map[string]string{"XDG_CONFIG_HOME": abs, "HANA_HOME": "~/.hanako", "PI_PROFILE": "work", "AGENT_LINK_ZED_CONFIG_DIR": "", "AGENT_LINK_ZED_BIN": "zedg", "AGENT_LINK_ZED_PROCESS_NAMES": "zedg,ZedG", "XDG_DATA_HOME": "", "CODEX_HOME": ""} {

@@ -296,7 +296,7 @@ func TestDriftInstalledAgentLink(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := filepath.Join(home, ".codex", "config.toml")
-	os.WriteFile(cfg, []byte("openai_base_url = \"http://"+gateway.DefaultAddr+gateway.CodexPath+"\"\nmodel = \"fake/m1\"\n"), 0o644)
+	os.WriteFile(cfg, []byte("openai_base_url = \"http://127.0.0.1:3426"+gateway.CodexPath+"\"\nmodel = \"fake/m1\"\n"), 0o644)
 	if d := cx.Drift(); d != nil {
 		t.Fatalf("the installed agentlink's wiring taken for drift: %+v", d)
 	}

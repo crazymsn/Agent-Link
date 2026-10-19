@@ -66,7 +66,7 @@ func TestCodexDisconnect(t *testing.T) {
 			if mine, _ := edit.GetTOMLTable(path, "model_providers.mine"); tc.config != "" && mine["base_url"] != "https://mine.example/v1" {
 				t.Fatalf("own provider table changed:\n%s", read())
 			}
-			if _, err := os.Stat(filepath.Join(home, ".codex", "agentlink-models.json")); err == nil {
+			if _, err := os.Stat(filepath.Join(home, ".codex", "agent-link-models.json")); err == nil {
 				t.Error("agentlink's catalog left")
 			}
 			if cx.Wired() || cx.Drift() != nil {

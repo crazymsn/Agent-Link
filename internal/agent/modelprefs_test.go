@@ -25,7 +25,7 @@ func TestModelNameAndLevelsReachAgentFiles(t *testing.T) {
 	piModels := filepath.Join(home, ".pi", "agent", "models.json")
 	writeFile(t, piModels, `{"providers":{"agentlink":{"name":"agentlink","models":[]}}}`)
 	codexDir := filepath.Join(home, ".codex")
-	codexCat := filepath.Join(codexDir, "agentlink-models.json")
+	codexCat := filepath.Join(codexDir, "agent-link-models.json")
 	writeFile(t, filepath.Join(codexDir, "config.toml"), "model = \"relay/glm-4.6\"\nmodel_provider = \"agentlink\"\nmodel_catalog_json = '"+codexCat+"'\n")
 	writeFile(t, codexCat, `{"models":[]}`)
 	catalog.Changed = SyncCatalog

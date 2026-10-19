@@ -78,7 +78,7 @@ func TestParseProbe(t *testing.T) {
 // the distro's config.
 func TestWSLPaths(t *testing.T) {
 	d := distro{Root: `\\wsl.localhost\Ubuntu`}
-	if got := d.native(`\\wsl.localhost\Ubuntu\home\me\.codex\agentlink-models.json`); got != "/home/me/.codex/agentlink-models.json" {
+	if got := d.native(`\\wsl.localhost\Ubuntu\home\me\.codex\agent-link-models.json`); got != "/home/me/.codex/agent-link-models.json" {
 		t.Error(got)
 	}
 	if got := d.native(`\\WSL.LOCALHOST\Ubuntu\home\me`); got != "/home/me" {
@@ -121,11 +121,11 @@ func TestWSLCodexProvider(t *testing.T) {
 	}
 	cfg := read()
 	nat := "http://172.20.0.1:" + gateway.Port()
-	if !strings.Contains(cfg, `model_catalog_json = "`+d.Home+`/.codex/agentlink-models.json"`) ||
+	if !strings.Contains(cfg, `model_catalog_json = "`+d.Home+`/.codex/agent-link-models.json"`) ||
 		!strings.Contains(cfg, `base_url = "`+nat+`/v1"`) || !strings.Contains(cfg, `model_provider = "agentlink"`) {
 		t.Fatalf("config:\n%s", cfg)
 	}
-	if _, err := os.Stat(filepath.Join(home, ".codex", "agentlink-models.json")); err != nil {
+	if _, err := os.Stat(filepath.Join(home, ".codex", "agent-link-models.json")); err != nil {
 		t.Fatal(err)
 	}
 	if c := a.Check(); c != "" {
