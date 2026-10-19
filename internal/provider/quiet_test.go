@@ -19,7 +19,7 @@ func TestEntryQuiet(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	cache := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", cache)
-	os.MkdirAll(filepath.Join(cache, "agentlink"), 0o755)
+	os.MkdirAll(filepath.Join(cache, "agent-link"), 0o755)
 	if err := os.WriteFile(catalog.CachePath(), []byte(`{
 	  "xiaomi": {"models": {
 	    "mimo-v2.6-flash": {"id":"mimo-v2.6-flash","reasoning":true,"reasoning_options":[{"type":"toggle"}]}}},

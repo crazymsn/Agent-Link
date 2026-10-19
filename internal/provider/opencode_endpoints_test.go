@@ -24,7 +24,7 @@ func TestOpenCodeEndpointsFilledIn(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	cache := t.TempDir()
 	t.Setenv("XDG_CACHE_HOME", cache)
-	os.MkdirAll(filepath.Join(cache, "agentlink"), 0o755)
+	os.MkdirAll(filepath.Join(cache, "agent-link"), 0o755)
 	// as models.dev lists them (2026-10-08, Gemini 2026-10-14): MiniMax
 	// M2.7 is Anthropic's SDK on Go and the OpenAI-compatible one on Zen
 	if err := os.WriteFile(catalog.CachePath(), []byte(`{
