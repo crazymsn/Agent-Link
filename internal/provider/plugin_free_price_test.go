@@ -28,7 +28,7 @@ func TestPluginFreeModelCostsNothing(t *testing.T) {
 	  "anthropic":{"id":"anthropic","models":{"claude-opus-5-5":{"id":"claude-opus-5-5","cost":{"input":4,"output":20,"cache_read":0.2,"cache_write":5}}}}}`), 0o644)
 	catalog.Reset()
 	t.Cleanup(catalog.Reset)
-	spec := "@agentlink-community/opencode-devin-auth"
+	spec := "@magpie-community/opencode-devin-auth"
 	write := func(name string, v any) {
 		t.Helper()
 		b, _ := json.Marshal(v)

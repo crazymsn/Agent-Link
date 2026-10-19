@@ -2,10 +2,10 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): WorkBuddy ("workbuddy") and WorkBuddy AI
 // ("workbuddy-ai") are retired built-in subscriptions served by their
-// plugin, @agentlink-community/opencode-workbuddy-auth. The check-in here
+// plugin, @magpie-community/opencode-workbuddy-auth. The check-in here
 // presses 签到 for the plugin's accounts, sent through the plugin's fetch,
 // when the plugin doesn't check in itself. A fix to the plugin's own paths
-// belongs in github.com/agentlink-community/plugins (packages/workbuddy), with
+// belongs in github.com/magpie-community/plugins (packages/workbuddy), with
 // the movers' min raised in internal/provider/migrate_workbuddy.go.
 
 // WorkBuddy's daily check-in (签到): while its event runs, a WorkBuddy

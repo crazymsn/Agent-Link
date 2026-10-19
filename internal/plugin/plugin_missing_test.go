@@ -31,7 +31,7 @@ func init() {
 }
 
 // #2002 (anganing, Windows): after an update every plugin switched on
-// said "no such plugin: …\node_modules\@agentlink-community\opencode-grok-auth"
+// said "no such plugin: …\node_modules\@magpie-community\opencode-grok-auth"
 // at each start, and stayed so until it was taken off and added again.
 // A plugin on the list whose package isn't in plugins/ is installed again,
 // as its spec says, by the loop that keeps plugins updated; one that is
@@ -40,7 +40,7 @@ func TestMissingPluginsInstalledAgain(t *testing.T) {
 	dir := offSandbox(t)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	const other = "@agentlink-community/opencode-grok-auth"
+	const other = "@magpie-community/opencode-grok-auth"
 	for _, spec := range []string{pkg + "@1.2.3", other + "@0.1.14"} {
 		if _, err := Add(ctx, spec); err != nil {
 			t.Fatal(err)
@@ -114,7 +114,7 @@ func TestBunCommandsOneAtATime(t *testing.T) {
 	errs := make([]error, 4)
 	run := []func() error{
 		func() error { return install(ctx, pkg+"@1.2.3") },
-		func() error { return installAt(ctx, "@agentlink-community/opencode-grok-auth", "0.1.14") },
+		func() error { return installAt(ctx, "@magpie-community/opencode-grok-auth", "0.1.14") },
 		func() error { return reinstall(ctx, "github:owner/repo") },
 		func() error {
 			_, err := runBun(ctx, "bun", "remove", "--ignore-scripts", "x")

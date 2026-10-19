@@ -168,7 +168,7 @@ func (p Provider) clineFreeModel(model string) bool {
 
 // ClinePinnable reports whether p's requests reach Cline's API and can be
 // pinned to an upstream (PinUpstream): the ClinePass provider, one on
-// cline.bot, or the Cline plugin's (@agentlink-community/opencode-cline-auth),
+// cline.bot, or the Cline plugin's (@magpie-community/opencode-cline-auth),
 // whose requests agentlink writes before the plugin sends them on.
 func (p Provider) ClinePinnable() bool {
 	return p.IsCline() || p.PluginProvider() == "cline"

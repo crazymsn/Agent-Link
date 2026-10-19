@@ -636,7 +636,7 @@ func SetOptions(name string, opts map[string]any) error {
 	i := indexOf(l, name)
 	if i < 0 {
 		// a short name, as the community's READMEs write it: param-override
-		// for @agentlink-community/middleware-param-override
+		// for @magpie-community/middleware-param-override
 		i = slices.IndexFunc(l.Plugins, func(x Entry) bool { return Called(Name(x.Spec), name) })
 	}
 	if i < 0 {
@@ -654,9 +654,9 @@ func SetOptions(name string, opts map[string]any) error {
 }
 
 // ShortName is a package's name without its scope and the words every
-// package of its kind has: model-map for @agentlink-community/middleware-model-map,
-// zed for @agentlink-community/opencode-zed-auth, calc for
-// @agentlink-community/tools-calc (so its tools are calc_eval, as from its
+// package of its kind has: model-map for @magpie-community/middleware-model-map,
+// zed for @magpie-community/opencode-zed-auth, calc for
+// @magpie-community/tools-calc (so its tools are calc_eval, as from its
 // folder). A plugin added from a folder is named by its path, which on
 // Windows ends after a backslash.
 func ShortName(pkg string) string {
@@ -708,7 +708,7 @@ func install(ctx context.Context, spec string) error {
 	}
 	defer installMu.Unlock()
 	err = bunAdd(ctx, bun, spec)
-	// a @agentlink-community package or version npm doesn't have (a new
+	// a @magpie-community package or version npm doesn't have (a new
 	// one waits for an owner to publish it there) comes from the
 	// community repo's dist branch; one Bun's minimumReleaseAge holds
 	// back stays held, as the user's bunfig asks

@@ -67,7 +67,7 @@ func TestMuslBunKeptApartFromGlibc(t *testing.T) {
 	if err := writeBunState(bunState{Bad: []string{"9.9.9"}}); err != nil {
 		t.Fatal(err)
 	}
-	if rel, _ := filepath.Rel(filepath.Dir(bunRoot()), glibc); rel != filepath.Join("bun", BunVersion, agentlinkBun()) {
+	if rel, _ := filepath.Rel(filepath.Dir(bunRoot()), glibc); rel != filepath.Join("bun", BunVersion, agentLinkBun()) {
 		t.Fatalf("a glibc Bun is kept at %s, not where it was before", glibc)
 	}
 
@@ -214,7 +214,7 @@ func TestMissingLibsNamesThem(t *testing.T) {
 
 	bunHome(t, BunVersion, time.Now())
 	lacksLibstdcxx(t, bunExeOf(BunVersion))
-	err := install(context.Background(), "@agentlink-community/opencode-cursor-auth@latest")
+	err := install(context.Background(), "@magpie-community/opencode-cursor-auth@latest")
 	if err == nil || !strings.Contains(err.Error(), "libstdc++.so.6") || !strings.Contains(err.Error(), "apk add") {
 		t.Fatalf("bun add on a bun lacking libstdc++: %v", err)
 	}

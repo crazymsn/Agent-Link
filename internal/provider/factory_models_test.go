@@ -1,5 +1,5 @@
 // PLUGIN-SERVED (see AGENTS.md): a moved Factory's models are the plugin's
-// (@agentlink-community/opencode-factory-auth, packages/factory/models.test.mjs
+// (@magpie-community/opencode-factory-auth, packages/factory/models.test.mjs
 // checks the same fixture there); this is the built-in's table.
 
 package provider

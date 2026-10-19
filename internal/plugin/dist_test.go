@@ -75,12 +75,12 @@ func npmHasNothing(t *testing.T) {
 
 // A plugin merged into the community repo reaches agentlink before npm has
 // it: its first npm version waits for an owner's 2FA, which kept reviewed
-// plugins unmerged (agentlink-community/plugins#84, Open Design). The market
+// plugins unmerged (magpie-community/plugins#84, Open Design). The market
 // shows its version and README, and adding it installs the dist branch's
 // tarball with real bun.
 func TestDistInstallsAPackageNPMDoesntHave(t *testing.T) {
 	sandbox(t)
-	const pkg = "@agentlink-community/opencode-opendesign-auth"
+	const pkg = "@magpie-community/opencode-opendesign-auth"
 	npmHasNothing(t)
 	fakeDist(t, map[string][]string{pkg: {"0.1.3", "0.1.4"}}, false)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -98,7 +98,7 @@ func TestDistInstallsAPackageNPMDoesntHave(t *testing.T) {
 	if v := Installed(pkg); v != "0.1.4" {
 		t.Fatalf("installed %q, want 0.1.4", v)
 	}
-	if _, err := os.Stat(filepath.Join(Dir(), "dist", "agentlink-community-opencode-opendesign-auth-0.1.4.tgz")); err != nil {
+	if _, err := os.Stat(filepath.Join(Dir(), "dist", "magpie-community-opencode-opendesign-auth-0.1.4.tgz")); err != nil {
 		t.Fatalf("the tarball bun.lock names isn't kept: %v", err)
 	}
 	// a pinned, older version too, and the newer one's tarball goes
@@ -118,7 +118,7 @@ func TestDistInstallsAPackageNPMDoesntHave(t *testing.T) {
 // and once npm has a newer one, from npm again, the tarball taken out.
 func TestDistServesAVersionNPMRefused(t *testing.T) {
 	sandbox(t)
-	const pkg = "@agentlink-community/opencode-zed-auth"
+	const pkg = "@magpie-community/opencode-zed-auth"
 	old := time.Now().Add(-72 * time.Hour)
 	heldRegistry(t, pkg, map[string]time.Time{"0.1.6": old}, "0.1.6")
 	fakeDist(t, map[string][]string{pkg: {"0.1.6", "0.1.7"}}, false)
@@ -158,7 +158,7 @@ func TestDistServesAVersionNPMRefused(t *testing.T) {
 // A tarball that isn't the one the index names is never installed.
 func TestDistRefusesATarballNotItsIndexs(t *testing.T) {
 	sandbox(t)
-	const pkg = "@agentlink-community/opencode-opendesign-auth"
+	const pkg = "@magpie-community/opencode-opendesign-auth"
 	npmHasNothing(t)
 	fakeDist(t, map[string][]string{pkg: {"0.1.4"}}, true)
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -178,15 +178,15 @@ func TestDistRefusesATarballNotItsIndexs(t *testing.T) {
 
 func TestDistWanted(t *testing.T) {
 	for spec, want := range map[string]string{
-		"@agentlink-community/opencode-zed-auth":           "@agentlink-community/opencode-zed-auth latest",
-		"@agentlink-community/opencode-zed-auth@latest":    "@agentlink-community/opencode-zed-auth latest",
-		"@agentlink-community/opencode-zed-auth@0.1.7":     "@agentlink-community/opencode-zed-auth 0.1.7",
-		"@agentlink-community/opencode-zed-auth@^0.1.7":    "",
-		"@agentlink-community/opencode-zed-auth@next":      "",
+		"@magpie-community/opencode-zed-auth":              "@magpie-community/opencode-zed-auth latest",
+		"@magpie-community/opencode-zed-auth@latest":       "@magpie-community/opencode-zed-auth latest",
+		"@magpie-community/opencode-zed-auth@0.1.7":        "@magpie-community/opencode-zed-auth 0.1.7",
+		"@magpie-community/opencode-zed-auth@^0.1.7":       "",
+		"@magpie-community/opencode-zed-auth@next":         "",
 		"opencode-zed-auth@0.1.7":                       "",
 		"@someone/opencode-zed-auth@0.1.7":              "",
-		"github:agentlink-community/plugins":               "",
-		"./dist/agentlink-community-opencode-zed-auth.tgz": "",
+		"github:magpie-community/plugins":                  "",
+		"./dist/magpie-community-opencode-zed-auth.tgz": "",
 	} {
 		name, version, ok := distWanted(spec)
 		got := ""

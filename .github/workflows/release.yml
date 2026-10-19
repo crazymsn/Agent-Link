@@ -37,35 +37,47 @@ jobs:
           name: Agent-Link-windows
           path: Agent-Link-windows-amd64.exe
 
-  macos:
-    name: macOS client
-    runs-on: macos-latest
+  macos-arm64:
+    name: macOS client (Apple Silicon)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - name: Build macOS client
+      - name: Build macOS app
         shell: bash
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           [ -n "$VERSION" ] || VERSION="${{ github.event.inputs.version }}"
-          make icons
-          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -tags production -trimpath -ldflags="-s -w -X main.version=$VERSION" -o agent-link
-          mkdir -p Agent-Link.app/Contents/MacOS Agent-Link.app/Contents/Resources
-          cp agent-link Agent-Link.app/Contents/MacOS/agent-link
-          cp build/darwin/agent-link.icns Agent-Link.app/Contents/Resources/agent-link.icns
-          cp build/darwin/Info.plist Agent-Link.app/Contents/Info.plist
-          sed -i '' "s/@VERSION@/$VERSION/g" Agent-Link.app/Contents/Info.plist
-          ditto -c -k --sequesterRsrc --keepParent Agent-Link.app Agent-Link-macos-arm64.zip
+          bash build/macos/release.sh "$VERSION" arm64 "Agent-Link-Apple.Silicon.arm64.zip"
       - uses: actions/upload-artifact@v4
         with:
-          name: Agent-Link-macos
-          path: Agent-Link-macos-arm64.zip
+          name: Agent-Link-macos-arm64
+          path: Agent-Link-Apple.Silicon.arm64.zip
+
+  macos-amd64:
+    name: macOS client (Intel)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build macOS app
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -n "$VERSION" ] || VERSION="${{ github.event.inputs.version }}"
+          MACOS_ARCH_FLAGS="-arch x86_64" bash build/macos/release.sh "$VERSION" amd64 "Agent-Link-macOS.Intel.amd64.zip"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Agent-Link-macos-amd64
+          path: Agent-Link-macOS.Intel.amd64.zip
 
   release:
     name: Publish GitHub Release
-    needs: [windows, macos]
+    needs: [windows, macos-arm64, macos-amd64]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -82,4 +94,17 @@ jobs:
           else
             REF="v${{ github.event.inputs.version }}"
           fi
-          gh release create "$REF" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "Agent Link $REF" --generate-notes
+          cat > release-notes.md <<'EOF'
+          ## macOS first launch
+
+          These macOS packages use an ad-hoc signature because Agent Link is not enrolled in the paid Apple Developer Program. On first launch, macOS may show “cannot verify the developer”.
+
+          Open the app once with **Control-click → Open → Open**. If macOS still reports the app as damaged, run:
+
+          ```sh
+          xattr -dr com.apple.quarantine /Applications/Agent\ Link.app
+          ```
+
+          The app bundle is signed and its architecture is verified by the release workflow.
+          EOF
+          gh release create "$REF" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "Agent Link $REF" --notes-file release-notes.md

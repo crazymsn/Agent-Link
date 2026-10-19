@@ -2814,7 +2814,6 @@ body.window .ag-sk-icon { width: 22px; height: 22px; border-radius: 6px; }
 .editor .icon-pick .icon-grid button.on { box-shadow: inset 0 0 0 1.5px var(--fg); }
 .editor .icon-pick .icon-grid .ic { width: 18px; height: 18px; }
 .editor .ehead b { font-weight: 600; }
-.editor .fixed-provider-note { grid-column: 1 / -1; margin: 0 0 2px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2); color: var(--fg-2); line-height: 1.45; }
 .editor label { font-size: 12px; color: var(--fg-2); text-align: right; padding-top: 5px; }
 .editor .hint { font-size: 11px; color: var(--fg-2); margin-top: 4px; }
 /* a provider's own proxy (#237): the address beside the options, its room

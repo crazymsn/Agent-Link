@@ -8,9 +8,9 @@ import (
 const (
 	// AgentLinkProviderID is the stable storage and routing id for the built-in
 	// API distribution provider.
-	AgentLinkProviderID = "api-distribution"
+	AgentLinkProviderID   = "api-distribution"
 	AgentLinkProviderName = "API 分发站"
-	AgentLinkProviderURL = "https://api.meding.site/v1"
+	AgentLinkProviderURL  = "https://api.meding.site/v1"
 	AgentLinkProviderIcon = "deepcloud"
 )
 
@@ -20,7 +20,7 @@ var errFixedProvider = errors.New("the API 分发站 provider is built in and ca
 // material and model picks are merged from providers.json by allProviders.
 func AgentLinkProvider() Provider {
 	return Provider{
-		ID: AgentLinkProviderID,
+		ID:   AgentLinkProviderID,
 		Name: AgentLinkProviderName,
 		Icon: AgentLinkProviderIcon,
 		Chat: AgentLinkProviderURL,
@@ -34,34 +34,13 @@ func fixedProviderError() error { return errFixedProvider }
 
 func mergeAgentLinkProvider(saved Provider) Provider {
 	p := AgentLinkProvider()
+	// The fixed provider has one editable credential, one model selection, and
+	// an on/off switch. Keep every endpoint, proxy and request setting canonical
+	// so an editor payload cannot redirect requests or alter how its key is sent.
 	p.Key = saved.Key
-	p.Keys = slices.Clone(saved.Keys)
-	p.KeyName = saved.KeyName
-	p.KeyProtocol = saved.KeyProtocol
-	p.KeyWeight = saved.KeyWeight
 	p.Models = slices.Clone(saved.Models)
-	p.PickedFrom = slices.Clone(saved.PickedFrom)
 	p.NoModels = saved.NoModels
-	p.Unlisted = saved.Unlisted
 	p.Off = saved.Off
-	p.Proxy = saved.Proxy
-	p.AccountModels = saved.AccountModels
-	p.AccountCaps = saved.AccountCaps
-	p.AccountWindowCaps = saved.AccountWindowCaps
-	p.AccountConcurrency = saved.AccountConcurrency
-	p.QueueLimit = saved.QueueLimit
-	p.QueueWait = saved.QueueWait
-	p.MaxRPM = saved.MaxRPM
-	p.QuotaRest = saved.QuotaRest
-	p.QuotaResetAt = saved.QuotaResetAt
-	p.RestCap = saved.RestCap
-	p.Routing = saved.Routing
-	p.Sink = saved.Sink
-	p.Affinity = saved.Affinity
-	p.Fallback = slices.Clone(saved.Fallback)
-	p.Contexts = saved.Contexts
-	p.Family = saved.Family
-	p.MaxConcurrency = saved.MaxConcurrency
 	return p
 }
 

@@ -2,7 +2,7 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Factory ("factory") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-factory-auth (provider.BuiltinRetired). Its
+// @magpie-community/opencode-factory-auth (provider.BuiltinRetired). Its
 // sign-in, models, requests and usage are the plugin's. What is left here:
 // reading the accounts signed in to the built-in, for the move onto the
 // plugin (migrate_factory.go); whoami, which names an API key's account
@@ -10,7 +10,7 @@ package provider
 // wire per model (factoryAPIs) and pools (factoryCore) the provider named
 // "factory", the plugin's, still answers by; and the API's host, which a
 // moved provider shows. A fix belongs in the plugin
-// (github.com/agentlink-community/plugins, packages/factory), with the
+// (github.com/magpie-community/plugins, packages/factory), with the
 // mover's min raised in internal/provider/migrate_factory.go.
 
 import (

@@ -95,7 +95,7 @@ func heldRegistry(t *testing.T, pkg string, published map[string]time.Time, newe
 // built-in's update each said nothing, or that it was updated.
 func TestUpdateBunHoldsBackSaysWhy(t *testing.T) {
 	sandbox(t)
-	const pkg = "@agentlink-community/opencode-factory-auth"
+	const pkg = "@magpie-community/opencode-factory-auth"
 	heldRegistry(t, pkg, map[string]time.Time{"0.1.18": time.Now().Add(-72 * time.Hour), "0.1.21": time.Now().Add(-time.Hour)}, "0.1.21")
 	// the dist branch has 0.1.21 too: the user's hold is kept, not stepped round
 	fakeDist(t, map[string][]string{pkg: {"0.1.18", "0.1.21"}}, false)

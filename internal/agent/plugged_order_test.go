@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// kiloSrc is the shape of agentlink-community/plugins' Kilo agent (#90): one
+// kiloSrc is the shape of magpie-community/plugins' Kilo agent (#90): one
 // provider block whose models' effort variants go weakest first, the order
 // Kilo lists them in.
 const kiloSrc = `

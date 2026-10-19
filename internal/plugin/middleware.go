@@ -30,6 +30,7 @@ func Middleware(target string) (file string, only bool) {
 	if err != nil {
 		return "", false
 	}
+	b = withPluginMetadata(b)
 	var pkg struct {
 		Main    string          `json:"main"`
 		Exports json.RawMessage `json:"exports"`
@@ -63,6 +64,7 @@ func OptionsExample(target string) map[string]any {
 	if err != nil {
 		return nil
 	}
+	b = withPluginMetadata(b)
 	var pkg struct {
 		AgentLink struct {
 			Options map[string]any `json:"options"`

@@ -134,8 +134,8 @@ type pluginEntryJSON struct {
 	// listed; IsAgent is whether its package has one, said of one switched
 	// off too; InAgentLinkOnly is whether all it has runs in agentlink itself,
 	// middleware and an agent, no provider to sign in to
-	Agent        *pluginAgentJSON `json:"agent,omitempty"`
-	IsAgent      bool             `json:"isAgent,omitempty"`
+	Agent           *pluginAgentJSON `json:"agent,omitempty"`
+	IsAgent         bool             `json:"isAgent,omitempty"`
 	InAgentLinkOnly bool             `json:"inAgentLinkOnly,omitempty"`
 	// Page is the page it adds to the window (agentlink.page), said of one
 	// switched off too: what the row shows before it is turned on, with
@@ -197,10 +197,12 @@ type pluginClashJSON struct {
 const autoUpdatedFor = 3 * 24 * time.Hour
 
 type pluginsJSON struct {
-	Plugins []pluginEntryJSON `json:"plugins"`
-	Bun     bool              `json:"bun"` // Bun is here; adding the first plugin downloads it otherwise
-	BunVer  string            `json:"bunVersion"`
-	Error   string            `json:"error,omitempty"` // the plugins couldn't be asked
+	Plugins   []pluginEntryJSON `json:"plugins"`
+	Bun       bool              `json:"bun"` // Bun is here; adding the first plugin downloads it otherwise
+	BunVer    string            `json:"bunVersion"`
+	BunTarget string            `json:"bunTarget,omitempty"`
+	BunError  string            `json:"bunError,omitempty"`
+	Error     string            `json:"error,omitempty"` // the plugins couldn't be asked
 	// Picker is whether this agentlink can show the system's folder picker:
 	// `agentlink web` has none, and the page then offers no button for it
 	Picker bool `json:"picker"`
@@ -214,6 +216,11 @@ type pluginsJSON struct {
 
 func pluginsState(ctx context.Context, w Windows) pluginsJSON {
 	s := pluginsJSON{Plugins: []pluginEntryJSON{}, Bun: plugin.HasBun(), BunVer: plugin.BunInUse(), Movable: provider.MoveCandidates(), Picker: w != nil && !isWeb(w), Mirror: settings.Load().ChinaMirror}
+	if target, err := plugin.BunTarget(); err == nil {
+		s.BunTarget = target
+	} else {
+		s.BunError = err.Error()
+	}
 	l := plugin.Load()
 	errs := map[string]string{}
 	names := map[string][]string{}

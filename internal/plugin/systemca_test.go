@@ -11,7 +11,7 @@ import (
 // Bun checks TLS against its own roots: behind a proxy that re-signs HTTPS
 // with a root the user installed, `bun add` failed with
 // UNABLE_TO_VERIFY_LEAF_SIGNATURE (chenyyi001 on X, installing
-// @agentlink-community/opencode-kiro-auth). Every bun agentlink runs is given
+// @magpie-community/opencode-kiro-auth). Every bun agentlink runs is given
 // the system's roots, unless the user names a file of their own.
 func TestBunIsGivenTheSystemsRoots(t *testing.T) {
 	old := systemCAFile

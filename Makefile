@@ -18,8 +18,9 @@ TARGETS  = darwin/arm64 darwin/amd64 linux/amd64 linux/arm64 windows/amd64 windo
 # `nogui` builds the terminal-only Agent Link, which cross-compiles anywhere.
 # macOS 12 is the oldest Go (1.25 and later) runs on; Info.plist says so too.
 ifeq ($(shell uname -s),Darwin)
-  export CGO_CFLAGS  = -mmacosx-version-min=12.0
-  export CGO_LDFLAGS = -mmacosx-version-min=12.0
+  export CGO_CFLAGS  = -mmacosx-version-min=12.0 $(MACOS_ARCH_FLAGS)
+  export CGO_CXXFLAGS = $(MACOS_ARCH_FLAGS)
+  export CGO_LDFLAGS = -mmacosx-version-min=12.0 $(MACOS_ARCH_FLAGS)
 endif
 # On Linux, GTK 3 and WebKitGTK 4.1: older distributions have them, where
 # Wails' default GTK 4 and WebKitGTK 6 would leave them out.
@@ -62,8 +63,10 @@ app: build
 	@mkdir -p agent-link.app/Contents/MacOS agent-link.app/Contents/Resources
 	@cp agent-link agent-link.app/Contents/MacOS/agent-link
 	@cp build/darwin/agent-link.icns agent-link.app/Contents/Resources/agent-link.icns
-	@cp build/darwin/Assets.car agent-link.app/Contents/Resources/Assets.car
 	@sed 's/@VERSION@/$(VERSION)/' build/darwin/Info.plist > agent-link.app/Contents/Info.plist
+	@xattr -cr agent-link.app 2>/dev/null || true
+	@codesign --force --deep --sign - agent-link.app
+	@codesign --verify --deep --strict agent-link.app
 	@echo "  agent-link.app"
 
 icons:
@@ -84,7 +87,7 @@ icons:
 	@rm -rf build/darwin/actool && mkdir -p build/darwin/actool
 	@xcrun actool build/darwin/AppIcon.icon --compile build/darwin/actool --platform macosx \
 		--minimum-deployment-target 11.0 --app-icon AppIcon --output-partial-info-plist build/darwin/actool/partial.plist >/dev/null
-	@mv build/darwin/actool/Assets.car build/darwin/Assets.car && rm -rf build/darwin/actool
+	@if test -f build/darwin/actool/Assets.car; then mv build/darwin/actool/Assets.car build/darwin/Assets.car; fi; rm -rf build/darwin/actool
 
 release: clean build
 	@mkdir -p dist

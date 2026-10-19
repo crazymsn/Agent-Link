@@ -1,11 +1,11 @@
 {
-  "name": "@agentlink-community/agent-aider",
+  "name": "@magpie-community/agent-aider",
   "version": "0.1.0",
   "description": "Aider (aider.chat) as a agentlink agent: pick one of agentlink's models for it on the Agents page",
   "type": "module",
   "files": ["aider.agent.js", "README.md"],
   "keywords": ["agentlink", "agentlink-agent", "aider", "llm-gateway"],
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/agentlink-community/plugins.git", "directory": "packages/aider" },
+  "repository": { "type": "git", "url": "git+https://github.com/magpie-community/plugins.git", "directory": "packages/aider" },
   "agentlink": { "agent": "./aider.agent.js" }
 }

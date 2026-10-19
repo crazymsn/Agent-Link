@@ -15,7 +15,7 @@ import (
 // not.
 func TestTerminalUpdateRestartsTheHost(t *testing.T) {
 	storeSandbox(t)
-	writeList(t, `{"plugins":[{"spec":"@agentlink-community/opencode-factory-auth"}]}`)
+	writeList(t, `{"plugins":[{"spec":"@magpie-community/opencode-factory-auth"}]}`)
 	if err := os.MkdirAll(Dir(), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -31,8 +31,8 @@ func TestTerminalUpdateRestartsTheHost(t *testing.T) {
 		}
 	}
 	then := time.Now().Add(-time.Hour)
-	write(pkg, `{"dependencies":{"@agentlink-community/opencode-factory-auth":"0.1.17"}}`, then)
-	write(lock, `"@agentlink-community/opencode-factory-auth@0.1.17"`, then)
+	write(pkg, `{"dependencies":{"@magpie-community/opencode-factory-auth":"0.1.17"}}`, then)
+	write(lock, `"@magpie-community/opencode-factory-auth@0.1.17"`, then)
 
 	prevStale := hostStale.Swap(false)
 	t.Cleanup(func() {
@@ -49,8 +49,8 @@ func TestTerminalUpdateRestartsTheHost(t *testing.T) {
 
 	// the terminal's update: bun rewrites both, plugins.json is as it was
 	list, _ := os.ReadFile(listPath())
-	write(pkg, `{"dependencies":{"@agentlink-community/opencode-factory-auth":"0.1.18"}}`, then.Add(time.Minute))
-	write(lock, `"@agentlink-community/opencode-factory-auth@0.1.18"`, then.Add(time.Minute))
+	write(pkg, `{"dependencies":{"@magpie-community/opencode-factory-auth":"0.1.18"}}`, then.Add(time.Minute))
+	write(lock, `"@magpie-community/opencode-factory-auth@0.1.18"`, then.Add(time.Minute))
 	if now, _ := os.ReadFile(listPath()); string(now) != string(list) {
 		t.Fatal("plugins.json changed")
 	}
@@ -60,7 +60,7 @@ func TestTerminalUpdateRestartsTheHost(t *testing.T) {
 	}
 
 	// this agentlink's own install restarts the host itself: no second restart
-	write(lock, `"@agentlink-community/opencode-factory-auth@0.1.19"`, then.Add(2*time.Minute))
+	write(lock, `"@magpie-community/opencode-factory-auth@0.1.19"`, then.Add(2*time.Minute))
 	Restart()
 	checkList()
 	if hostStale.Load() {

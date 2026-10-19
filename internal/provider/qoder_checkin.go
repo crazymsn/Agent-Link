@@ -5,7 +5,7 @@ package provider
 // account's campaigns on their openapi host, the day's credits among them
 // (actionType CLAIM_BENEFIT), and claim one with a POST. While the setting
 // is on, whichever agentlink runs the gateway claims each claimable one for
-// each account of @agentlink-community/opencode-qoder-auth. Campaigns are
+// each account of @magpie-community/opencode-qoder-auth. Campaigns are
 // checked every 30 minutes and on a Beijing day change: their daily
 // rollover need not be midnight. The server decides which can be claimed.
 // Both go through the plugin's fetch (0.2.7 and later), which sends them

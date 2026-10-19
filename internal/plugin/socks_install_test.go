@@ -15,7 +15,7 @@ import (
 // remove alike, and the install goes through the SOCKS proxy.
 func TestInstallThroughSOCKSProxy(t *testing.T) {
 	sandbox(t)
-	const pkg = "@agentlink-community/opencode-socks-auth"
+	const pkg = "@magpie-community/opencode-socks-auth"
 	heldRegistry(t, pkg, map[string]time.Time{"0.1.0": time.Now().Add(-72 * time.Hour)}, "0.1.0")
 	reg, _ := url.Parse(npmRegistry)
 	socks, carried := socksTo(t, reg.Host)

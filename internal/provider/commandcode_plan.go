@@ -2,12 +2,12 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Command Code's plan ("commandcode-plan")
 // is a retired built-in subscription, served by its plugin alone,
-// @agentlink-community/opencode-commandcode-auth (provider.BuiltinRetired).
+// @magpie-community/opencode-commandcode-auth (provider.BuiltinRetired).
 // Its sign-in, models, requests and usage are the plugin's; what is left
 // here reads the accounts signed in to the built-in for the move onto the
 // plugin (migrate_side.go), and reads a Command Code key's plan and
 // windows for the keyed preset ("commandcode") and the moved account's
-// card. A fix belongs in the plugin (github.com/agentlink-community/plugins,
+// card. A fix belongs in the plugin (github.com/magpie-community/plugins,
 // packages/commandcode), with the mover's min raised in
 // internal/provider/migrate_side.go.
 

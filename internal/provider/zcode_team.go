@@ -2,10 +2,10 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): ZCode ("zcode") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-zcode-auth (provider.BuiltinRetired). What is
+// @magpie-community/opencode-zcode-auth (provider.BuiltinRetired). What is
 // left here are the readers of a team's seat that zcodeOwn and the Zhipu
 // plan card (planquota.go) still use. A fix belongs in the plugin
-// (github.com/agentlink-community/plugins, packages/zcode), with the mover's
+// (github.com/magpie-community/plugins, packages/zcode), with the mover's
 // min raised in internal/provider/migrate_zcode.go.
 
 // A team's GLM Coding Plan (团队套餐), bought by an organization on Z.ai or

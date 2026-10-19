@@ -2,7 +2,7 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Factory ("factory") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-factory-auth (provider.BuiltinRetired). A key
+// @magpie-community/opencode-factory-auth (provider.BuiltinRetired). A key
 // pasted here is checked with whoami and kept as the plugin's account.
 
 // A Factory account added by its API key (fk-…), as droid takes one from

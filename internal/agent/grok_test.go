@@ -212,7 +212,7 @@ func TestGrokFoldsItsOwnAccount(t *testing.T) {
 	os.MkdirAll(filepath.Join(home, "grok"), 0o755)
 	os.WriteFile(filepath.Join(home, "grok", "auth.json"), []byte(`{"x":{"key":"k","email":"me@x.ai"}}`), 0o600)
 	// the Grok plugin serves the account, taken from Grok Build's own
-	spec := "@agentlink-community/opencode-grok-auth"
+	spec := "@magpie-community/opencode-grok-auth"
 	write := func(name string, v any) {
 		t.Helper()
 		b, _ := json.Marshal(v)

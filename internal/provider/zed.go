@@ -2,11 +2,11 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Zed ("zed") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-zed-auth (provider.BuiltinRetired). Its sign-in,
+// @magpie-community/opencode-zed-auth (provider.BuiltinRetired). Its sign-in,
 // models, requests and usage are the plugin's; all that is left here is
 // reading the accounts signed in to the built-in, for the move onto the
 // plugin (migrate_zed.go). A fix belongs in the plugin
-// (github.com/agentlink-community/plugins, packages/zed), with the mover's min
+// (github.com/magpie-community/plugins, packages/zed), with the mover's min
 // raised in internal/provider/migrate_zed.go.
 
 import "encoding/json"

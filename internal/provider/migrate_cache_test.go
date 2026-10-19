@@ -17,7 +17,7 @@ func movedTwo(t *testing.T) {
 	t.Helper()
 	claudeHome(t)
 	if err := setMigration("zed", func(m *Migration) {
-		*m = Migration{State: MovePlugin, Package: "@agentlink-community/opencode-zed-auth", At: time.Now().UTC().Truncate(time.Second),
+		*m = Migration{State: MovePlugin, Package: "@magpie-community/opencode-zed-auth", At: time.Now().UTC().Truncate(time.Second),
 			Accounts: []movedAccount{
 				{Key: "zed:a", User: "a@example.com", Was: map[string]any{"type": "oauth", "refresh": "r-a"}},
 				{Key: "zed:b", User: "b@example.com"},

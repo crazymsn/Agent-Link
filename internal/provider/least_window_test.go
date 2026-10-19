@@ -27,7 +27,7 @@ func TestTinyListedWindowIsUnknown(t *testing.T) {
 	  "xiaomi":{"id":"xiaomi","models":{"mimo-v2.6-flash":{"id":"mimo-v2.6-flash","limit":{"context":1048576,"output":131072}}}}}`), 0o644)
 	catalog.Reset()
 	t.Cleanup(catalog.Reset)
-	spec := "@agentlink-community/opencode-cline-auth"
+	spec := "@magpie-community/opencode-cline-auth"
 	write := func(name string, v any) {
 		t.Helper()
 		b, _ := json.Marshal(v)

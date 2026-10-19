@@ -50,7 +50,7 @@ func TestClinePluginBorrowsEfforts(t *testing.T) {
 	if len(want) == 0 {
 		t.Fatal("the catalog written gives grok-4.7 no efforts")
 	}
-	pp := plugin.Provider{ID: "cline", Spec: "@agentlink-community/opencode-cline-auth", Models: []plugin.Model{{ID: id}}}
+	pp := plugin.Provider{ID: "cline", Spec: "@magpie-community/opencode-cline-auth", Models: []plugin.Model{{ID: id}}}
 	if got := pluginCatalog(pp)[0].Efforts; !slices.Equal(got, want) {
 		t.Fatalf("cline plugin: %s's efforts %v, want the API key's %v", id, got, want)
 	}

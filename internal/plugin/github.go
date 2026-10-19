@@ -99,7 +99,7 @@ func taggedOnDisk() []Tagged {
 // TaggedRepos are the repositories tagged with Topic, the most starred
 // first: GitHub asked at most every ten minutes (its search lets 10 a minute
 // through without a token), else what it said last, kept on disk. Archived
-// repositories, forks and agentlink-community's own (the market lists those)
+// repositories, forks and magpie-community's own (the market lists those)
 // are left out, as is one whose package.json doesn't parse, which bun
 // couldn't install either. A repository whose package.json didn't come in
 // time is as the list had it last, and the list is asked again in
@@ -224,7 +224,7 @@ func askTagged(ctx context.Context, last []Tagged) (l []Tagged, whole bool, err 
 	bg := context.WithoutCancel(ctx)
 	seen := map[string]bool{}
 	for i, it := range r.Items {
-		if it.Archived || it.Fork || strings.EqualFold(it.Owner.Login, "agentlink-community") || !strings.Contains(it.FullName, "/") {
+		if it.Archived || it.Fork || strings.EqualFold(it.Owner.Login, "magpie-community") || !strings.Contains(it.FullName, "/") {
 			done[i] = true
 			continue
 		}
@@ -318,6 +318,7 @@ func readTagged(pc context.Context, t Tagged, branch string) (Tagged, bool, bool
 	if err != nil {
 		return t, false, errors.Is(err, errNotFound)
 	}
+	b := withPluginMetadata(pb)
 	var pj struct {
 		Name    string          `json:"name"`
 		Version string          `json:"version"`
@@ -332,7 +333,7 @@ func readTagged(pc context.Context, t Tagged, branch string) (Tagged, bool, bool
 			} `json:"page"`
 		} `json:"agentlink"`
 	}
-	if json.Unmarshal(pb, &pj) != nil || !pkgName.MatchString(pj.Name) {
+	if json.Unmarshal(b, &pj) != nil || !pkgName.MatchString(pj.Name) {
 		return t, false, true
 	}
 	t.Package, t.Version = pj.Name, pj.Version
@@ -352,7 +353,7 @@ func readTagged(pc context.Context, t Tagged, branch string) (Tagged, bool, bool
 	// published to npm from this repository: npm's copy is the one
 	// built to be installed (a repository often leaves its dist out,
 	// built only to publish), so it is installed from npm
-	b, err := fetchJSON(pc, npmRegistry+"/"+npmPath(pj.Name)+"/latest", 1<<20)
+	b, err = fetchJSON(pc, npmRegistry+"/"+npmPath(pj.Name)+"/latest", 1<<20)
 	known := err == nil || errors.Is(err, errNotFound)
 	// npmNames is whether npm's copy names what it loads (main,
 	// exports); one that names nothing loads an index file

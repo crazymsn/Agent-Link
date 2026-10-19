@@ -17,7 +17,7 @@ func TestIsPathWhicheverSystemWroteIt(t *testing.T) {
 		"file:///Users/me/plugin":              true,
 		"./my-plugin.js":                       true,
 		"opencode-gemini-auth":                 false,
-		"@agentlink-community/opencode-kiro-auth": false,
+		"@magpie-community/opencode-kiro-auth": false,
 		"owner/repo":                           false,
 		"github:owner/repo":                    false,
 	} {

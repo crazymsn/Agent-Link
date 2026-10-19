@@ -2,7 +2,7 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Factory ("factory") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-factory-auth (provider.BuiltinRetired). What
+// @magpie-community/opencode-factory-auth (provider.BuiltinRetired). What
 // is left here reads /api/billing/limits for tests of the gateway's pool
 // routing (FactoryAllowanceForTest).
 

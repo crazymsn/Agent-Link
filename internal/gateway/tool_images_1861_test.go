@@ -33,7 +33,7 @@ func codexViewImageRequest(t *testing.T) *Request {
 
 // What a plugin on Anthropic's Messages (Kiro's) is handed: the image in
 // the tool_result, as an image block of base64 bytes. Kiro's plugin reads it
-// there (agentlink-community/plugins kiro 0.1.9).
+// there (magpie-community/plugins kiro 0.1.9).
 func TestCodexToolImageReachesAnthropicPlugin(t *testing.T) {
 	var body struct {
 		Messages []struct {

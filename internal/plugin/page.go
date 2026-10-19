@@ -130,6 +130,7 @@ func Window(target string) (w *WindowSpec, only bool) {
 	if err != nil {
 		return nil, false
 	}
+	b = withPluginMetadata(b)
 	type part struct {
 		Title    string          `json:"title"`
 		Titles   json.RawMessage `json:"titles"`

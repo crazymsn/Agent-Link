@@ -16,10 +16,8 @@
   let tagged = null;     // /api/plugins/github: repositories their authors tagged agentlink-plugin, as listings
   let taggedErr = "";    // why they couldn't be asked for, while none were had
   let topic = "agentlink-plugin";
-  const npm = {};        // /api/plugins/npm: package → what npm says of it
   const heads = {};      // /api/plugins/git: a git plugin's spec → the commit its repository is at
   let failed = "";       // why what's installed couldn't be loaded
-  let failedList = "";   // ...and the plugins suggested
   let tab = "discover";
   try { tab = localStorage.getItem("agentlink.pluginTab") || tab; } catch {}
   let query = "";
@@ -185,10 +183,7 @@
     try {
       const r = await api("plugins/listings");
       listings = r.listings || [];
-      failedList = "";
-    } catch (e) {
-      failedList = e.message;
-    }
+    } catch {}
     merge();
   }
   // what npm says of the plugins suggested and those installed: drawn
@@ -406,7 +401,7 @@
     if (npm) {
       b.title = t("Update to {v}", { v: "v" + e.latest });
       // the community's would come by itself: Update brings it now
-      if (pkg.startsWith("@agentlink-community/") && !/@(?!latest$)[^@/]+$/.test(e.spec.slice(pkg.length))) b.title += "\n" + t("agentlink updates it by itself within the hour; Update does it now");
+      if (pkg.startsWith("@magpie-community/") && !/@(?!latest$)[^@/]+$/.test(e.spec.slice(pkg.length))) b.title += "\n" + t("agentlink updates it by itself within the hour; Update does it now");
     } else b.title = t("Fetches it from {repo} again", { repo: e.spec }) + "\n" + t("{have} installed, {repo} is at {head}", { have: e.commit, repo: e.spec, head: e.head });
     b.onclick = (ev) => {
       ev.stopPropagation();
@@ -507,7 +502,7 @@
     if (l.community) {
       const v = el("span", "pm-verified");
       v.append(glyph(SHIELD, 11, 1.5), el("span", "", t("agentlink community")));
-      v.title = t("Written for agentlink by its community, in github.com/agentlink-community/plugins");
+      v.title = t("Written for agentlink by its community, in github.com/magpie-community/plugins");
       by.append(v);
     } else by.append(el("span", "", l.npm?.publisher || l.package));
     who.append(by);
@@ -855,12 +850,8 @@
     if (tab === "installed" || tab === "builtin" || !listings) body.replaceChildren();
     if (tab === "installed") return drawInstalled();
     if (tab === "builtin") return drawBuiltin();
-    if (failedList && !listings) {
-      body.append(el("p", "pm-empty", t("Couldn't load the plugins: {error}", { error: failedList })));
-      return;
-    }
     if (!listings) {
-      body.append(intro(), skeleton(6));
+      body.replaceChildren(intro(), skeleton(6));
       return;
     }
     const f = query.trim().toLowerCase();

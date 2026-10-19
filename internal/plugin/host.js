@@ -1133,6 +1133,16 @@ function readJSON(file) {
   }
 }
 
+function pluginMetadata(pkg) {
+  if (!pkg || typeof pkg !== "object") return {}
+  return { ...(pkg.magpie ?? {}), ...(pkg.agentlink ?? {}) }
+}
+
+function pluginPackage(file) {
+  const pkg = readJSON(file)
+  return pkg ? { ...pkg, agentlink: pluginMetadata(pkg) } : pkg
+}
+
 // entries are the files a plugin's server side may load from, as
 // OpenCode looks for them: the package's exports["./server"], its main,
 // exports["."], else an index file; a path to a file is that file. A
@@ -1145,7 +1155,7 @@ function entries(target) {
   const out = []
   const add = (v) => typeof v === "string" && v.trim() && out.push(path.resolve(target, v.trim()))
   const pick = (x) => (typeof x === "string" ? x : x?.import ?? x?.default)
-  const pkg = readJSON(path.join(target, "package.json"))
+  const pkg = pluginPackage(path.join(target, "package.json"))
   if (pkg) {
     const ex = pkg.exports && typeof pkg.exports === "object" && !Array.isArray(pkg.exports) ? pkg.exports : undefined
     if (ex) add(pick(ex["./server"]))
@@ -1229,7 +1239,7 @@ async function loadPlugins(list) {
       let fns = []
       // A gateway-only package needs no OpenCode entry. Mixed packages
       // still load their provider hooks through the usual entry rules.
-      const pkg = readJSON(path.join(p.target, "package.json"))
+      const pkg = pluginPackage(path.join(p.target, "package.json"))
       const onlyGateway = isPi || (p.gateway && (p.gateway === p.target || (!pkg?.main && !pkg?.exports && !INDEX_FILES.some((f) => fs.existsSync(path.join(p.target, f))))))
       for (const file of onlyGateway ? [] : entries(p.target)) {
         fns = servers(await import(pathToFileURL(file).href))
@@ -1856,7 +1866,7 @@ function iconOf(a) {
   const own = ok(a.auth.icon)
   if (own || !a.target) return own
   const dir = fs.statSync(a.target, { throwIfNoEntry: false })?.isDirectory() ? a.target : path.dirname(a.target)
-  return ok(readJSON(path.join(dir, "package.json"))?.agentlink?.icon)
+  return ok(pluginPackage(path.join(dir, "package.json"))?.agentlink?.icon)
 }
 
 // concurrencyOf is how many requests the plugin says each of its accounts
@@ -1868,7 +1878,7 @@ function concurrencyOf(a) {
   const own = ok(a.auth.maxConcurrency)
   if (own || !a.target) return own
   const dir = fs.statSync(a.target, { throwIfNoEntry: false })?.isDirectory() ? a.target : path.dirname(a.target)
-  return ok(readJSON(path.join(dir, "package.json"))?.agentlink?.maxConcurrency)
+  return ok(pluginPackage(path.join(dir, "package.json"))?.agentlink?.maxConcurrency)
 }
 
 // rateOf reads a model's credit rate as a plugin gives it: a number (0.5)

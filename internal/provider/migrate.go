@@ -2,7 +2,7 @@ package provider
 
 // Retiring a built-in subscription. Each subscription with a mover below
 // has a community plugin that does what the built-in does
-// (github.com/agentlink-community/plugins). Moving one puts its accounts onto
+// (github.com/magpie-community/plugins). Moving one puts its accounts onto
 // the plugin under the same id, so agents on zed/<model>, the model picks,
 // routing and fallbacks carry on as they were:
 //

@@ -288,7 +288,7 @@ func listPlugins(ctx context.Context, asJSON bool) error {
 // package suggests.
 // installedName is the package name of the plugin a short name, as the
 // community's READMEs write it (think-tags for
-// @agentlink-community/middleware-think-tags), stands for; a name a plugin
+// @magpie-community/middleware-think-tags), stands for; a name a plugin
 // has itself, or one no plugin has, is kept as it is.
 func installedName(name string) string {
 	ps := plugin.Load().Plugins

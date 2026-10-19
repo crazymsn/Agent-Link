@@ -2,7 +2,7 @@ package provider
 
 // MiniMax Code's daily check-in (签到, #811: a week of daily credits, more
 // on days 4 and 7): MiniMax Code is served only by its community plugin,
-// @agentlink-community/opencode-minimax-auth (provider "minimax-code", the
+// @magpie-community/opencode-minimax-auth (provider "minimax-code", the
 // China site, and "minimax-code-global", the international one; no
 // built-in, no mover). While the setting is on, whichever agentlink runs the
 // gateway presses it for each of the plugin's accounts once a Beijing day,

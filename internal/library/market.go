@@ -784,10 +784,10 @@ type MarketSkill struct {
 }
 
 // featuredSkills are agentlink's own skills, first in the market: in
-// agentlink-community/plugins, beside its plugins (ttmouse on X: an official
+// magpie-community/plugins, beside its plugins (ttmouse on X: an official
 // skill for an agent to read what agentlink quota tells).
 var featuredSkills = []MarketSkill{{
-	Source: "agentlink-community/plugins", SkillID: "agentlink-quota", Name: "agentlink-quota", Official: true, Featured: true,
+	Source: "magpie-community/plugins", SkillID: "agentlink-quota", Name: "agentlink-quota", Official: true, Featured: true,
 	Description: "Check how much is left of the user's AI subscriptions, coding plans and API key balances through agentlink: each usage window's percent used and when it resets, each key's balance, and wait until a subscription has allowance again.",
 }}
 

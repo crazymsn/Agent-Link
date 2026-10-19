@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-// MiMo's accounts on @agentlink-community/opencode-mimo-auth, as its sign-in
+// MiMo's accounts on @magpie-community/opencode-mimo-auth, as its sign-in
 // keeps one: the Xiaomi account (what signs it on again) as refresh, the
 // session's cookies as access, expiring a day after they were set, when
 // the app signs on again.
 func init() {
 	movers[MiMoID] = &mover{
-		pkg:    "@agentlink-community/opencode-mimo-auth",
+		pkg:    "@magpie-community/opencode-mimo-auth",
 		min:    "0.1.9", // an account with a Token Plan and no app membership is answered by its Token Plan
 		agents: []string{MiMoID},
 		out: func() ([]Moving, error) {

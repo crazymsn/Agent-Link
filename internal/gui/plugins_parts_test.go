@@ -19,14 +19,16 @@ import (
 // npm; asking it is /api/plugins/npm's, which takes package names only.
 func TestPluginMarketInParts(t *testing.T) {
 	cache := t.TempDir()
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", os.Getenv("HOME"))
 	t.Setenv("XDG_CACHE_HOME", cache)
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	t.Setenv("AGENT_LINK_PLUGIN_MARKET", "off")
-	const pkg = "@agentlink-community/opencode-zcode-auth"
+	const pkg = "@magpie-community/opencode-zcode-auth"
 	// a listing the market gives no icon (yetone: 这里的 agent plugin 为什么
 	// 没有 logo): the picture its package gives (agentlink.icon) is kept here,
 	// and the page gets it as a file, never the data URI
-	const agent = "@agentlink-community/middleware-word-guard"
+	const agent = "@magpie-community/middleware-word-guard"
 	png := []byte("\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR")
 	data := "data:image/png;base64," + base64.StdEncoding.EncodeToString(png)
 	kept := map[string]any{
@@ -34,10 +36,10 @@ func TestPluginMarketInParts(t *testing.T) {
 		agent: map[string]any{"info": map[string]any{"version": "0.1.1", "icon": data}, "at": time.Now()},
 	}
 	b, _ := json.Marshal(kept)
-	if err := os.MkdirAll(filepath.Join(cache, "agentlink"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(cache, "agent-link"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(cache, "agentlink", "plugin-npm.json"), b, 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(cache, "agent-link", "plugin-npm.json"), b, 0o644); err != nil {
 		t.Fatal(err)
 	}
 	plugin.ReloadInfo()

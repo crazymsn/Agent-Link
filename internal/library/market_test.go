@@ -233,7 +233,7 @@ func TestFeaturedSkills(t *testing.T) {
 	t.Cleanup(func() { popular.Lock(); popular.list = nil; popular.Unlock() })
 
 	list, _ := MarketSkills("")
-	if len(list) != 2 || list[0].ID != "agentlink-community/plugins/agentlink-quota" || !list[0].Official || !list[0].Featured ||
+	if len(list) != 2 || list[0].ID != "magpie-community/plugins/agentlink-quota" || !list[0].Official || !list[0].Featured ||
 		list[0].Description == "" || list[0].Icon != gh("agentlink-community") || !offered(list[0].Icon) || list[1].ID != "o/r/pdf" {
 		t.Fatalf("market: %+v", list)
 	}

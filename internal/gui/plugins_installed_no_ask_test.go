@@ -43,7 +43,7 @@ func pluginsSandbox(t *testing.T) string {
 // every plugin's vendor, one at a time — and nothing here needs its models.
 func TestPluginsStateNamesWithoutAsking(t *testing.T) {
 	cfg := pluginsSandbox(t)
-	const spec = "@agentlink-community/opencode-copilot-auth@latest"
+	const spec = "@magpie-community/opencode-copilot-auth@latest"
 	if err := os.MkdirAll(cfg, 0o700); err != nil {
 		t.Fatal(err)
 	}

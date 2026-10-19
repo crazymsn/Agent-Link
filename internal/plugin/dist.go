@@ -16,7 +16,7 @@ import (
 )
 
 // The community repo's dist branch: every version of each
-// @agentlink-community package, packed by the repo's publish workflow
+// @magpie-community package, packed by the repo's publish workflow
 // (scripts/dist.mjs there) as soon as it is merged. npm can't take a new
 // package's first version without an owner's 2FA (trusted publishing sets
 // up only a package that exists), so a reviewed plugin used to wait,
@@ -27,10 +27,10 @@ import (
 
 // distBase is where the branch is read; moved by tests. Read through the
 // 「国内镜像」 switch's jsDelivr copy first when it is on (source.DoFaithful).
-var distBase = "https://raw.githubusercontent.com/agentlink-community/plugins/dist"
+var distBase = "https://raw.githubusercontent.com/magpie-community/plugins/dist"
 
 // distScope is the scope of the packages the branch has.
-const distScope = "@agentlink-community/"
+const distScope = "@magpie-community/"
 
 type distVersion struct {
 	File      string          `json:"file"`      // tgz/<npm pack's file name>
@@ -103,7 +103,7 @@ func distInfo(ctx context.Context, name string) (NPM, bool) {
 		return NPM{}, false
 	}
 	var l npmLatest
-	if json.Unmarshal(v.Manifest, &l) != nil {
+	if json.Unmarshal(withPluginMetadata(v.Manifest), &l) != nil {
 		return NPM{}, false
 	}
 	info := npmOf(l)
@@ -112,7 +112,7 @@ func distInfo(ctx context.Context, name string) (NPM, bool) {
 }
 
 // distWanted is the package and version an npm spec asks for, when the
-// dist branch could serve it: a @agentlink-community package, at a version
+// dist branch could serve it: a @magpie-community package, at a version
 // or "latest" (not a range or another tag).
 func distWanted(spec string) (name, version string, ok bool) {
 	if IsPath(spec) || IsGit(spec) {

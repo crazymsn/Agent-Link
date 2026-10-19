@@ -14,7 +14,7 @@ import (
 
 // pkg is the package these tests add: an npm one, so add installs it
 // through the fake bun.
-const pkg = "@agentlink-community/opencode-zed-auth"
+const pkg = "@magpie-community/opencode-zed-auth"
 
 // offSandbox gives the test its own agentlink folders and a Bun that installs
 // nothing real: $AGENT_LINK_BUN is this test binary, which stands in for bun as

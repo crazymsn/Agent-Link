@@ -27,18 +27,27 @@ func Agent(target string) (file string, only bool) {
 	if err != nil {
 		return "", false
 	}
+	b = withPluginMetadata(b)
 	var pkg struct {
 		Main    string          `json:"main"`
 		Exports json.RawMessage `json:"exports"`
-		AgentLink struct { Agent string `json:"agent"` } `json:"agentLink"`
-		Legacy struct { Agent string `json:"agent"` } `json:"agentlink"`
+		AgentLink struct {
+			Agent string `json:"agent"`
+		} `json:"agentLink"`
+		Legacy struct {
+			Agent string `json:"agent"`
+		} `json:"agentlink"`
 	}
 	if json.Unmarshal(b, &pkg) != nil {
 		return "", false
 	}
 	name := strings.TrimSpace(pkg.AgentLink.Agent)
-	if name == "" { name = strings.TrimSpace(pkg.Legacy.Agent) }
-	if name == "" { return "", false }
+	if name == "" {
+		name = strings.TrimSpace(pkg.Legacy.Agent)
+	}
+	if name == "" {
+		return "", false
+	}
 	file = filepath.Join(target, filepath.FromSlash(name))
 	return file, pkg.Main == "" && len(pkg.Exports) == 0
 }

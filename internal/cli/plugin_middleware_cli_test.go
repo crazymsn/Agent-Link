@@ -63,7 +63,7 @@ func TestPluginOnOffRmShortName(t *testing.T) {
 	t.Cleanup(plugin.Settle)
 	dir := filepath.Join(t.TempDir(), "middleware-zz-tags")
 	os.MkdirAll(dir, 0o755)
-	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name": "@agentlink-community/middleware-zz-tags", "agentlink": {"middleware": "./zz.middleware.js"}}`), 0o644)
+	os.WriteFile(filepath.Join(dir, "package.json"), []byte(`{"name": "@magpie-community/middleware-zz-tags", "agentlink": {"middleware": "./zz.middleware.js"}}`), 0o644)
 	os.WriteFile(filepath.Join(dir, "zz.middleware.js"), []byte("export function onRequest(b) {}\n"), 0o644)
 	if _, err := plugin.Add(context.Background(), dir); err != nil {
 		t.Fatal(err)

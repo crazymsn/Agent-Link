@@ -32,7 +32,7 @@ var builtinMarket []byte
 
 // MarketURL is where the list is kept; AGENT_LINK_PLUGIN_MARKET moves it, and
 // "off" keeps to the built-in copy.
-const MarketURL = "https://raw.githubusercontent.com/agentlink-community/plugins/main/registry.json"
+const MarketURL = "https://raw.githubusercontent.com/magpie-community/plugins/main/registry.json"
 
 // Listing is a plugin the market suggests.
 type Listing struct {
@@ -431,7 +431,7 @@ func npmAsk(ctx context.Context, name string) (NPM, error) {
 			return
 		}
 		var l npmLatest
-		if err := json.Unmarshal(b, &l); err != nil {
+		if err := json.Unmarshal(withPluginMetadata(b), &l); err != nil {
 			latestErr = err
 			return
 		}
@@ -450,7 +450,7 @@ func npmAsk(ctx context.Context, name string) (NPM, error) {
 		}
 	}()
 	wg.Wait()
-	// a @agentlink-community package npm doesn't have yet, or has an older
+	// a @magpie-community package npm doesn't have yet, or has an older
 	// version of, is as the community repo's dist branch has it, which
 	// agentlink installs it from (dist.go)
 	if d, ok := distInfo(ctx, name); ok && (latestErr != nil || update.Newer(d.Version, info.Version)) {
@@ -684,6 +684,7 @@ func InstalledIcon(spec string) string {
 	if err != nil {
 		return ""
 	}
+	b = withPluginMetadata(b)
 	var p struct {
 		AgentLink struct {
 			Icon string `json:"icon"`

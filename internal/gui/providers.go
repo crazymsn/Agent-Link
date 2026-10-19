@@ -23,6 +23,13 @@ import (
 	"github.com/crazymsn/Agent-Link/internal/upstream"
 )
 
+// fixedProviderActionAllowed keeps the built-in provider usable for saving its
+// credential, switching it off, and network operations against its canonical
+// endpoint while rejecting actions that alter, probe or remove it.
+func fixedProviderActionAllowed(action string) bool {
+	return slices.Contains([]string{"save", "key", "test", "models", "off", "on"}, action)
+}
+
 // The providers page: the vendors the user added, the presets they can add
 // with one key, the gateway that fronts them, and who is routed where.
 
@@ -1241,7 +1248,7 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 			return
 		}
 		in := req.Provider
-		if provider.IsFixedProvider(in.ID) && !slices.Contains([]string{"save", "key", "test", "detect"}, r.PathValue("action")) {
+		if provider.IsFixedProvider(in.ID) && !fixedProviderActionAllowed(r.PathValue("action")) {
 			fail(rw, errors.New("the API 分发站 provider is built in and cannot be changed or removed"))
 			return
 		}
@@ -1808,7 +1815,7 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 			}
 			saved := *p
 			if req.Typed {
-				q := typed(*p, in, req.Proxy, req.InsecureTLS)
+				q := typedModelsRequest(*p, in, req.Proxy, req.InsecureTLS)
 				p = &q
 			}
 			if len(req.Test) > 0 {
@@ -1954,7 +1961,7 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 			defer cancel()
 			ask := *p
 			if req.Typed {
-				ask = typed(*p, in, req.Proxy, req.InsecureTLS)
+				ask = typedModelsRequest(*p, in, req.Proxy, req.InsecureTLS)
 			}
 			ms, dropped, err := ask.Refetch(ctx)
 			if err != nil {
@@ -2273,7 +2280,19 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 	})
 }
 
-// typed is the saved provider p as the editor's form has it (in), for
+// typedModelsRequest is the provider as the editor has it for a model refresh.
+// A fixed provider accepts only a replacement token; its endpoint and request
+// settings stay canonical even when the form sends them back.
+func typedModelsRequest(p, in provider.Provider, proxy *string, insecureTLS *bool) provider.Provider {
+	if !provider.IsFixedProvider(p.ID) {
+		return typed(p, in, proxy, insecureTLS)
+	}
+	if key := strings.TrimSpace(in.Key); key != "" && key != p.Key {
+		p.Key, p.KeyName, p.KeyProtocol, p.KeyWeight = key, "", "", 0
+	}
+	return p
+}
+
 // Refresh and Test models before a Save: a key pasted to replace the saved
 // one is the one asked with, and the URLs, headers, extra body and proxy
 // typed are where and how. Nothing is saved. What the form left blank (the

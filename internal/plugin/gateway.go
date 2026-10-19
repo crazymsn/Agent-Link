@@ -31,14 +31,28 @@ func Gateway(target string) string {
 		return ""
 	}
 	var pkg struct {
-		AgentLink struct { Hooks string `json:"hooks"` } `json:"agentLink"`
-		Legacy struct { Hooks string `json:"hooks"` } `json:"agentlink"`
+		AgentLink struct {
+			Hooks string `json:"hooks"`
+		} `json:"agentLink"`
+		Legacy struct {
+			Hooks string `json:"hooks"`
+		} `json:"agentlink"`
 	}
 	b, err := os.ReadFile(filepath.Join(target, "package.json"))
-	if err != nil || json.Unmarshal(b, &pkg) != nil { return "" }
+	if err != nil {
+		return ""
+	}
+	b = withPluginMetadata(b)
+	if json.Unmarshal(b, &pkg) != nil {
+		return ""
+	}
 	name := strings.TrimSpace(pkg.AgentLink.Hooks)
-	if name == "" { name = strings.TrimSpace(pkg.Legacy.Hooks) }
-	if name == "" { return "" }
+	if name == "" {
+		name = strings.TrimSpace(pkg.Legacy.Hooks)
+	}
+	if name == "" {
+		return ""
+	}
 	return filepath.Join(target, filepath.FromSlash(name))
 }
 

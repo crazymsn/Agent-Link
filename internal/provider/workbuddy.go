@@ -2,12 +2,12 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): WorkBuddy ("workbuddy") and WorkBuddy AI
 // ("workbuddy-ai") are retired built-in subscriptions served by their
-// plugin, @agentlink-community/opencode-workbuddy-auth, moved or not. Their
+// plugin, @magpie-community/opencode-workbuddy-auth, moved or not. Their
 // built-in sign-in, models, requests and usage are gone; what is left here
 // reads the built-in accounts for the move (migrate_workbuddy.go), checks
 // the plugin's accounts in (workbuddy_checkin.go), and tells a restricted
 // account's refusal (WBRestricted). A fix belongs in the plugin
-// (github.com/agentlink-community/plugins, packages/workbuddy), with the
+// (github.com/magpie-community/plugins, packages/workbuddy), with the
 // movers' min raised in internal/provider/migrate_workbuddy.go.
 
 // A WorkBuddy subscription is Tencent's CodeBuddy plan, which WorkBuddy

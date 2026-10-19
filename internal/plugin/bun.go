@@ -176,9 +176,12 @@ func cantStart(bun string, err error) error {
 	return fmt.Errorf("this system can't start the Bun agentlink downloaded (%s, %s), though it is there: the build doesn't match this system's C library (glibc or musl). Set AGENT_LINK_BUN to a bun built for this system to run plugins on it: %w", target, bun, err)
 }
 
-// Bun is the bun to run plugins with: $AGENT_LINK_BUN when set, else the one
-// agentlink downloaded and keeps up to date, downloading it now when there
-// is none yet.
+// BunTarget reports the download target for this machine, for diagnostics in
+// the Plugins page. It never downloads or starts the runtime.
+func BunTarget() (string, error) { return bunTarget() }
+
+// Bun is the runtime used to install and run community plugins: $AGENT_LINK_BUN
+// when set, else the one agentlink downloads and keeps up to date.
 func Bun(ctx context.Context) (string, error) {
 	if b := os.Getenv("AGENT_LINK_BUN"); b != "" {
 		return b, nil

@@ -36,11 +36,11 @@ func TestCheckUpdates(t *testing.T) {
 	t.Setenv("USERPROFILE", dir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	const (
-		ours   = "@agentlink-community/opencode-zed-auth"
-		pinned = "@agentlink-community/opencode-kiro-auth"
+		ours   = "@magpie-community/opencode-zed-auth"
+		pinned = "@magpie-community/opencode-kiro-auth"
 		theirs = "opencode-gemini-auth"
-		off    = "@agentlink-community/opencode-qoder-auth"
-		fresh  = "@agentlink-community/opencode-grok-auth"
+		off    = "@magpie-community/opencode-qoder-auth"
+		fresh  = "@magpie-community/opencode-grok-auth"
 	)
 	if err := save(List{Plugins: []Entry{{Spec: ours + "@latest"}, {Spec: pinned + "@0.1.2"}, {Spec: theirs + "@latest"}, {Spec: off + "@latest", Off: true}, {Spec: fresh}}}); err != nil {
 		t.Fatal(err)
@@ -99,10 +99,10 @@ func TestCheckUpdates(t *testing.T) {
 
 func TestPinned(t *testing.T) {
 	for spec, want := range map[string]bool{
-		"@agentlink-community/opencode-zed-auth":          false,
-		"@agentlink-community/opencode-zed-auth@latest":   false,
-		"@agentlink-community/opencode-zed-auth@0.1.2":    true,
-		"@agentlink-community/opencode-zed-auth@^0.1.0":   true,
+		"@magpie-community/opencode-zed-auth":          false,
+		"@magpie-community/opencode-zed-auth@latest":   false,
+		"@magpie-community/opencode-zed-auth@0.1.2":    true,
+		"@magpie-community/opencode-zed-auth@^0.1.0":   true,
 		"opencode-gemini-auth@next":                    true,
 		"opencode-gemini-auth":                         false,
 		filepath.Join(os.TempDir(), "plugin/index.js"): false,

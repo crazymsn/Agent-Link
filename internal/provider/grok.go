@@ -2,12 +2,12 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Grok ("grok") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-grok-auth (provider.BuiltinRetired). Its
+// @magpie-community/opencode-grok-auth (provider.BuiltinRetired). Its
 // sign-in, models, requests and usage are the plugin's; what is left here
 // reads the accounts signed in to the built-in for the move onto the plugin
 // (migrate_side.go), installs and finds the Grok CLI the plugin signs in
 // with, and shapes the plugin's request bodies (grokBody). A fix belongs in
-// the plugin (github.com/agentlink-community/plugins, packages/grok), with the
+// the plugin (github.com/magpie-community/plugins, packages/grok), with the
 // mover's min raised in internal/provider/migrate_side.go.
 
 // A Grok subscription (SuperGrok, X Premium+) is served straight from the
@@ -266,7 +266,7 @@ func grokBody(body []byte) []byte {
 // (encrypted_content on it or on a part), empty, or with a part of another
 // kind is left as it is: agentlink reads no sealed task, and the gateway's
 // guard for one (hasSealedAgentMessage) still sees it. The plugin does the
-// same (@agentlink-community/opencode-grok-auth 0.1.11, plugins#61).
+// same (@magpie-community/opencode-grok-auth 0.1.11, plugins#61).
 func grokAgentMessage(it any) (map[string]any, bool) {
 	im, ok := it.(map[string]any)
 	if !ok || im["type"] != "agent_message" {

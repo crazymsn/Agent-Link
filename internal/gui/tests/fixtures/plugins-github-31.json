@@ -425,7 +425,7 @@
    "stars": 0,
    "license": "MIT",
    "pushed": "2026-10-12T13:56:20Z",
-   "package": "@agentlink-community/agent-delta",
+   "package": "@magpie-community/agent-delta",
    "version": "0.1.0",
    "kind": "agent",
    "icon": "file:fd78c148795ae0d0.svg"

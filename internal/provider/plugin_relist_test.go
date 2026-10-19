@@ -15,7 +15,7 @@ import (
 
 // zenFree is the opencode-zen-free plugin's provider listing ids.
 func zenFree(fellBack bool, ids ...string) []plugin.Provider {
-	p := plugin.Provider{ID: "opencode-zen-free", Spec: "@agentlink-community/opencode-zen-free-auth", Name: "OpenCode Zen Free",
+	p := plugin.Provider{ID: "opencode-zen-free", Spec: "@magpie-community/opencode-zen-free-auth", Name: "OpenCode Zen Free",
 		NPM: "@ai-sdk/openai-compatible", FellBack: fellBack}
 	for _, id := range ids {
 		p.Models = append(p.Models, plugin.Model{ID: id, Name: id, NPM: "@ai-sdk/openai-compatible"})
@@ -40,7 +40,7 @@ func TestPluginsListedAgainWhileRunning(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	write("plugins.json", map[string]any{"plugins": []map[string]any{{"spec": "@agentlink-community/opencode-zen-free-auth"}}})
+	write("plugins.json", map[string]any{"plugins": []map[string]any{{"spec": "@magpie-community/opencode-zen-free-auth"}}})
 	write("plugin-auth.json", map[string]any{"opencode-zen-free": map[string]any{"type": "api", "key": "public"}})
 	plugin.UseCached(zenFree(false, "big-pickle", "glm-5-free"))
 	t.Cleanup(func() { plugin.UseCached(nil) })

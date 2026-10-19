@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// Kiro's accounts on @agentlink-community/opencode-kiro-auth:
+// Kiro's accounts on @magpie-community/opencode-kiro-auth:
 //   - kiro-cli's or the IDE's own sign-in goes as a marker ({source:
 //     "kiro"}): the plugin reads it where they keep it, as the built-in did;
 //   - an account agentlink signed in (a home holding kiro-auth-token.json)
@@ -20,7 +20,7 @@ import (
 //     while the plugin has it.
 func init() {
 	movers["kiro"] = &mover{
-		pkg:    "@agentlink-community/opencode-kiro-auth",
+		pkg:    "@magpie-community/opencode-kiro-auth",
 		min:    "0.1.12", // a request for JSON output (output_config.format) answers in JSON, its schema in the system prompt as the built-in; 0.1.11: a thinking model offers xhigh as its own level (50k), so Claude Code's xhigh isn't routed as max (plugins#120); 0.1.10: the caller's prompt-cache marks reach Kiro as cachePoints (plugins#110)
 		agents: []string{"kiro"},
 		out: func() ([]Moving, error) {

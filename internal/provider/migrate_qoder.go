@@ -8,7 +8,7 @@ import (
 	"github.com/crazymsn/Agent-Link/internal/qoder"
 )
 
-// Qoder's and Qoder CN's accounts on @agentlink-community/opencode-qoder-auth,
+// Qoder's and Qoder CN's accounts on @magpie-community/opencode-qoder-auth,
 // which serves both sites as providers "qoder" and "qoder-cn", as its device
 // sign-in keeps one: the job token pair as access and refresh (the refresh
 // token is spent on use, so it moves rather than being copied), the device
@@ -23,7 +23,7 @@ func init() {
 
 func qoderMover(id string) *mover {
 	return &mover{
-		pkg:    "@agentlink-community/opencode-qoder-auth",
+		pkg:    "@magpie-community/opencode-qoder-auth",
 		min:    "0.2.18", // a 10605 trimmed or wrapped is the model's queue busy, not a lapsed sign-in (plugins #185); 0.2.17: the daily check-in through auth.checkin (plugins #179); 0.2.16: a tool call written into the text that can't be read, or that the stream ends inside, ends the turn as an error (a 502, or the stream's error frame with no finish), never as the answer (plugins #132); 0.2.14: Qoder's 403 code 10605 (the model's queue busy) is a 503 with Retry-After, not a lapsed sign-in; quota and credit codes (110, 112–119, 122) are 429, refusals of the request (406, 416, 430, 80411, 80412, 100400, 100401, 100403) are 400, and only 105 or no code is "sign in again" (plugins #98); 0.2.13: models are listed from Qoder's app scene first, so its new default Fast 0.8× shows (plugins #97); 0.2.12: a chat Qoder refuses keeps Qoder's own reason in the error; 0.2.11: a Qoder CN enterprise VPC account keeps its model list and renewal mark apart from a public account with the same uid (plugins#40); international check-in finds the device identity runtime Qoder CLI caches on macOS and Linux and the Linux desktop installs in /opt/Qoder (ARNO on Discord); sends Qoder's native device identity, without which the daily 100 credits aren't listed (#1268); Qoder CN enterprise VPC (0.2.8); the daily credits claimed through the account's fetch (ARNO on Discord); Qoder CN as "qoder-cn", its device-token chat as the built-in's; each model's credit rate; the sign-in renewed ahead of time through auth.refresh; token usage read; each model's context the largest window Qoder offers it (#722); the window a request is sent holds the reply's max_tokens (#700)
 		agents: []string{id},
 		out: func() ([]Moving, error) {

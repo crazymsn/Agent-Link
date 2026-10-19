@@ -25,7 +25,7 @@ const (
 	// with the 「国内镜像」 switch: Bun's releases at npmmirror, and the
 	// plugin list at jsDelivr, both copies of the very files
 	bunMirror  = "https://registry.npmmirror.com/-/binary/bun"
-	listMirror = "https://cdn.jsdelivr.net/gh/agentlink-community/plugins@"
+	listMirror = "https://cdn.jsdelivr.net/gh/magpie-community/plugins@"
 )
 
 // NPMMirror is npm's registry in China, npmmirror.
@@ -54,8 +54,8 @@ func chinaFirst(raw string) string {
 			return bunMirror + "/" + rest
 		}
 	case "raw.githubusercontent.com":
-		// /agentlink-community/plugins/<branch>/<path>
-		if rest, ok := strings.CutPrefix(u.EscapedPath(), "/agentlink-community/plugins/"); ok {
+		// /magpie-community/plugins/<branch>/<path>
+		if rest, ok := strings.CutPrefix(u.EscapedPath(), "/magpie-community/plugins/"); ok {
 			if ref, path, ok := strings.Cut(rest, "/"); ok && ref != "" && path != "" && u.RawQuery == "" {
 				return listMirror + ref + "/" + path
 			}

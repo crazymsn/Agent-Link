@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-// Zed's accounts on @agentlink-community/opencode-zed-auth: the access token
+// Zed's accounts on @magpie-community/opencode-zed-auth: the access token
 // as the oauth entry's access, the rest the calls need as its refresh
 // (Zed has no refresh token: the pair lasts until Zed refuses it).
 func init() {
 	movers["zed"] = &mover{
-		pkg:    "@agentlink-community/opencode-zed-auth",
+		pkg:    "@magpie-community/opencode-zed-auth",
 		min:    "0.1.10", // the organization with a plan is picked, and a 402 for the saved one moves the account (plugins#232); 0.1.9: a signed-in account whose model list was never read says why; 0.1.8: a free account's plan reads "No plan", as the built-in's; 0.1.6: a failure's status and its sign-in mark as the built-in's; a model token refused while listing marks the account
 		agents: []string{"zed"},
 		out: func() ([]Moving, error) {

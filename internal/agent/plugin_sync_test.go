@@ -28,7 +28,7 @@ func TestPluginSignInReachesPiModels(t *testing.T) {
 	if err := provider.Save(provider.Provider{ID: "deepseek", Name: "DeepSeek", Chat: "https://api.deepseek.com/v1", Key: "k", Models: []string{"pro"}}); err != nil {
 		t.Fatal(err)
 	}
-	spec := "@agentlink-community/opencode-trae-auth"
+	spec := "@magpie-community/opencode-trae-auth"
 	write := func(name string, v any) {
 		t.Helper()
 		b, _ := json.Marshal(v)

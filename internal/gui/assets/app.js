@@ -5743,9 +5743,9 @@ function renderProviders() {
     chev.append(svg(CHEV_R, 11, 1.7));
     // a provider on is listed, and tried, in the order the user puts it in
     // (#499): its logo is the handle, as an agent row's is
-    row.append(p.off || p.fixed ? icon(p.icon || "generic") : providerHandle(p, row), who, uses, key, p.fixed ? el("span", "chev") : providerSwitch(p), chev);
+    row.append(p.off || p.fixed ? icon(p.icon || "generic") : providerHandle(p, row), who, uses, key, providerSwitch(p), chev);
     // right-click: Move to Top, Move Up, Move Down, Move to Bottom (#1614)
-    if (!p.off) row.oncontextmenu = (ev) => { ev.preventDefault(); openProviderMenu(row.querySelector(".pv-handle"), p); };
+    if (!p.off && !p.fixed) row.oncontextmenu = (ev) => { ev.preventDefault(); openProviderMenu(row.querySelector(".pv-handle"), p); };
     row.onclick = async () => {
       if (providerDirty() && !(await confirmDiscard())) return;
       editing = open ? null : p.id; draft = null; renderProviders();
@@ -8784,7 +8784,10 @@ function drawEditor(p, presetID) {
       b.onclick = () => api("open", { url: b.dataset.url });
       h.append(b);
     }
-    if (p) h.append(fixed ? el("span", "badge", t("Built in")) : providerSwitch(p));
+    if (p) {
+      if (fixed) h.append(el("span", "badge", t("Built in")));
+      h.append(providerSwitch(p));
+    }
     ed.append(h);
     if (p?.off) ed.append(el("div", "hint off-note", t("Switched off: agents aren't given its models and no request goes to it. Its keys and settings are kept; switch it on to use it again.")));
   }
@@ -8868,10 +8871,6 @@ function drawEditor(p, presetID) {
   };
   if (p && !p.account && !custom && !fixed) idField();
   let fillEndpoints = () => {};
-  if (fixed) {
-    const note = el("div", "hint fixed-provider-note", t("Built-in provider. Only the API key and model choices can be changed."));
-    ed.append(note);
-  }
   // provider's Base URL and its API, and a new one's models
   let curlBase = null, curlModel = null;
   // a URL typed and not saved that a protocol switch carried to another
@@ -9651,7 +9650,7 @@ function drawEditor(p, presetID) {
   const saveBtn = el("button", "text primary", t(isNew ? "Add" : "Save"));
   const save = () => {
     // new: an Add never replaces a provider that has the id already
-    const body = { id: p ? slug(draft.id) || p.id : draft.id, from: p?.id, name: draft.name, preset: draft.preset, key: draft.key || "", chat: draft.chat, responses: draft.responses, anthropic: draft.anthropic, gemini: (draft.gemini || "").trim(), catalog: draft.catalog, models: p ? chosenIds() : draft.extra, headers: headersOf(draft.headers), new: isNew };
+    const body = { id: p ? slug(draft.id) || p.id : draft.id, from: p?.id, name: draft.name, preset: draft.preset, key: draft.key || "", chat: draft.chat, responses: draft.responses, anthropic: draft.anthropic, gemini: (draft.gemini || "").trim(), catalog: draft.catalog, models: p ? chosenIds() : draft.extra, headers: headersOf(draft.headers), new: isNew, off: !!p?.off };
     if (isNew && draft.copyOf) body.copyOf = draft.copyOf;
     const xb = extraBodyOf(draft.extraBody);
     if (xb.error) { shown(ed.querySelector(".extra-body textarea"))?.focus({ preventScroll: true }); return editorError(t("Extra body: {why}", { why: xb.error }), "warn"); }

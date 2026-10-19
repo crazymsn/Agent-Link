@@ -301,8 +301,8 @@ func TestLoadConcurrentWithSavesAndEdits(t *testing.T) {
 // is refreshed in the background: what is measured is the per-call read.
 func BenchmarkCachedWarm(b *testing.B) {
 	storeSandbox(b)
-	writeList(b, `{"plugins":[{"spec":"@agentlink-community/opencode-zed-auth@latest","options":{"a":1}},{"spec":"@agentlink-community/opencode-qoder-auth@latest","off":true}],"config":{"provider":{"zed":{"options":{"projectId":"p"}}}}}`)
-	UseCached([]Provider{{ID: "zed", Spec: "@agentlink-community/opencode-zed-auth@latest", Name: "Zed", SignedIn: true}})
+	writeList(b, `{"plugins":[{"spec":"@magpie-community/opencode-zed-auth@latest","options":{"a":1}},{"spec":"@magpie-community/opencode-qoder-auth@latest","off":true}],"config":{"provider":{"zed":{"options":{"projectId":"p"}}}}}`)
+	UseCached([]Provider{{ID: "zed", Spec: "@magpie-community/opencode-zed-auth@latest", Name: "Zed", SignedIn: true}})
 	b.ReportAllocs()
 	for b.Loop() {
 		Cached()

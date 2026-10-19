@@ -105,13 +105,13 @@ func TestPluginsCarried(t *testing.T) {
 		}
 	}
 	write(`{"plugins":[
-		{"spec":"@agentlink-community/opencode-cursor-auth@0.3.0"},
+		{"spec":"@magpie-community/opencode-cursor-auth@0.3.0"},
 		{"spec":"/Users/me/my-plugin"},
-		{"spec":"@agentlink-community/middleware-model-map","off":true,
+		{"spec":"@magpie-community/middleware-model-map","off":true,
 		 "options":{"map":{"a":"b"},"apiKey":"sk-option","nested":{"authToken":"t","keep":1}}}]}`)
 
 	keyless := Carried(false)
-	if len(keyless) != 2 || keyless[0].Spec != "@agentlink-community/opencode-cursor-auth@0.3.0" {
+	if len(keyless) != 2 || keyless[0].Spec != "@magpie-community/opencode-cursor-auth@0.3.0" {
 		t.Fatalf("carried: %+v, want the npm plugins only", keyless)
 	}
 	opts := keyless[1].Options
@@ -126,7 +126,7 @@ func TestPluginsCarried(t *testing.T) {
 
 	// the other computer: the model-map middleware is here already, as the
 	// user set it; the cursor plugin is not
-	write(`{"plugins":[{"spec":"@agentlink-community/middleware-model-map@1.0.0","options":{"map":{"x":"y"}}}]}`)
+	write(`{"plugins":[{"spec":"@magpie-community/middleware-model-map@1.0.0","options":{"map":{"x":"y"}}}]}`)
 	oldAdd, oldHand := addPlugin, handOver
 	t.Cleanup(func() { addPlugin, handOver = oldAdd, oldHand })
 	var asked []string
@@ -141,7 +141,7 @@ func TestPluginsCarried(t *testing.T) {
 	handed := 0
 	handOver = func(context.Context, bool) map[string]error { handed++; return nil }
 	added, failed := AddPlugins(context.Background(), withKeys)
-	if len(failed) > 0 || !slices.Equal(added, []string{"@agentlink-community/opencode-cursor-auth@0.3.0"}) ||
+	if len(failed) > 0 || !slices.Equal(added, []string{"@magpie-community/opencode-cursor-auth@0.3.0"}) ||
 		!slices.Equal(asked, added) {
 		t.Fatalf("added %v (asked %v, failed %v), want only the cursor plugin", added, asked, failed)
 	}

@@ -30,7 +30,7 @@ import (
 // image costs the plan's credits, so AutoDrawer never picks one.
 //
 // It is the same for the built-in and for a WorkBuddy moved onto its
-// plugin (@agentlink-community/opencode-workbuddy-auth): agentlink shapes the
+// plugin (@magpie-community/opencode-workbuddy-auth): agentlink shapes the
 // request, the plugin's fetch signs and sends it.
 
 // wbImagesFor is how long a plan's image models are kept before its config

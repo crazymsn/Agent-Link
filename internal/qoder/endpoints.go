@@ -9,10 +9,10 @@ package qoder
 
 // PLUGIN-SERVED (see AGENTS.md): Qoder ("qoder") and Qoder CN ("qoder-cn")
 // are retired built-in subscriptions served by their plugin,
-// @agentlink-community/opencode-qoder-auth, moved or not. Their built-in
+// @magpie-community/opencode-qoder-auth, moved or not. Their built-in
 // sign-in, models, requests and usage are gone; only the move, in
 // internal/provider/migrate_qoder.go, still reads their accounts. A fix
-// belongs in the plugin (github.com/agentlink-community/plugins,
+// belongs in the plugin (github.com/magpie-community/plugins,
 // packages/qoder), with the movers' min raised in migrate_qoder.go.
 
 import (

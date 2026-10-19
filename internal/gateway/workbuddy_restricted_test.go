@@ -39,7 +39,7 @@ func TestWorkBuddyRestrictedRestsHours(t *testing.T) {
 	s := New()
 
 	// the plugin's explained(), as it puts the same answer
-	// (@agentlink-community/opencode-workbuddy-auth 0.1.17)
+	// (@magpie-community/opencode-workbuddy-auth 0.1.17)
 	plugin := []byte(`{"error":{"message":"request illegal — ` + provider.WBRestrictedHint + `","type":"permission_error","code":11140}}`)
 
 	escaped := []byte(`{"code":"11140","msg":"request illegal","displayMsg":{"zh":"账号存在异常行为，已被限制使用"}}`)

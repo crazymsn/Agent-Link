@@ -2,13 +2,13 @@ package provider
 
 // PLUGIN-SERVED (see AGENTS.md): Devin ("devin") is a retired built-in
 // subscription, served by its plugin alone,
-// @agentlink-community/opencode-devin-auth (provider.BuiltinRetired). Its
+// @magpie-community/opencode-devin-auth (provider.BuiltinRetired). Its
 // sign-in, requests and usage are the plugin's; what is left here reads
 // the accounts signed in to the built-in for the move onto the plugin
 // (migrate_side.go), installs and runs the Devin CLI the plugin and the
 // devin agent use, and shapes the models listed under "devin" (families,
 // variants, contexts, images). A fix belongs in the plugin
-// (github.com/agentlink-community/plugins, packages/devin), with the mover's
+// (github.com/magpie-community/plugins, packages/devin), with the mover's
 // min raised in internal/provider/migrate_side.go.
 
 // Here is who the devin CLI's account is and the models it offers.

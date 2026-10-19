@@ -32,7 +32,7 @@ func TestPluginsCheckRoute(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 		t.Fatal(err)
 	}
-	if got.At == "" || got.Plugins == nil || got.State == nil || got.State.Plugins == nil {
+	if got.At == "" || got.Plugins == nil || got.State == nil || got.State.Plugins == nil || got.State.BunTarget == "" {
 		t.Fatalf("answered %s", rec.Body)
 	}
 }

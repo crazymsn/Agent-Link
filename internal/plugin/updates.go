@@ -1,7 +1,7 @@
 package plugin
 
 // Plugin updates, as agentlink keeps itself up to date: the community's
-// plugins (@agentlink-community/*, the ones the built-in subscriptions move
+// plugins (@magpie-community/*, the ones the built-in subscriptions move
 // onto) update by themselves, a little after agentlink starts and every hour; anyone else's new version waits for the reader, who sees a dot
 // on Plugins and updates it with a click. A plugin pinned to a version
 // stays on it. Updating never cuts a reply streaming through a plugin:
@@ -74,7 +74,7 @@ const (
 
 // Official is whether the package is the community's, agentlink's own,
 // which agentlink keeps up to date by itself.
-func Official(pkg string) bool { return strings.HasPrefix(pkg, "@agentlink-community/") }
+func Official(pkg string) bool { return strings.HasPrefix(pkg, "@magpie-community/") }
 
 // Pinned is whether spec names a version (or a range or a tag other than
 // latest): the user chose it, and it stays. A git one's version is its

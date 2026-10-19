@@ -1,7 +1,7 @@
 package provider
 
 // Trae CN's daily check-in (每日签到, #694: 100 credits a day): Trae CN is
-// served only by its community plugin, @agentlink-community/opencode-trae-auth
+// served only by its community plugin, @magpie-community/opencode-trae-auth
 // (provider "trae-cn"; no built-in, no mover). While the setting is on,
 // whichever agentlink runs the gateway presses it for each of the plugin's
 // accounts once a Beijing day, as Trae's IDE does: it asks the check-in's

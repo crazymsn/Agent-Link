@@ -19,9 +19,9 @@ import (
 // fakeGitHub answers as GitHub's search, raw.githubusercontent.com and npm
 // do, from testdata/github (npm's real answers for the packages it has): search.json is a real answer for a topic (five
 // repositories), with three more items made from its first — a fork, an
-// archived one and agentlink-community's — and someone/word-guard, whose
+// archived one and magpie-community's — and someone/word-guard, whose
 // package.json is word-guard's own, a middleware alone; someone/agent-aider,
-// agentlink-community's agent-aider package.json and module, an agent alone;
+// magpie-community's agent-aider package.json and module, an agent alone;
 // someone/page-glance, a page alone (internal/gui/testdata/page-plugin's
 // package.json), and someone/page-gone, whose page file isn't there; alfaoz's
 // opencode-see-image (real), whose main is a dist the repository hasn't;
@@ -73,7 +73,7 @@ func fakeGitHub(t *testing.T, up *atomic.Bool, asked *atomic.Int32) {
 		like("cyberElar/agentlink-x-search", nil),
 		like("forker/opencode-claude-auth", map[string]any{"fork": true}),
 		like("old/opencode-old", map[string]any{"archived": true}),
-		like("agentlink-community/plugins", nil))
+		like("magpie-community/plugins", nil))
 	// one page of the search, as GitHub cuts it
 	search := func(q url.Values) []byte {
 		per, _ := strconv.Atoi(q.Get("per_page"))
@@ -137,7 +137,7 @@ func fakeGitHub(t *testing.T, up *atomic.Bool, asked *atomic.Int32) {
 }
 
 // Repositories tagged agentlink-plugin: each with what its package.json says,
-// in GitHub's order; forks, archived ones and agentlink-community's left out.
+// in GitHub's order; forks, archived ones and magpie-community's left out.
 // Asked once in six hours; with GitHub down, what it said last.
 // Every page of the search is read: with a page short of what is tagged,
 // the list is the same as from one page, in GitHub's order (HoGee_xxl on X:
@@ -214,7 +214,7 @@ func TestTaggedRepos(t *testing.T) {
 	if x := byRepo["someone/page-glance"]; x.Kind != "page" || x.Spec != "github:someone/page-glance" || x.Package != "agentlink-usage-glance" {
 		t.Fatalf("a page alone: %+v", x)
 	}
-	if x := byRepo["someone/word-guard"]; x.Kind != "middleware" || x.Package != "@agentlink-community/middleware-word-guard" || x.License != "" {
+	if x := byRepo["someone/word-guard"]; x.Kind != "middleware" || x.Package != "@magpie-community/middleware-word-guard" || x.License != "" {
 		t.Fatalf("a middleware alone: %+v", x)
 	}
 	// npm's copy when npm has it from this very repository (its build is
@@ -398,7 +398,7 @@ func TestTaggedReposSlowRead(t *testing.T) {
 	if n := asked.Load(); n != 3 {
 		t.Fatalf("a list cut short kept: asked %d times", n)
 	}
-	if x := has(l, "someone/word-guard"); len(l) != 7 || x == nil || x.Package != "@agentlink-community/middleware-word-guard" {
+	if x := has(l, "someone/word-guard"); len(l) != 7 || x == nil || x.Package != "@magpie-community/middleware-word-guard" {
 		t.Fatalf("asked again: %d repos, word-guard %+v", len(l), x)
 	}
 	// flaky-entry's package.json, npm and entry, as ten minutes on

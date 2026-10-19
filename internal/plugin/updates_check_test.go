@@ -21,9 +21,9 @@ func TestCheckNow(t *testing.T) {
 	t.Setenv("USERPROFILE", dir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	const (
-		ours    = "@agentlink-community/opencode-zed-auth"
+		ours    = "@magpie-community/opencode-zed-auth"
 		theirs  = "opencode-gemini-auth"
-		current = "@agentlink-community/opencode-kiro-auth"
+		current = "@magpie-community/opencode-kiro-auth"
 		gone    = "opencode-gone-auth"
 		limited = "opencode-busy-auth"
 		broken  = "opencode-broken-auth"

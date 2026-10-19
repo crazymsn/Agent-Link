@@ -995,11 +995,11 @@ agentlink plugin options model-map off   # clears them
 ```
 
 The name can be a package's short name (`model-map` for
-`@agentlink-community/middleware-model-map`). A package's
+`@magpie-community/middleware-model-map`). A package's
 `"agentlink": { "options": {…} }` is the example the editor starts from.
 
 Ready-made middleware, under Plugins › Discover › Gateway middleware
-(`@agentlink-community/middleware-<name>`), mostly New API's channel settings
+(`@magpie-community/middleware-<name>`), mostly New API's channel settings
 with the same JSON: `param-override` (`param_override`), `model-map`
 (`model_mapping`), `system-prompt`, `word-guard` (sensitive words) and
 `think-tags` (strip `<think>…</think>`, or `thinking_to_content`), and
@@ -1031,7 +1031,7 @@ It is then on the Agents page like agentlink's own: picking one of agentlink's
 models writes the model and what `connect` returns, and its own model or
 Disconnect puts every key back as it was. It runs in moejs like middleware.
 An id agentlink's own agents use is refused. In the market an agent's entry has
-`"kind": "agent"` (`@agentlink-community/agent-<name>`). The full reference is
+`"kind": "agent"` (`@magpie-community/agent-<name>`). The full reference is
 on the site's Plugins page, under Agent plugins.
 
 ### What a model costs
@@ -2732,7 +2732,7 @@ The Plugins page's **Mirrors in China** (国内镜像) switch has what that page
 downloads asked of a mirror in China first and of its official address
 after: npm's registry (plugin packages, their versions and search) at
 `registry.npmmirror.com`, Bun's releases at npmmirror's binary mirror, and
-the plugin list at jsDelivr (`cdn.jsdelivr.net/gh/agentlink-community/plugins`).
+the plugin list at jsDelivr (`cdn.jsdelivr.net/gh/magpie-community/plugins`).
 Each is a copy of the very file — Bun's zip is still checked against Bun's
 SHA-256s, and a package against the integrity npm gave — and what the
 mirror hasn't copied yet is asked of the official address. npm's weekly

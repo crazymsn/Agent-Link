@@ -48,7 +48,7 @@ func TestPluginOpsOutliveRequest(t *testing.T) {
 	for _, op := range []string{"add", "remove", "update", "upgrade"} {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel() // the tunnel gave up waiting
-		r := httptest.NewRequest("POST", "/api/plugins/"+op, strings.NewReader(`{"spec":"@agentlink-community/opencode-zed-auth"}`)).WithContext(ctx)
+		r := httptest.NewRequest("POST", "/api/plugins/"+op, strings.NewReader(`{"spec":"@magpie-community/opencode-zed-auth"}`)).WithContext(ctx)
 		mux.ServeHTTP(httptest.NewRecorder(), r)
 	}
 	if want := "add: going,remove: going,update: going,upgrade: going"; strings.Join(got, ",") != want {

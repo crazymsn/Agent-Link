@@ -11,9 +11,91 @@ import (
 	"github.com/crazymsn/Agent-Link/internal/provider"
 )
 
+func TestFixedProviderModelsActionAllowed(t *testing.T) {
+	for _, action := range []string{"models", "off", "on"} {
+		if !fixedProviderActionAllowed(action) {
+			t.Fatalf("fixed provider action %q was blocked", action)
+		}
+	}
+	for _, action := range []string{"delete", "route", "rename", "detect"} {
+		if fixedProviderActionAllowed(action) {
+			t.Fatalf("fixed provider action %q was allowed", action)
+		}
+	}
+}
+
+func TestFixedProviderSwitchActions(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", os.Getenv("HOME"))
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	if err := provider.MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	providerRoutes(mux, nil)
+	post := func(action string) *httptest.ResponseRecorder {
+		t.Helper()
+		w := httptest.NewRecorder()
+		mux.ServeHTTP(w, httptest.NewRequest("POST", "/api/provider/"+action, strings.NewReader(`{"id":"`+provider.AgentLinkProviderID+`"}`)))
+		return w
+	}
+	if w := post("off"); w.Code != http.StatusOK {
+		t.Fatalf("off: %d %s", w.Code, w.Body)
+	}
+	p, err := provider.Find(provider.AgentLinkProviderID)
+	if err != nil || !p.Off {
+		t.Fatalf("fixed provider after off = %#v, %v", p, err)
+	}
+	if w := post("on"); w.Code != http.StatusOK {
+		t.Fatalf("on: %d %s", w.Code, w.Body)
+	}
+	if err := provider.Save(provider.Provider{ID: provider.AgentLinkProviderID, Key: "sk-kept-while-off", Models: []string{"model-a"}, Off: true}); err != nil {
+		t.Fatal("saving the fixed provider while off:", err)
+	}
+	p, err = provider.Find(provider.AgentLinkProviderID)
+	if err != nil || !p.Off || p.Key != "sk-kept-while-off" {
+		t.Fatalf("fixed provider save lost off state: %#v, %v", p, err)
+	}
+}
+
 // Refresh and Test models ask with the key the editor has, before a Save
 // (the user: a key pasted over the saved one only errored, and Save closes
 // the editor); the saved key stays as it was.
+func TestFixedProviderModelsRequestKeepsCanonicalSettings(t *testing.T) {
+	p := provider.AgentLinkProvider()
+	p.Key = "sk-old"
+	in := provider.Provider{
+		Key:       "sk-new",
+		Chat:      "https://attacker.example/v1",
+		Responses: "https://attacker.example/responses",
+		Proxy:     "http://attacker.example:8080",
+		Headers:   map[string]string{"Authorization": "attacker"},
+	}
+	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != "" || got.Proxy != "" || got.Headers != nil {
+		t.Fatalf("fixed provider model request was mutable: %#v", got)
+	}
+}
+
+func TestFixedProviderTestRequestKeepsCanonicalSettings(t *testing.T) {
+	p := provider.AgentLinkProvider()
+	p.Key = "sk-old"
+	in := provider.Provider{
+		Key:     "sk-new",
+		Chat:    "https://attacker.example/v1",
+		Proxy:   "http://attacker.example:8080",
+		Headers: map[string]string{"Authorization": "attacker"},
+	}
+	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+		t.Fatalf("fixed provider test request was mutable: %#v", got)
+	}
+}
+
+func stringPtr(s string) *string { return &s }
+func boolPtr(v bool) *bool       { return &v }
+
 func TestProviderTypedKey(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("USERPROFILE", os.Getenv("HOME"))

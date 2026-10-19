@@ -447,7 +447,7 @@ func TestRestorePluginsAndSignIn(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(settings.Dir(), "plugins.json"), []byte(`{"plugins":[
-		{"spec":"@agentlink-community/opencode-cursor-auth"},{"spec":"/Users/me/mine"}]}`), 0o600); err != nil {
+		{"spec":"@magpie-community/opencode-cursor-auth"},{"spec":"/Users/me/mine"}]}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(provider.Path(), []byte(`{"providers":[
@@ -482,7 +482,7 @@ func TestRestorePluginsAndSignIn(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !slices.Equal(asked, []string{"@agentlink-community/opencode-cursor-auth"}) {
+	if !slices.Equal(asked, []string{"@magpie-community/opencode-cursor-auth"}) {
 		t.Fatalf("asked to install %v, want the npm plugin only", asked)
 	}
 	if !slices.Equal(r.SignIn, []string{"claude"}) || !slices.Equal(r.Plugins, asked) ||

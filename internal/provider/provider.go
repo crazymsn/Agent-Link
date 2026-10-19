@@ -758,15 +758,15 @@ func Slug(name string) string {
 // Save adds or replaces a provider.
 func Save(p Provider) error {
 	if IsFixedProvider(p.ID) {
-		if p.Name != "" && p.Name != AgentLinkProviderName || p.Icon != "" && p.Icon != AgentLinkProviderIcon || p.Chat != "" && strings.TrimRight(p.Chat, "/") != AgentLinkProviderURL || p.Responses != "" || p.Anthropic != "" || p.Gemini != "" || p.Decide != "" || p.Preset != "" {
-			return fixedProviderError()
-		}
 		f, err := read()
 		if err != nil {
 			return err
 		}
 		for i := range f.Providers {
 			if f.Providers[i].ID == AgentLinkProviderID {
+				if p.Key == "" {
+					p.Key = f.Providers[i].Key
+				}
 				f.Providers[i] = mergeAgentLinkProvider(p)
 				return store(f)
 			}
@@ -1749,9 +1749,6 @@ func (p Provider) On() bool { return p.Ready() && !p.Off }
 // SetOff switches a provider off, or on again (see Provider.Off). Saving
 // it brings the model lists written into agents' files up to date.
 func SetOff(id string, off bool) error {
-	if IsFixedProvider(id) {
-		return fixedProviderError()
-	}
 	p, err := Find(id)
 	if err != nil {
 		return err
