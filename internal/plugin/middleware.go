@@ -32,9 +32,9 @@ func Middleware(target string) (file string, only bool) {
 	}
 	b = withPluginMetadata(b)
 	var pkg struct {
-		Main    string          `json:"main"`
-		Exports json.RawMessage `json:"exports"`
-		AgentLink  struct {
+		Main      string          `json:"main"`
+		Exports   json.RawMessage `json:"exports"`
+		AgentLink struct {
 			Middleware string `json:"middleware"`
 			Gateway    string `json:"gateway"`
 		} `json:"agentlink"`

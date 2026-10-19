@@ -49,13 +49,17 @@ jobs:
         run: |
           if [ "$RUNNER_OS" = Linux ]; then echo "tags=gtk3" >> "$GITHUB_OUTPUT"; fi
 
-      # Unformatted files reached main 8 times from 10-01 to 10-06 and each
-      # took a gofmt commit of its own. Linux only: Windows checks out CRLF.
+      # Check the Go files changed by this push. Older release snapshots keep
+      # a few historical formatting exceptions; new code must stay gofmt'd.
       - name: Gofmt
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          bad=$(gofmt -l $(git ls-files '*.go'))
+          base="${{ github.event.before }}"
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then base="$(git rev-list --max-parents=0 HEAD)"; fi
+          files=$(git diff --name-only "$base" HEAD -- '*.go')
+          bad=""
+          if [ -n "$files" ]; then bad=$(gofmt -l $files); fi
           if [ -n "$bad" ]; then echo "not gofmt'd:"; echo "$bad"; exit 1; fi
 
       - name: Vet

@@ -36,19 +36,15 @@ import { LANGS } from "./i18n.js";
 import { PARTNERS } from "./partners.js";
 import { SPONSORS } from "./sponsors.js";
 
-const REPO = "yetone/agentlink-releases";
+const REPO = "crazymsn/Agent-Link";
 const TTL = 300; // seconds the newest release is remembered
 
 const SHORT = {
-  "mac-arm64": "agentlink-darwin-arm64.dmg",
-  "mac-intel": "agentlink-darwin-amd64.dmg",
-  "mac-amd64": "agentlink-darwin-amd64.dmg",
-  windows: "agentlink-windows-amd64.exe",
-  "windows-amd64": "agentlink-windows-amd64.exe",
-  "windows-arm64": "agentlink-windows-arm64.exe",
-  linux: "agentlink-linux-amd64",
-  "linux-amd64": "agentlink-linux-amd64",
-  "linux-arm64": "agentlink-linux-arm64",
+  "mac-arm64": "Agent-Link-Apple.Silicon.arm64.zip",
+  "mac-intel": "Agent-Link-macOS.Intel.amd64.zip",
+  "mac-amd64": "Agent-Link-macOS.Intel.amd64.zip",
+  windows: "Agent-Link-windows-amd64.exe",
+  "windows-amd64": "Agent-Link-windows-amd64.exe",
 };
 
 // The bare docs paths open the getting-started guide.

@@ -320,11 +320,11 @@ func readTagged(pc context.Context, t Tagged, branch string) (Tagged, bool, bool
 	}
 	b := withPluginMetadata(pb)
 	var pj struct {
-		Name    string          `json:"name"`
-		Version string          `json:"version"`
-		Main    string          `json:"main"`
-		Exports json.RawMessage `json:"exports"`
-		AgentLink  struct {
+		Name      string          `json:"name"`
+		Version   string          `json:"version"`
+		Main      string          `json:"main"`
+		Exports   json.RawMessage `json:"exports"`
+		AgentLink struct {
 			Middleware string `json:"middleware"`
 			Agent      string `json:"agent"`
 			Icon       string `json:"icon"`

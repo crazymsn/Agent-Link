@@ -23,12 +23,12 @@ function install(t, { termux = true, arch = "aarch64", override = false, prefixO
   writeFileSync(join(bin, "magpie"), "old installation");
   const payload = "test binary\n";
   const cpu = arch === "aarch64" ? "arm64" : "amd64";
-  const file = termux ? `magpie-cli-android-${cpu}` : desktop ? `magpie-linux-${cpu}` : `magpie-cli-linux-${cpu}`;
+  const file = termux ? `agentlink-cli-android-${cpu}` : desktop ? `magpie-linux-${cpu}` : `magpie-cli-linux-${cpu}`;
   const assets = {};
   // A Linux asset is present even when Android's is missing: never use it.
   for (const name of [file, `magpie-cli-linux-${cpu}`]) {
     if (missing && name === file) continue;
-    assets[name] = { url: github ? `https://github.com/yetone/magpie-releases/releases/download/vtest/${name}` : `https://download.invalid/${name}`, sha256: corrupt ? "0".repeat(64) : createHash("sha256").update(payload).digest("hex") };
+    assets[name] = { url: github ? `https://github.com/crazymsn/Agent-Link/releases/download/vtest/${name}` : `https://download.invalid/${name}`, sha256: corrupt ? "0".repeat(64) : createHash("sha256").update(payload).digest("hex") };
   }
   const requests = join(dir, "requests");
   writeFileSync(join(tools, "uname"), `#!/bin/sh\ncase "$1" in -m) echo '${arch}';; -s) echo Linux;; esac\n`, { mode: 0o755 });
@@ -74,7 +74,7 @@ test("Termux downloads Android arm64 into PREFIX/bin even with WebKit installed"
   assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
   // NTFS keeps no execute bit, so Windows reports none
   if (process.platform !== "win32") assert.ok(statSync(join(r.bin, "magpie")).mode & 0o111);
-  assert.match(r.requests, /magpie-cli-android-arm64/);
+  assert.match(r.requests, /agentlink-cli-android-arm64/);
   assert.doesNotMatch(r.requests, /magpie-linux-|icon-256/);
   assert.equal(existsSync(join(r.share, "applications/magpie.desktop")), false);
   assert.match(r.stdout, /run it: magpie web/);
@@ -84,7 +84,7 @@ test("Termux downloads Android arm64 into PREFIX/bin even with WebKit installed"
 test("Termux prefix detection and amd64 target", (t) => {
   const r = install(t, { prefixOnly: true, arch: "x86_64" });
   assert.equal(r.status, 0, r.stderr);
-  assert.match(r.requests, /magpie-cli-android-amd64/);
+  assert.match(r.requests, /agentlink-cli-android-amd64/);
 });
 
 test("Termux respects a custom bin directory containing spaces", (t) => {
@@ -96,7 +96,7 @@ test("Termux respects a custom bin directory containing spaces", (t) => {
 test("missing Android release never falls back to Linux", (t) => {
   const r = install(t, { missing: true });
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr, /no magpie-cli-android-arm64.*build in Termux/);
+  assert.match(r.stderr, /no agentlink-cli-android-arm64.*build in Termux/);
   assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), "old installation");
   assert.equal(r.requests.trim().split("\n").length, 1);
 });
@@ -125,7 +125,7 @@ test("no proxy and no mirror unless given", (t) => {
   const r = install(t, { termux: false, github: true });
   assert.equal(r.status, 0, r.stderr);
   for (const a of r.calls) assert.ok(!a.includes("--proxy"), JSON.stringify(a));
-  assert.match(r.requests, /^https:\/\/github\.com\/yetone\/magpie-releases\//m);
+  assert.match(r.requests, /^https:\/\/github\.com\/crazymsn\/Agent-Link\//m);
 });
 
 test("--proxy takes every download through it, as does MAGPIE_PROXY", (t) => {
@@ -149,8 +149,8 @@ test("--mirror fetches the file through the mirror, the feed and its checksum fr
   const r = install(t, { termux: false, github: true, args: ["--mirror", "https://gh.mirror.example"] });
   assert.equal(r.status, 0, r.stderr);
   const [feed, file] = r.requests.trim().split("\n");
-  assert.equal(feed, "https://usemagpie.ai/api/latest");
-  assert.equal(file, "https://gh.mirror.example/https://github.com/yetone/magpie-releases/releases/download/vtest/magpie-cli-linux-arm64");
+  assert.equal(feed, "https://useagentlink.ai/api/latest");
+  assert.equal(file, "https://gh.mirror.example/https://github.com/crazymsn/Agent-Link/releases/download/vtest/magpie-cli-linux-arm64");
   assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
   assert.match(r.stdout, /through https:\/\/gh\.mirror\.example\//);
 
@@ -162,7 +162,7 @@ test("--mirror fetches the file through the mirror, the feed and its checksum fr
 test("a file the mirror changed is refused and the installed magpie kept", (t) => {
   const r = install(t, { termux: false, github: true, args: ["--mirror", "https://gh.mirror.example/"], tamper: "https://gh.mirror.example/" });
   assert.notEqual(r.status, 0);
-  assert.match(r.stderr, /from https:\/\/gh\.mirror\.example\/ does not match its checksum from https:\/\/usemagpie\.ai; not installed/);
+  assert.match(r.stderr, /from https:\/\/gh\.mirror\.example\/ does not match its checksum from https:\/\/useagentlink\.ai; not installed/);
   assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), "old installation");
   const bad = install(t, { termux: false, args: ["--mirror", "gh.mirror.example"] });
   assert.notEqual(bad.status, 0);

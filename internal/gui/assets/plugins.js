@@ -13,6 +13,8 @@
 
   let mine = null;       // /api/plugins: what's installed
   let listings = null;   // /api/plugins/listings: the plugins suggested
+  const npm = {};        // /api/plugins/npm: npm answers arrive after listings
+  let failedList = "";  // why the market list couldn't be loaded
   let tagged = null;     // /api/plugins/github: repositories their authors tagged agentlink-plugin, as listings
   let taggedErr = "";    // why they couldn't be asked for, while none were had
   let topic = "agentlink-plugin";
@@ -183,7 +185,10 @@
     try {
       const r = await api("plugins/listings");
       listings = r.listings || [];
-    } catch {}
+      failedList = "";
+    } catch (e) {
+      failedList = e.message || String(e);
+    }
     merge();
   }
   // what npm says of the plugins suggested and those installed: drawn
@@ -216,16 +221,23 @@
 
   async function load() {
     if (!mine && !listings) draw();
-    const parts = [
-      loadMine().then(() => { draw(); window.renderPluginDot?.(); }),
-      loadListings().then(draw),
+    // The market and installed state are enough to make an Install button.
+    // Ask npm as soon as either arrives; GitHub, built-ins and Providers are
+    // secondary sections and must not leave Discover's cards spinning while
+    // one of those slower requests is unavailable on macOS.
+    const primary = [
+      loadMine().then(() => { draw(); window.renderPluginDot?.(); askNPM(); }),
+      loadListings().then(() => { draw(); askNPM(); }),
+    ];
+    const secondary = [
       loadTagged().then(drawBody),
       loadBuiltins(),
       providers ? null : loadProviders().then(drawBody, () => {}),
     ];
-    await Promise.all(parts);
+    await Promise.all(primary);
     askNPM();
     askGit();
+    await Promise.all(secondary);
   }
   window.loadPlugins = load;
   // the sidebar's dot, followed: Plugins opens on Installed, where the
@@ -424,9 +436,10 @@
       if (!mine?.bun) b.title = t("Plugins run on Bun {v}, downloaded once", { v: mine?.bunVersion || "" });
       return b;
     }
-    // not known yet whether it's installed, or whether npm has it: a
-    // button that waits, rather than one that says the wrong thing
-    if (!mine || (!e && listed && !listed.npm)) {
+    // Installed state is a separate request from the market. Once the card
+    // has a real npm/GitHub source, it can offer Install immediately; waiting
+    // for Bun or the installed host here left macOS Discover spinning forever.
+    if ((!listed || (!listed.npm?.version && !listed.github)) && (!mine || !e)) {
       b.classList.add("busy");
       b.append(el("span", "spin"));
       b.disabled = true;
@@ -851,7 +864,9 @@
     if (tab === "installed") return drawInstalled();
     if (tab === "builtin") return drawBuiltin();
     if (!listings) {
-      body.replaceChildren(intro(), skeleton(6));
+      body.replaceChildren(intro(), failedList
+        ? el("p", "pm-empty bad", t("Couldn't load the plugin market: {error}", { error: failedList }))
+        : skeleton(6));
       return;
     }
     const f = query.trim().toLowerCase();

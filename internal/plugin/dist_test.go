@@ -178,14 +178,14 @@ func TestDistRefusesATarballNotItsIndexs(t *testing.T) {
 
 func TestDistWanted(t *testing.T) {
 	for spec, want := range map[string]string{
-		"@magpie-community/opencode-zed-auth":              "@magpie-community/opencode-zed-auth latest",
-		"@magpie-community/opencode-zed-auth@latest":       "@magpie-community/opencode-zed-auth latest",
-		"@magpie-community/opencode-zed-auth@0.1.7":        "@magpie-community/opencode-zed-auth 0.1.7",
-		"@magpie-community/opencode-zed-auth@^0.1.7":       "",
-		"@magpie-community/opencode-zed-auth@next":         "",
+		"@magpie-community/opencode-zed-auth":           "@magpie-community/opencode-zed-auth latest",
+		"@magpie-community/opencode-zed-auth@latest":    "@magpie-community/opencode-zed-auth latest",
+		"@magpie-community/opencode-zed-auth@0.1.7":     "@magpie-community/opencode-zed-auth 0.1.7",
+		"@magpie-community/opencode-zed-auth@^0.1.7":    "",
+		"@magpie-community/opencode-zed-auth@next":      "",
 		"opencode-zed-auth@0.1.7":                       "",
 		"@someone/opencode-zed-auth@0.1.7":              "",
-		"github:magpie-community/plugins":                  "",
+		"github:magpie-community/plugins":               "",
 		"./dist/magpie-community-opencode-zed-auth.tgz": "",
 	} {
 		name, version, ok := distWanted(spec)

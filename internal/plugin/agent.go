@@ -29,8 +29,8 @@ func Agent(target string) (file string, only bool) {
 	}
 	b = withPluginMetadata(b)
 	var pkg struct {
-		Main    string          `json:"main"`
-		Exports json.RawMessage `json:"exports"`
+		Main      string          `json:"main"`
+		Exports   json.RawMessage `json:"exports"`
 		AgentLink struct {
 			Agent string `json:"agent"`
 		} `json:"agentLink"`

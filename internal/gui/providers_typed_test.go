@@ -96,6 +96,28 @@ func TestFixedProviderTestRequestKeepsCanonicalSettings(t *testing.T) {
 func stringPtr(s string) *string { return &s }
 func boolPtr(v bool) *bool       { return &v }
 
+func TestFixedProviderHTTPSavePersistsEditorKey(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", os.Getenv("HOME"))
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	if err := provider.MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	providerRoutes(mux, nil)
+	body := `{"id":"` + provider.AgentLinkProviderID + `","key":"sk-gui-saved","models":["model-a"],"noModels":false}`
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("POST", "/api/provider/save", strings.NewReader(body)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("save: %d %s", rec.Code, rec.Body)
+	}
+	p, err := provider.Find(provider.AgentLinkProviderID)
+	if err != nil || p.Key != "sk-gui-saved" || p.Chat != provider.AgentLinkProviderURL {
+		t.Fatalf("saved fixed provider = %#v, err %v", p, err)
+	}
+}
+
 func TestProviderTypedKey(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("USERPROFILE", os.Getenv("HOME"))
