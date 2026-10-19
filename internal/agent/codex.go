@@ -231,7 +231,7 @@ func writeOwnList(path string, b []byte) error {
 func codexIn(at place) *Agent {
 	dir := at.codexHome()
 	path := filepath.Join(dir, "config.toml")
-	catalogPath := filepath.Join(dir, "agentlink-models.json")
+	catalogPath := filepath.Join(dir, "agent-link-models.json")
 	get := func(k string) string { v, _ := edit.GetTOMLTop(path, k); return v }
 	// this machine's Codex reaches the gateway at the address its config
 	// gives, when that is agentlink's on another host: the Codex app on

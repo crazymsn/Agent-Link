@@ -55,13 +55,13 @@ func TestPortableSettings(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(data, "settings.json")); err != nil {
 		t.Fatalf("settings not saved in the data folder: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(r, "home", ".config", "agentlink")); !os.IsNotExist(err) {
-		t.Fatalf("the profile's ~/.config/agentlink was touched: %v", err)
+	if _, err := os.Stat(filepath.Join(r, "home", ".config", "agent-link")); !os.IsNotExist(err) {
+		t.Fatalf("the profile's ~/.config/agent-link was touched: %v", err)
 	}
 
 	// without the data folder it's the profile again
 	appdir.UseExecutable("")
-	if got, want := Path(), filepath.Join(r, "home", ".config", "agentlink", "settings.json"); got != want {
+	if got, want := Path(), filepath.Join(r, "home", ".config", "agent-link", "settings.json"); got != want {
 		t.Fatalf("installed Path() = %q, want %q", got, want)
 	}
 }

@@ -36,7 +36,7 @@ func TestAccountsCachedReading(t *testing.T) {
 	for _, mode := range []string{"cached-text", "cached-json", "fresh-text", "fresh-json"} {
 		t.Run(mode, func(t *testing.T) {
 			home := t.TempDir()
-			config := filepath.Join(home, ".config", "agentlink")
+			config := filepath.Join(home, ".config", "agent-link")
 			at := time.Now().Add(-2 * time.Hour).UTC().Truncate(time.Second)
 			reset := at.Add(time.Hour)
 			write := func(path string, value any) {

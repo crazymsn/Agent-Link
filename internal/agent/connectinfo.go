@@ -114,7 +114,7 @@ func (a *Agent) FailoverSaid() string {
 func (a *Agent) startsWith() (pats []string, files []string, reads func() string) {
 	switch a.ID {
 	case "codex":
-		list := filepath.Join(filepath.Dir(a.Path), "agentlink-models.json")
+		list := filepath.Join(filepath.Dir(a.Path), "agent-link-models.json")
 		return []string{`(^|/)codex( |$)`}, []string{a.Path, list}, func() string {
 			var b strings.Builder
 			for _, k := range []string{"model_provider", "model_catalog_json", "openai_base_url"} {

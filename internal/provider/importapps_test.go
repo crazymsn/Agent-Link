@@ -171,7 +171,7 @@ func TestImportCodexConfig(t *testing.T) {
 	}
 	data := `model_provider = "agentlink"
 model = "deepseek/deepseek-chat"
-model_catalog_json = "agentlink-models.json"
+model_catalog_json = "agent-link-models.json"
 
 [model_providers.agentlink]
 base_url = "http://127.0.0.1:3448/v1"
@@ -218,7 +218,7 @@ model = "gpt-6-sol"
 [profiles.agentlinkcatalog]
 model_provider = "deepseek"
 model = "gpt-6-sol"
-model_catalog_json = "agentlink-models.json"
+model_catalog_json = "agent-link-models.json"
 `
 	if err := os.WriteFile(config, []byte(data), 0o600); err != nil {
 		t.Fatal(err)
@@ -226,7 +226,7 @@ model_catalog_json = "agentlink-models.json"
 	if err := os.WriteFile(filepath.Join(filepath.Dir(config), "models.json"), []byte(`{"models":[{"slug":"deepseek-chat","visibility":"list"},{"slug":"deepseek-reasoner","visibility":"list"},{"slug":"old-model","visibility":"hide"}]}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(filepath.Dir(config), "agentlink-models.json"), []byte(`{"models":[{"slug":"openrouter/x-ai/grok-4.7","visibility":"list"},{"slug":"group/auto-glm-5-3","visibility":"list"}]}`), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(filepath.Dir(config), "agent-link-models.json"), []byte(`{"models":[{"slug":"openrouter/x-ai/grok-4.7","visibility":"list"},{"slug":"group/auto-glm-5-3","visibility":"list"}]}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	items := itemsOf(t, "codex")
@@ -338,8 +338,8 @@ func TestCodexImportModelsSameBasename(t *testing.T) {
 	config := filepath.Join(home, "other", "config.toml")
 	models := []byte(`{"models":[{"slug":"custom-model","visibility":"list"}]}`)
 	for _, path := range []string{
-		filepath.Join(home, ".codex", "agentlink-models.json"),
-		filepath.Join(home, "other", "agentlink-models.json"),
+		filepath.Join(home, ".codex", "agent-link-models.json"),
+		filepath.Join(home, "other", "agent-link-models.json"),
 	} {
 		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 			t.Fatal(err)
@@ -348,10 +348,10 @@ func TestCodexImportModelsSameBasename(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if got := codexImportModels(config, "../.codex/agentlink-models.json"); len(got) != 0 {
+	if got := codexImportModels(config, "../.codex/agent-link-models.json"); len(got) != 0 {
 		t.Fatalf("agentlink's own catalog was imported: %v", got)
 	}
-	if got := codexImportModels(config, "agentlink-models.json"); len(got) != 1 || got[0] != "custom-model" {
+	if got := codexImportModels(config, "agent-link-models.json"); len(got) != 1 || got[0] != "custom-model" {
 		t.Fatalf("user catalog with the same basename was skipped: %v", got)
 	}
 }

@@ -56,7 +56,7 @@ func TestAgentConnectAPI(t *testing.T) {
 	if !a.Wired || a.Fields[0].Value != "relay/m2" {
 		t.Fatalf("after connect: wired %v, model %q", a.Wired, a.Fields[0].Value)
 	}
-	cat, err := os.ReadFile(filepath.Join(home, ".codex", "agentlink-models.json"))
+	cat, err := os.ReadFile(filepath.Join(home, ".codex", "agent-link-models.json"))
 	if err != nil || !strings.Contains(string(cat), "relay/m1") || !strings.Contains(string(cat), "relay/m2") {
 		t.Fatalf("Codex's model list: %s %v", cat, err)
 	}

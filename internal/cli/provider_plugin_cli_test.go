@@ -20,7 +20,7 @@ func TestShowMovedProvider(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(home, ".cache"))
 	t.Setenv("AGENT_LINK_BUN", "")
-	dir := filepath.Join(home, ".config", "agentlink")
+	dir := filepath.Join(home, ".config", "agent-link")
 	for name, body := range map[string]string{
 		"plugins.json":     `{"plugins":[{"spec":"opencode-zed-auth"}]}`,
 		"plugin-auth.json": `{"zed":{"type":"oauth","access":"a","refresh":"r","expires":0,"accountId":"me@zed"}}`,

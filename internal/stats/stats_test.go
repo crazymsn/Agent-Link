@@ -171,7 +171,7 @@ func TestSendPartnerCounts(t *testing.T) {
 	defer func() { usage = readUsage }()
 	counts := `{"days":{"2026-09-27":{"acme":{"shown":12,"opened":2}},"2026-09-28":{"acme":{"shown":3}}}}`
 	write := func() {
-		f := filepath.Join(home, ".cache", "agentlink", "partner-counts.json")
+		f := filepath.Join(home, ".cache", "agent-link", "partner-counts.json")
 		if err := os.MkdirAll(filepath.Dir(f), 0o755); err != nil {
 			t.Fatal(err)
 		}

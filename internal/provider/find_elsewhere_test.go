@@ -16,7 +16,7 @@ func TestFindSaysFilesAreElsewhere(t *testing.T) {
 	t.Setenv("HOME", h)
 	t.Setenv("USERPROFILE", h)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(h, ".cache"))
-	app := filepath.Join(h, ".config", "agentlink")
+	app := filepath.Join(h, ".config", "agent-link")
 	if err := os.MkdirAll(app, 0o700); err != nil {
 		t.Fatal(err)
 	}

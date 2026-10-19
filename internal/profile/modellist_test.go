@@ -16,7 +16,7 @@ import (
 
 // modelsHome is the sandbox with a provider of three models and Codex set up
 // with agentlink as its provider, whose model list agentlink writes into
-// agentlink-models.json, and the agents' files following a change of the
+// agent-link-models.json, and the agents' files following a change of the
 // catalog as they do in agentlink (main sets catalog.Changed).
 func modelsHome(t *testing.T) (catalogFile string) {
 	t.Helper()
@@ -24,14 +24,14 @@ func modelsHome(t *testing.T) (catalogFile string) {
 	if err := provider.Save(provider.Provider{ID: "relay", Name: "Relay", Key: "k", Chat: "http://127.0.0.1:1/v1", Models: []string{"m1", "m2", "m3"}}); err != nil {
 		t.Fatal(err)
 	}
-	catalogFile = filepath.Join(h, ".codex", "agentlink-models.json")
+	catalogFile = filepath.Join(h, ".codex", "agent-link-models.json")
 	// the catalog named as agentlink names it: by its full path, and on
 	// Windows relative to config.toml (#816). A C:/ spelling isn't one
 	// agentlink writes or takes for its own list, so on Windows Codex's list
 	// was never written and these tests failed there (#1517).
 	ref := "'" + catalogFile + "'"
 	if runtime.GOOS == "windows" {
-		ref = `"agentlink-models.json"`
+		ref = `"agent-link-models.json"`
 	}
 	write(t, filepath.Join(h, ".codex", "config.toml"), "model = \"relay/m1\"\nmodel_provider = \"agentlink\"\nmodel_catalog_json = "+ref+"\n\n[model_providers.agentlink]\nname = \"agentlink\"\nbase_url = \"http://127.0.0.1:1/v1\"\nwire_api = \"responses\"\n")
 	was := catalog.Changed
@@ -41,7 +41,7 @@ func modelsHome(t *testing.T) (catalogFile string) {
 	return catalogFile
 }
 
-// lists is which of the relay's models agentlink-models.json gives Codex.
+// lists is which of the relay's models agent-link-models.json gives Codex.
 func lists(t *testing.T, file string) []string {
 	t.Helper()
 	var out []string
