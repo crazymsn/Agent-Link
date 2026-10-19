@@ -1,0 +1,4 @@
+body { margin: 0; padding: 16px; font: 13px/1.5 var(--agentlink-font, system-ui); color: var(--agentlink-fg); background: var(--agentlink-bg); }
+h1 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+p { margin: 0 0 4px; }
+button { font: inherit; color: var(--agentlink-accent); background: none; border: 0; padding: 0; cursor: pointer; }

@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>はじめに · Agent Link ドキュメント</title>
+<meta name="description" content="Agent Link の全体の仕組みとセットアップ方法：手持ちのプロバイダを追加し、エージェントごとにモデルを選び、必要に応じて 1 つのモデルを複数のアカウントにルーティングします。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/start">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/start">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/start">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Agent Link をはじめる">
+<meta property="og:description" content="手持ちのプロバイダを追加し、エージェントごとにモデルを選ぶ。セットアップを順を追って解説します。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/ja/start">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート Agent Link</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/start" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/start" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/start" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="Discord の Agent Link" title="Discord に参加"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="GitHub の Agent Link" title="GitHub のソースコード"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>はじめに</p>
+    <a href="#overview">全体の仕組み</a>
+    <a href="#providers">1 · プロバイダ</a>
+    <a href="#agents">2 · エージェント</a>
+    <a href="#routing">3 · ルーティンググループ</a>
+    <a href="#usage">使用量とプロファイル</a>
+    <a href="#cli">ターミナル</a>
+    <a href="#faq">よくある質問</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · ガイド</p>
+    <h1>はじめに</h1>
+    <p class="lede">Agent Link は、各エージェントが使うモデルを一か所で選べるツールです。手持ちのプロバイダを追加し、エージェントごとにモデルを選ぶと、Agent Link がそのエージェント自身の設定に書き込みます。</p>
+
+    <p>その裏では、小さなゲートウェイがあなたのマシンの <code>127.0.0.1:7500</code> で動いています。OpenAI、Anthropic、Gemini の API を話し、ストリーミングやツール呼び出しも含めて相互に変換するので、どのエージェントでもどのプロバイダのモデルでも使えます。たとえば ChatGPT プランの GPT モデルで動く Claude Code、DeepSeek で動く Codex、Claude プランで動く OpenCode といった具合です。</p>
+
+    <div class="cards">
+      <div><h3>プロバイダ</h3><p>モデルの提供元です。サインインするサブスクリプション、API キーを持っているベンダー、そして自前のエンドポイント。各モデルは <code>provider/model</code> という名前で呼ばれます。</p></div>
+      <div><h3>エージェント</h3><p>モデルを使うツールです。Claude Code、Codex、Gemini CLI、OpenCode など。1 つにつき 1 行で、設定中のモデルが表示されます。</p></div>
+      <div><h3>ゲートウェイ</h3><p>Agent Link 経由でモデルを選んだときに、すべてのエージェントの接続先となるローカルのエンドポイントです。各リクエストを、そのモデルを提供する先へ送ります。</p></div>
+      <div><h3>ルーティンググループ</h3><p>任意です。複数のモデルやアカウントを、エージェントが 1 つとして選べるようにまとめたもの（<code>group/&lt;id&gt;</code>）。どれかのクォータが尽きたときに役立ちます。</p></div>
+    </div>
+
+    <ol class="steps">
+      <li><b>プロバイダを追加する</b>サブスクリプションにサインインし、API キーを貼り付けます。一度で済みます。</li>
+      <li><b>エージェントごとにモデルを選ぶ</b>エージェントのモデルをクリックして選びます。Agent Link がそのエージェントの設定を書き換えます。</li>
+      <li><b>新しいセッションを始める</b>エージェントは起動時に設定を読むので、次のセッションから新しいモデルが使われます。</li>
+    </ol>
+
+    <h2 id="providers"><a class="anchor" href="#providers">1 · プロバイダを追加する</a></h2>
+    <p><span class="ui">Providers</span> タブを開き、<span class="ui">＋ Add provider</span> を押します。タイルを選ぶか、ベンダー名を入力して探します。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/add-ja-light.png" width="2016" height="1604" loading="lazy" alt="プロバイダの追加シート：サブスクリプション、ベンダー、中継サービス、このマシン上のもの、カスタム URL">
+      <img class="for-dark" src="/img/add-ja-dark.png" width="2016" height="1604" loading="lazy" alt="プロバイダの追加シート：サブスクリプション、ベンダー、中継サービス、このマシン上のもの、カスタム URL">
+      <figcaption>プロバイダの追加：サブスクリプションにサインインする、ベンダーを選ぶ、または互換性のある任意の URL を指定する。</figcaption>
+    </figure>
+
+    <h3>サブスクリプション · サインインのみ、キー不要</h3>
+    <p>Claude（Pro、Max、Team）、ChatGPT（Plus、Pro、Business）、Cursor、Grok（SuperGrok）、Copilot、Devin。タイルをクリックすると、Agent Link がブラウザでベンダー自身のサインインページを開き、完了するとすぐにアカウントが表示されます（Copilot では GitHub のページに入力するコードが表示されます）。サブスクリプションは他のエージェント内でログインするのではなく、ここ Agent Link で追加します。</p>
+    <ul>
+      <li><b>複数のアカウント。</b> Claude や ChatGPT のタイルをもう一度クリックすると、別のアカウントを追加できます。各アカウントはプロバイダの下に並び、ワンクリックで使用中のものに切り替えられます。</li>
+      <li><b>すでにサインイン済み？</b> このマシンでサインインしているエージェントも、<em>signed in as …</em> というプロバイダとして表示されます。</li>
+      <li><b>どのエージェントからも使えます。</b> サブスクリプションのモデルは、他のすべてのエージェントのピッカーに <code>claude/…</code>、<code>codex/…</code>、<code>copilot/…</code> として並びます。Claude サブスクリプションのリクエストはこのマシンにインストールされた Claude Code を通して実行されるため、Claude Code はインストールしたままにしてください。</li>
+    </ul>
+
+    <h3>ベンダー</h3>
+    <p>Anthropic、OpenAI、Google Gemini、DeepSeek、Kimi、Zhipu GLM、MiniMax、Qwen、Mistral、Groq、xAI など。1 つ選んでキーを貼り付け（<span class="ui">Get a key ↗</span> はベンダーのキー発行ページへのリンクです）、保存します。Agent Link はベンダーに提供モデルを問い合わせてそれを候補に出します。プロバイダの行を開くと、エージェントに見せるモデルを選んだり、<span class="ui">Test</span> で動作確認したりできます。</p>
+
+    <h3>このマシン上</h3>
+    <p>Ollama と LM Studio。キーは不要です。</p>
+
+    <h3>カスタム · 互換性のある任意の URL</h3>
+    <p>それ以外のものには、<span class="ui">Name</span>、<span class="ui">OpenAI compatible</span> のベース URL（末尾は <code>/v1</code>）、<span class="ui">Anthropic compatible</span> のベース URL（ルート、つまり <code>ANTHROPIC_BASE_URL</code> に指定するもの）のどちらかまたは両方、そしてキーを入力します。エンドポイントが話す API はすべて指定してください。各エージェントはネイティブに話せる API を使い、それ以外は Agent Link が変換します。</p>
+
+    <div class="callout"><b>Claude Code や Codex でプロバイダを設定済みですか？</b> シート上部の <span class="ui">Import…</span> は Claude Code の <code>settings.json</code> と Codex の <code>config.toml</code> を読み取り、それらには一切手を加えずに、チェックしたプロバイダを取り込みます。</div>
+    <p>キーは <code>~/.config/Agent Link/providers.json</code> に保存され、あなただけが読めます。Agent Link はシェルの環境変数からキーを読みません。追加したものだけが使われます。</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">2 · エージェントごとにモデルを選ぶ</a></h2>
+    <p><span class="ui">Agents</span> タブには、このマシンにインストールまたは設定されているエージェントごとに行があります。Agent Link が対応しているのは Claude Code、Codex、Gemini CLI、OpenCode、MiMo Code、DevEco Code、Pi、Goose、Cursor CLI、Copilot CLI、Crush、DeepSeek Harness、Command Code、omp、OmO、Devin、Hermes Agent、MiniMax Code、Grok Build、ZCode、OpenHanako、Alma です。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/agents-ja-light.png" width="2080" height="1290" loading="lazy" alt="エージェントタブ：エージェントごとに使用中のモデルを示す行と、下部に保存済みのプロファイル">
+      <img class="for-dark" src="/img/agents-ja-dark.png" width="2080" height="1290" loading="lazy" alt="エージェントタブ：エージェントごとに使用中のモデルを示す行と、下部に保存済みのプロファイル">
+      <figcaption>エージェントごとに 1 行。どのプロバイダのモデルでも選べ、プロファイルですべてを一度に切り替えられます。</figcaption>
+    </figure>
+    <ul>
+      <li><b>モデルをクリック</b>するとピッカーが開きます。モデルはエージェント自身のもの、ルーティンググループ、追加した各プロバイダの順にまとめられています。入力して絞り込むことも、一覧にないモデル id を直接入力することもできます。</li>
+      <li><b>推論の強さ</b>は、エージェントが対応している場合（Codex の <em>effort</em>、Pi の <em>thinking</em>）、一覧の下のスライダーで設定します。</li>
+      <li><b>Agent Link 経由の Claude Code</b> では、opus・sonnet・haiku の各ティアに個別のモデルを割り当てることもできます。デフォルトではメインのモデルに従います。</li>
+    </ul>
+    <p>モデルを選ぶと、エージェント自身の設定ファイルに書き込まれます。変更されるのは Agent Link が必要とするキーだけで、コメント、順序、インデントはそのまま残り、書き込みはアトミックに行われます。</p>
+    <div class="table-wrap"><table>
+      <tr><th>エージェント</th><th>Agent Link 経由のモデルで書き込まれる内容</th></tr>
+      <tr><td>Claude Code</td><td><code>~/.claude/settings.json</code>：<code>env</code> ブロック内の <code>ANTHROPIC_BASE_URL</code>、<code>ANTHROPIC_AUTH_TOKEN</code> とモデル関連の変数</td></tr>
+      <tr><td>Codex</td><td><code>~/.codex/config.toml</code>：<code>[model_providers.Agent Link]</code> テーブルとモデル、一覧は <code>Agent Link-models.json</code>。ChatGPT のサインインには手を加えません</td></tr>
+      <tr><td>OpenCode、MiMo Code、DevEco Code、Pi、Crush</td><td><code>Agent Link</code> プロバイダのエントリと <code>Agent Link/provider/model</code></td></tr>
+      <tr><td>AtomCode</td><td><code>~/.atomcode/config.toml</code>：<code>Agent Link</code> プロバイダアカウントと、カタログ内の各モデルのエントリ</td></tr>
+      <tr><td>Snow CLI</td><td><code>~/.snow/profiles/Agent Link.json</code>：<code>Agent Link</code> プロファイルを作り、使用中のプロファイルにする（Snow App は「Sync Snow CLI API config」で取り込む）</td></tr>
+      <tr><td>Gemini CLI</td><td>ゲートウェイを指す <code>GOOGLE_GEMINI_BASE_URL</code>、API キー認証、そしてモデル</td></tr>
+    </table></div>
+    <p><b>実行中のセッションは、開始時のモデルを使い続けます。</b> エージェントは起動時に設定を読むので、変更は次のセッションから反映されます。Codex は起動時にモデル一覧も作るため、切り替えたら Codex アプリと開いている <code>codex</code> セッションを再起動してください。</p>
+    <div class="callout"><b>Paseo やエディタ拡張などのフロントエンド</b>で Claude Code や Codex を代わりに動かすものは、同じ CLI を起動し、同じ <code>~/.claude</code> または <code>~/.codex</code> の設定を読みます。Agent Link で一度モデルを設定すれば、それらにも次のセッションから反映されます。</div>
+
+    <h2 id="routing"><a class="anchor" href="#routing">3 · 任意：ルーティンググループ</a></h2>
+    <p>プロバイダごとにアカウントが 1 つなら、ここは読み飛ばして構いません。ChatGPT アカウントが 2 つある、あるいは同じモデルをサブスクリプションとキーの両方で使えるなど、複数あるときに意味を持ちます。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/routing-ja-light.png" width="2080" height="1610" loading="lazy" alt="ルーティングタブ：4 つのエージェントが 3 つのルーティンググループを通して同時に送信し、レート制限中のプロバイダは外れている">
+      <img class="for-dark" src="/img/routing-ja-dark.png" width="2080" height="1610" loading="lazy" alt="ルーティングタブ：4 つのエージェントが 3 つのルーティンググループを通して同時に送信し、レート制限中のプロバイダは外れている">
+      <figcaption>ルーティンググループ：複数のモデルやアカウントを 1 つの名前にまとめ、スマートまたは順番どおりにフォールバックします。</figcaption>
+    </figure>
+
+    <h3>1 つのプロバイダに複数のアカウントやキー</h3>
+    <p>プロバイダの行を開き、使うアカウントやキーをすべてチェックします。<span class="ui">Routing</span> はリクエストをそれらにどう振り分けるかを決めます：<span class="ui">Smart</span>（デフォルト）、<span class="ui">In order</span>、<span class="ui">In turn</span>、<span class="ui">Least used first</span>、<span class="ui">Weekly pace</span>。<span class="ui">Fallback</span> には、プロバイダのクォータ切れ、レート制限、ダウン時に代わりに使うモデルを並べます。</p>
+
+    <h3>1 つのモデルを複数のプロバイダで</h3>
+    <p>グループとは、1 つまたは複数のプロバイダのモデルを、エージェントが 1 つとして選べるようにまとめたものです。ピッカーの <em>Routing groups</em> の下に <code>group/&lt;id&gt;</code> として表示されます。2 つのプロバイダが同じ名前で提供しているモデルは、それだけでグループになります。<span class="ui">Routing</span> タブの <span class="ui">New group</span> では、好きなモデルを組み合わせてグループを作れます。グループで何ができるかは、最初のモデルが基準になります。</p>
+    <div class="callout"><b>何もしなくてもできるグループ。</b> すでに持っているモデルを提供する 2 つ目のプロバイダを追加すると（Claude サブスクリプションと Copilot の Claude Opus、DeepSeek 自身の API と OpenRouter の DeepSeek など）、Agent Link はそれを提供するすべてのプロバイダにまたがるグループ <code>group/auto-&lt;model&gt;</code> を自動で作ります。名前はベンダーごとの表記の違い（<code>deepseek/deepseek-chat</code>、<code>deepseek-chat</code>）を吸収して照合されます。エージェントにこれを選ぶとリクエストがすべてに分散されます。不要なものは <code>Agent Link group rm</code> で非表示にできます。</div>
+    <div class="table-wrap"><table>
+      <tr><th>ルーティング</th><th>先に使われるもの</th></tr>
+      <tr><td>スマート <code>smart</code></td><td>デフォルトです。メンバーのアカウントとキーをまとめて扱い（グループ内のグループは 1 つとして扱います。下記参照）、クォータに余裕のあるサブスクリプションのうち、利用枠が最も早く更新されるもの。基準は週の枠です。週の枠がなく 5 時間枠だけのアカウント（Claude Enterprise）は 5 時間枠で判断されるため、それより後に週の枠が更新されるものすべてより先になります。リセットのないクレジット（WorkBuddy のパッケージはそれぞれの日に失効します）は、残りのうち最も早く失効する時点で判断されるため、クレジットが最も早く失効する WorkBuddy アカウントが先になります。失敗後に休止中のものは最後に回ります。</td></tr>
+      <tr><td>順番どおり <code>order</code></td><td>最初のモデルが応答できなくなるまでそれを使い、次へ進みます。</td></tr>
+      <tr><td>持ち回り <code>rotate</code></td><td>各会話の次のターンを、次のメンバーのアカウントやキーに送り、負荷を分散します。</td></tr>
+      <tr><td>使用量の少ない順 <code>usage</code></td><td>利用枠の残りが最も多いアカウントやキー。</td></tr>
+      <tr><td>週のペース <code>pace</code></td><td>更新までの 1 時間あたりの週の枠の残りが最も多いアカウント、つまりリセット時に失う分が最も多いもの。これにより各メンバーの週の枠がリセットで無駄になりにくくなります。週の枠がなく 5 時間枠だけのアカウント（Claude Enterprise）は、更新までの 1 時間あたりの 5 時間枠の残りで判断されるので、ほぼ常に最初になります。使用率が 90% 以上のものは、他が応答できなくなるまで待ちます。キーは最近送ったトークン数で判断します。</td></tr>
+      <tr><td>重み順 <code>weight</code></td><td>グループ編集画面で各モデルの横に設定した重み（1〜1000、未設定は 1）に応じてリクエストを分けます。重み 3 のモデルは重み 1 のモデルが 1 件受けるごとに 3 件受け、まとめてではなく均等に散らします。各モデルは自分のプロバイダーのルーティングで自分のアカウントやキーを使い、グループ内のグループは 1 つとして数えます。失敗して休んでいるものはその回から外れ、失敗したときは次のモデルが代わりに答えます。</td></tr>
+    </table></div>
+    <div class="table-wrap"><table>
+      <tr><th>維持</th><th>会話が、応答したアカウントやキーに留まる期間</th></tr>
+      <tr><td>自動 <code>auto</code></td><td>デフォルトです。ターン内では常に、ターンをまたいでは、ベンダーがキャッシュした内容が保持する価値のある間。</td></tr>
+      <tr><td>セッション <code>session</code></td><td>応答できる限り、セッション全体。</td></tr>
+      <tr><td>ターン内 <code>turn</code></td><td>エージェントがツールの結果を返している間。あなたが再び発言すると、ルーティングが改めて決めます。</td></tr>
+      <tr><td>オフ <code>off</code></td><td>リクエストごとに改めてルーティングします。</td></tr>
+      <tr><td>厳格 <code>strict</code></td><td>使用量上限を超えても、他のアカウントやキーへは移りません。レート制限や割り当て切れのときは、エラーがそのままエージェントに渡ります。新しい会話は通常どおりルーティングされます。</td></tr>
+    </table></div>
+    <h3 id="rules">ルール · ターンを指定したモデルへ</h3>
+    <p>グループの <span class="ui">Rules</span> は、指定した種類のターンをグループ内の特定のモデルに送ります。種類とは、長いもの（<code>tokens ≥ N</code>）、画像を含むもの、推論を求めるもの（オン、または一定レベル以上）、特定のエージェントからのもの、あなたが記述した内容を求めるもの（<em>インテント</em>）、エージェントがコンテキストを圧縮するもの、特定のフォルダ（プロジェクト）で作業しているもの、です。ルールの条件はすべて満たす必要があるので、「~/work/acme 内で、かつ長い」のようにも書けます。メッセージを送ると上から順に評価され、最初に一致したルールのモデルが先頭になり、失敗したときはグループの他のモデルが後に続きます。どのルールにも一致しないターンは、グループの通常のルーティングに従い、それまでの送り先に留まります。</p>
+    <ul>
+      <li>ルールはターンの開始時に決まり、エージェントがツールの結果を返している間もそのターンは同じモデルに留まるため、ベンダーのキャッシュが途中で失われません。唯一の例外として、ターンがモデルのコンテキストを超えて大きくなった場合は、それを受け付けられるメンバーに移ります。</li>
+      <li>トークン数は、リクエストのサイズから推定した値と、会話の直前のリクエストでベンダーが数えた値のうち、大きいほうを使います。余裕を持たせてください。200k のモデルなら、ルールは 199k ではなく 150k にします。</li>
+      <li>サブエージェントはそれ自体が独立した会話なので、親のエージェントはそのままに、ルールでサブエージェントだけを別の送り先に送れます。</li>
+      <li>インテントは、ユーザーが求めていることを数語で表したものです（「テストを書く・直す」「ちょっとした質問」など）。ターンの開始時に、グループの分類モデル（Agent Link にある任意のモデル。小さく高速で推論なしのものが最適です）に、一致しうるインテントのうちユーザーのメッセージがどれに当たるかを一度だけ尋ねます。送られるのはそのメッセージだけで、会話全体ではありません。分類モデルが失敗した、遅すぎた（8 秒）、または判断できなかった場合は、どのインテントも一致せず、そのターンは他のルールに従います。インテントのないルールでいずれにせよ決まる場合は問い合わせず、同じメッセージについて二度尋ねることもありません。その呼び出しは使用量に Agent Link 自身の呼び出しとして表示されます。何を尋ねるのか、回答がどう使われるのか、失敗したらどうなるのかの詳細は<a href="/docs/ja/intent">インテントルーティング</a>を参照してください。</li>
+      <li><span class="ui">compacting</span> は、エージェントが会話を圧縮するとき（Claude Code の <code>/compact</code> と自動圧縮、Codex、OpenCode、Pi、Gemini CLI、Qwen Code、Kimi Code）に一致します。これにより、会話は元のモデルのまま、要約だけをより安く速いモデルに書かせられます。圧縮は単独で判断されます。圧縮が起きたターンとそのキャッシュは元の送り先に留まります。会話がルールのモデルが受け付けられる長さを超えている場合は、次に一致するルール、またはグループの順序で決まります。</li>
+      <li><b>時間帯と曜日。</b>ルールは、このコンピューターの時計で、特定の時間帯や曜日だけ有効にできます（ベンダーのピーク時間など）。その間のターンを別のモデルに送るルールでは、ベンダーのモデルはフォールバックとして後ろに残ります。完全に外すには、ルールの <span class="ui">⋯</span> メニューから <span class="ui">代わりにモデルを一時停止</span> を選びます。ルールが有効な間（時間帯、曜日、エージェント）、そのモデルはグループから外れ、先頭にもフォールバックにもならず、会話の継続でも使われません。時間帯が終われば戻ります。一時停止は時間帯、曜日、エージェントだけで判断し、グループのモデルがすべて一時停止中ならエージェントにそう伝えます。</li>
+      <li><b>フォルダ。</b><span class="ui">フォルダ</span> は、エージェントの作業フォルダが指定したフォルダのどれか、またはその中にあるときに一致します。<code>~/work/acme</code> は <code>~/work/acme/web</code> を含み、<code>~/work/acme-old</code> は含みません。フォルダはエージェントがリクエストでモデルに伝えるもの（Claude Code、Codex、OpenCode、Pi が伝えます）なので、伝えないエージェントはフォルダのルールに一致しません。<code>~</code> はホームフォルダ、<code>C:\work</code> は WSL の <code>/mnt/c/work</code> と同じで、macOS と Windows では大文字小文字を区別しません。</li>
+      <li><b>推論。</b>ルールはモデルに求める推論も指定できるので、インテントでモデルと推論の強さを組で選べます。ルールの <span class="ui">⋯</span> メニューの <span class="ui">推論を指定</span>、またはターミナルで <code>use-effort=low</code>。エージェントの指定にかかわらず、モデルの最も近いレベルでその推論を求めます。Agent Link がレベルを知らないモデルと、その後ろのフェイルオーバー先のモデルはエージェントの指定どおりです。<a href="/docs/ja/intent#effort">インテントルーティング</a>を参照してください。</li>
+      <li>ルーティングタブには、各ターンをどのルールがどこへ送ったか、分類モデルが何と答えたか、エージェントが伝えた作業フォルダが表示されます。</li>
+    </ul>
+    <h3 id="nested">グループの中のグループ</h3>
+    <p>グループのモデルには別のグループも含められます。<span class="ui">Add a model</span> の <em>Routing groups</em> の下から選ぶか、ターミナルで <code>models+=group/&lt;id&gt;</code> を使います。中に入ったグループは順序の中でその位置を占め、自分のモデルの間では自分のルーティングとルールに従って振り分けます。たとえば Coder を <code>deepseek-v4-pro</code>、次に <em>Fast</em> とし、Fast は安いモデルを独自の順序で並べる、といった構成ができます。Coder のルールでターンを <code>group/fast</code> に送れば、どのモデルを先にするかは Fast 自身のルールが決めます。</p>
+    <ul>
+      <li><b>ループは不可。</b> グループは、直接でも中のグループ経由でも、自分自身を含められません。Coder が Fast を含んでいるときに、Coder を含む Fast を保存しようとすると拒否され、ピッカーにもそのようなグループは表示されません。入れ子は最大 8 階層です。他のグループに含まれているグループは削除できないので、先にそちらから外してください。</li>
+      <li><b>各グループは自分のルーティングに従います。</b> 外側のグループのルーティングが何であれ、内側のグループの中には及びません。スマート、持ち回り、使用量の少ない順、週のペースは、内側のグループを 1 つのメンバーとして、内側のグループが最初に試すアカウントやキーで評価します。そこが選ばれると、内側のグループが丸ごと、自分の順序で試されます。Claude（順番どおり）と GPT（順番どおり）を含むスマートの Coder は、両者のアカウントをすべてまとめて比べるのではなく、Claude の先頭と GPT の先頭を比べます。</li>
+      <li><b>独自のルーティングを持つプロバイダーも同じです。</b> プロバイダーのアカウントやキーのルーティングを順番どおり、持ち回り、使用量の少ない順、週のペース、重みにしたモデルは、どのグループの中でもそれを保ちます。グループはそれが最初に試すアカウントやキーで比べ、選ばれたら自分の順序で丸ごと試します。既定のスマートのままのプロバイダーは、アカウントがグループの他のものとまとめて比べられ、どのプロバイダーのものでも枠が最も早くリセットされるものが先になります。</li>
+      <li><b>フェイルオーバーは通ります。</b> 内側のグループのモデルがすべて失敗すると、他のメンバーと同様に、外側のグループの次のメンバーが応答します。</li>
+      <li>2 回現れるモデル（単独と、中のグループ内）は、最初の位置で一度だけ問い合わせます。</li>
+    </ul>
+    <figure class="figure">
+      <img class="for-light" src="/img/nested-routing-ja-light.png" width="2080" height="1404" loading="lazy" alt="グループの中にグループがある ルーティングタブ：Coder には deepseek-v4-pro とグループ Fast があり、Fast の下に deepseek-v4-flash と kimi-k2.5 が並ぶ。応答したのは Kimi">
+      <img class="for-dark" src="/img/nested-routing-ja-dark.png" width="2080" height="1404" loading="lazy" alt="グループの中にグループがある ルーティングタブ：Coder には deepseek-v4-pro とグループ Fast があり、Fast の下に deepseek-v4-flash と kimi-k2.5 が並ぶ。応答したのは Kimi">
+      <figcaption>Coder のルールがちょっとした質問をグループ Fast に送り、Fast 自身のルールがそこで Kimi を先頭にしました。トレースには、各グループのルールと分類モデルが何を決めたかが表示されます。</figcaption>
+    </figure>
+    <p><span class="ui">Routing</span> タブには、ゲートウェイの判断がリアルタイムで表示されます。各リクエストに誰が応答したか、そしてその理由です。同じグループをターミナルから扱うと次のとおりです：</p>
+    <div class="code">
+      <span class="lang">ターミナル</span>
+      <button class="copy" data-copy="ex-group">コピー</button>
+      <pre id="ex-group">Agent Link groups                        <span class="c"># 自分のグループ、次に Agent Link が見つけたもの</span>
+Agent Link group add <span class="s">"Opus anywhere"</span> models=claude/claude-opus-5-5,copilot/claude-opus-5.5 routing=order stays=session
+Agent Link group set opus-anywhere models+=openrouter/anthropic/claude-opus-5.5
+Agent Link group set opus-anywhere routing=weight weight=claude/claude-opus-5-5=3  <span class="c"># 4 件に 3 件をこれに</span>
+Agent Link group rule add opus-anywhere use=openrouter/anthropic/claude-opus-5.5 tokens=150k  <span class="c"># 長いターンはまずこれへ</span>
+Agent Link group rule add opus-anywhere use=copilot/claude-opus-5.5 intent=<span class="s">"ちょっとした質問"</span> classifier=groq/llama-3.1-8b-instant
+Agent Link group rule add opus-anywhere use=deepseek/deepseek-v4-flash compact  <span class="c"># /compact の要約は安いモデルへ</span>
+Agent Link group rule add opus-anywhere use=kimi/kimi-k2.6 folders=~/oss,<span class="s">"~/My Project"</span>  <span class="c"># これらのプロジェクトのターンはまずこのモデルへ</span>
+Agent Link group rule add opus-anywhere pause=copilot/claude-opus-5.5 time=14:00-18:00 days=mon-fri  <span class="c"># その時間帯は外す</span>
+Agent Link group rule add opus-anywhere pause=claude/claude-opus-5-5 except-folders=~/big-task  <span class="c"># ~/big-task のタスク専用：ほかのフォルダでは外す</span>
+Agent Link group set coder models+=group/opus-anywhere  <span class="c"># グループの中のグループ</span>
+Agent Link group rule opus-anywhere      <span class="c"># ルール一覧。rule rm|mv &lt;n&gt;、rule classifier &lt;group&gt; &lt;model&gt;</span>
+Agent Link group copy opus-anywhere <span class="s">"Opus test"</span>  <span class="c"># モデル・ルーティング・ルールが同じ複製。別々に変更できる</span>
+Agent Link group rm opus-anywhere        <span class="c"># Agent Link が見つけたものは非表示に。Agent Link group restore &lt;id&gt; で戻す</span>
+Agent Link claude group/opus-anywhere    <span class="c"># これを使う</span></pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">使用量とプロファイル</a></h2>
+    <p><b>使用量。</b> <span class="ui">Usage</span> タブでは、ゲートウェイを通ったすべての呼び出しについて、エージェントとモデルごとのトークン、キャッシュヒット、コストを <span class="ui">Today</span>、<span class="ui">7 days</span>、<span class="ui">30 days</span>、<span class="ui">All</span> の期間で集計します。上部にはサブスクリプションの利用枠の使用量と、そのリセット時刻が表示されます。エージェントが自分のベンダーへ直接行う呼び出しは Agent Link を通らないため、集計されません。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/usage-ja-light.png" width="2080" height="1004" loading="lazy" alt="使用量タブ：残高、トークンとコストの合計、30 日間のグラフ">
+      <img class="for-dark" src="/img/usage-ja-dark.png" width="2080" height="1004" loading="lazy" alt="使用量タブ：残高、トークンとコストの合計、30 日間のグラフ">
+      <figcaption>ゲートウェイを通ったすべての呼び出しの残高、トークン、キャッシュヒット、コスト。</figcaption>
+    </figure>
+    <p><b>コンテキスト。</b> Usage の <span class="ui">Context</span> タブでは、ゲートウェイを通るときに読み取った各エージェントのプロンプトの中身を表示します。システムプロンプト、ツール定義（MCP サーバーのツールはまとめて 1 つ）、指示ファイルと skills、ツールが読み込んだファイル、ツールのその他の出力、会話が、モデルのコンテキストウィンドウのどれだけを占めるかがわかります。各エージェントには 100 点満点のスコア（プロンプトのうちキャッシュから読まれた割合、スタートの軽さ、埋まる速さ、失敗の頻度）と、スコアの根拠を示す「軽いスタート」「MCP が重い」などのタグが付きます。セッションを開くと最新リクエストのウィンドウをマスごとに見られ、<span class="ui">Routing</span> ページでも選んだリクエストについて同じものが表示されます。部分・マス・項目をクリックすると、Agent Link が送ったままの本文を読めます（マスクがオンならマスク済み）。本文は直近 10 件のリクエスト分だけ、Agent Link の実行中にメモリに置かれます。保存するのは名前だけで、プロンプトの本文は保存せず、どこにも送りません。</p>
+    <p><b>プロファイル。</b> <span class="ui">Agents</span> タブの下部にある <span class="ui">＋ Save current</span> で、全エージェントの設定を名前を付けて保存できます。チップをクリックすれば、すべてを一度に元に戻せます。使用中のプロファイルには ✓ が付き、トレイパネルの <span class="ui">プロファイル</span> ボタンにもその名前が表示されます。その後に設定を手で変えると ✓ は外れます。</p>
+
+    <h2 id="cli"><a class="anchor" href="#cli">ターミナルから</a></h2>
+    <p><code>agent-link tui</code> はターミナルで動くアプリ全体で、上記の各手順にはそれぞれコマンドがあります。<code>Agent Link help</code> ですべて確認できます。</p>
+    <div class="table-wrap"><table>
+      <tr><th>コマンド</th><th>内容</th></tr>
+      <tr><td><code>Agent Link ls</code></td><td>見つかったすべてのエージェントとその設定</td></tr>
+      <tr><td><code>Agent Link presets</code></td><td>Agent Link が知っているベンダー</td></tr>
+      <tr><td><code>Agent Link provider add deepseek sk-…</code></td><td>プリセットをキー付きで追加</td></tr>
+      <tr><td><code>Agent Link accounts add codex</code></td><td>Claude または ChatGPT のサブスクリプションをもう 1 つサインイン</td></tr>
+      <tr><td><code>Agent Link accounts discovery off</code></td><td>エージェントのサインイン（Claude Code と Codex のファイル、キーチェーン）を読み取らない。<code>on</code> で再び読み取る</td></tr>
+      <tr><td><code>agent-link providers</code></td><td>プロバイダ一覧：ホスト、キー、モデル、使っているエージェント</td></tr>
+      <tr><td><code>agent-link models</code></td><td>エージェントが選べるすべてのモデル（<code>provider/model</code> 形式）</td></tr>
+      <tr><td><code>Agent Link claude codex/gpt-5.5</code></td><td>エージェントのモデルを設定</td></tr>
+      <tr><td><code>Agent Link codex effort high</code></td><td>他の項目を設定</td></tr>
+      <tr><td><code>Agent Link codex default</code></td><td>エージェント自身のデフォルトに戻し、Agent Link の設定を取り除く</td></tr>
+      <tr><td><code>Agent Link save work</code> · <code>use work</code></td><td>プロファイルを保存・適用</td></tr>
+      <tr><td><code>agent-link usage 7d</code></td><td>エージェントとモデルごとのトークンとコスト</td></tr>
+      <tr><td><code>Agent Link tray</code></td><td>メニューバーのアイコンだけで起動</td></tr>
+    </table></div>
+
+    <h2 id="faq"><a class="anchor" href="#faq">よくある質問</a></h2>
+    <h3><code>OPENAI_BASE_URL</code> や <code>ANTHROPIC_BASE_URL</code> を export する必要はありますか？</h3>
+    <p>いいえ。Agent Link が一覧に表示するエージェントについては、ゲートウェイのアドレスとトークンをエージェント自身の設定ファイルに書き込みます。これらの変数は、ベース URL を設定できる他のツール向けです。<span class="ui">Gateway</span> タブの <span class="ui">Connect</span> セクションに、コピーボタンとスニペットとして用意されています。</p>
+    <h3>Agent Link は起動しておく必要がありますか？</h3>
+    <p>Agent Link 経由のモデルを使うなら必要です。ゲートウェイはアプリと一緒に動きます。ウィンドウを閉じてもメニューバーやトレイで動き続けます。<code>Agent Link tray</code> はアイコンだけで起動し（ログイン項目に入れておくと便利です）、<code>Agent Link serve</code> はゲートウェイだけを動かし、<code>Agent Link daemon install</code> はそれをサービス（Linux は systemd、Mac は launchd）として登録し、ログインや起動時からウィンドウなしで動かし続けます。<code>Agent Link daemon install --web</code> ならブラウザのページも同じサービスが提供し、<code>Agent Link daemon status</code> がページのリンクを表示します。エージェント自身のモデルと自身のサインインで動くエージェントは、Agent Link を通りません。</p>
+    <h3>エージェントを元の状態に戻すには？</h3>
+    <p>ピッカーでエージェント自身のモデルを選ぶか、<code>Agent Link &lt;agent&gt; default</code> を実行します。Agent Link は自分が書き込んだものを取り除き、以前に設定していた <code>ANTHROPIC_BASE_URL</code> など、置き換えた値を元に戻します。</p>
+    <h3>モデルを切り替えたのに、エージェントが古いモデルを使い続けます。</h3>
+    <p>実行中のセッションは開始時の設定を使い続けます。新しいセッションを始めてください。Codex の場合は Codex アプリも再起動してください。</p>
+    <h3>エージェントの設定を手で編集すると、何か壊れますか？</h3>
+    <p>いいえ。Agent Link は毎回ファイルを読み直し、自分が設定するキーだけに触れるので、他の設定やコメントはそのまま残ります。<span class="ui">Import…</span> で取り込んだプロバイダはコピーなので、その後エージェント側の設定を変えても再度コピーはされません。</p>
+    <h3>GitHub に届かない環境で、インストールや更新をするには？</h3>
+    <p>インストーラと <code>Agent Link update</code> にプロキシを渡します：<code>curl -fsSL https://useAgent Link.ai/install.sh | sh -s -- --proxy http://127.0.0.1:7890</code>、または <code>Agent Link update --proxy socks5://127.0.0.1:1080</code>（http・https・socks5・socks5h に対応。<code>HTTPS_PROXY</code> と <code>ALL_PROXY</code> も使われます）。<code>--mirror &lt;prefix&gt;</code> を付けると、指定した GitHub ダウンロードミラーから <code>&lt;prefix&gt;https://github.com/…</code> としてリリースファイルを取得します。<code>Agent Link update mirror &lt;prefix&gt;</code> でアプリ自身の更新を含め毎回使い、<code>Agent Link update mirror off</code> で解除します。指定しない限りミラーは使われず、ファイルの SHA-256 はミラーではなく常に useAgent Link.ai から取得するので、ミラーが書き換えたファイルはインストールされません。アプリ自身の更新は <span class="ui">Settings</span> → <span class="ui">Proxy</span> を通ります。</p>
+
+    <h3 id="privacy">Agent Link は何を送信しますか？</h3>
+    <p>プロンプト、返答、キー、アカウントは、使っているプロバイダーにだけ送られます。間に Agent Link 自身のサーバーはありません。リリース版の Agent Link は 1 日 1 回、使われていることを知らせます。何人が使っていて、何を優先して面倒を見るべきかを知るためです。送るのは、このコンピュータで作ったランダムな ID、Agent Link のバージョンとシステム、そして使っているエージェント、プロバイダー、モデルを Agent Link 自身の ID（<code>claude</code>、<code>deepseek</code>、<code>deepseek/deepseek-v4</code>）で、それぞれの数とともに。自分で追加したプロバイダーとそのモデルは <code>custom</code> とだけ記録します。プロバイダー追加シートの先頭に載るパートナーについては、1 日に表示された回数、開かれた回数、追加された回数も送ります（回数のみ）。名前、Base URL、アカウント、キー、プロンプト、使用量は送りません。<span class="ui">設定</span> → <span class="ui">プライバシー</span> → <span class="ui">使っているエージェント、プロバイダー、モデルを共有</span> でエージェント、プロバイダー、モデルとパートナーの回数を外せます。<span class="ui">ユーザー数に含める</span>、<code>DO_NOT_TRACK=1</code>、<code>AGENT_LINK_NO_STATS=1</code> のどれかですべてオフになります。ソースからのビルドは送信しません。パートナーの公式サイトと「キーを取得」のリンクは <code>useAgent Link.ai/go/…</code> を経由し、移動の前にクリックを 1 回数えます（どのパートナーか、どのリンクか、国）。useAgent Link.ai はパートナー一覧が取得された回数も数えます。これはサーバー自身が見るもので、どの Web サイトのアクセス集計とも同じく、上の設定には左右されません。ID、IP アドレス、アカウントは記録しません。プラグイン、インポートリンク、ライブラリが示すアイコンは <code>useAgent Link.ai/api/icon</code> を経由して取得するので、アイコンのあるサーバーに見えるのはあなたの IP ではなく Cloudflare のアドレスです。このサーバーは画像を中継するだけで、数えることも記録することもしません。Agent Link が自分から送るものすべては、毎日のカウントの例、手元に残すファイル、各スイッチとともに<a href="/docs/ja/privacy">プライバシー</a>のページに挙げています。</p>
+
+    <h3 id="proxy-loopback">エージェントが 502 を返す、または接続できず、Agent Link の Routing タブに何も出ない？</h3>
+    <p>プロキシアプリ（Surge、Clash、mihomo など。システムプロキシ、TUN、拡張モードのいずれかが有効）が、エージェントから <code>http://127.0.0.1:7500</code> へのリクエストを横取りして別の場所へ送っているため、Agent Link に届いていません。除外リスト（<code>skip-proxy</code>、バイパス）に 127.0.0.1 を書くだけでは足りないことがあります。Codex など一部のエージェントは、それでもプロキシを通します。ローカルアドレスを直結にするルールを、他のルールより前に追加してください：</p>
+    <div class="code">
+      <span class="lang">Surge</span>
+      <button class="copy" data-copy="ex-loopback">コピー</button>
+      <pre id="ex-loopback">IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+IP-CIDR6,::1/128,DIRECT,no-resolve</pre>
+    </div>
+    <p>Clash / mihomo の設定では、同じ行を <code>rules:</code> の下に、それぞれ先頭に <code>- </code> を付けて書きます。そのあと、エージェントからもう一度リクエストを送ってください。</p>
+    <p style="margin-top:48px">困ったときや、共有したい構成があるときは <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> でどうぞ。ユーザーにすぐ使えるプロバイダを配りたいベンダーの方は <a href="/docs/ja/import">Agent Link に追加</a> をご覧ください。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート Agent Link</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

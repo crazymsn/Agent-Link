@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>隐私 · Agent Link 文档</title>
+<meta name="description" content="Agent Link 自己会发出什么、发到哪里：每天一次的用户计数、更新检查和其他公开列表、useAgent Link.ai 能看到什么、OTLP 导出，以及关闭它们的每个开关。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/privacy">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/privacy">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/privacy">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="隐私">
+<meta property="og:description" content="Agent Link 自己发出的所有内容，以及怎么关掉。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/zh/privacy">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 Agent Link</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/privacy" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/privacy" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/privacy" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>隐私</p>
+    <a href="#overview">概览</a>
+    <a href="#count">每日计数</a>
+    <a href="#off">关闭</a>
+    <a href="#files">本机上的文件</a>
+    <a href="#site">useAgent Link.ai 能看到什么</a>
+    <a href="#lists">Agent Link 拉取的公开列表</a>
+    <a href="#otel">OTLP 导出</a>
+    <a href="#why">为什么计数默认开启</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 隐私</p>
+    <h1>隐私</h1>
+    <p class="lede">你的提示词、回复、密钥和账号只发给你用的供应商，中间没有 Agent Link 自己的服务器。这一页列出 Agent Link 在这些请求之外自己发出的所有内容，以及关掉它们的每个开关。内容按代码写成，每一节都附了代码链接。</p>
+
+    <div class="table-wrap"><table>
+      <tr><th>内容</th><th>发往</th><th>默认</th><th>怎么关</th></tr>
+      <tr><td><a href="#count">每日计数</a></td><td>PostHog（<code>us.i.posthog.com</code>）</td><td>正式版开启；源码构建从不发送</td><td><span class="ui">设置</span> → <span class="ui">隐私</span>，<code>DO_NOT_TRACK=1</code></td></tr>
+      <tr><td><a href="#site">更新检查</a>、更新说明、合作伙伴列表、图标</td><td><code>useAgent Link.ai</code></td><td>开启</td><td>更新检查用 <code>noAutoUpdate</code>；其余是应用运行所需</td></tr>
+      <tr><td><a href="#lists">模型目录和汇率</a></td><td><code>models.dev</code>、<code>open.er-api.com</code></td><td>开启</td><td>不可关；不发送任何你的信息</td></tr>
+      <tr><td><a href="#otel">OTLP 导出</a></td><td>你指定的收集器</td><td>关闭</td><td>保持关闭即可</td></tr>
+    </table></div>
+
+    <h2 id="count"><a class="anchor" href="#count">每日计数</a></h2>
+    <p>正在运行的正式版 Agent Link（应用或 <code>Agent Link serve</code>）每天（UTC）向 PostHog 发送一批事件，好让我们知道有多少人在用、该先照顾哪些 agent、供应商和模型。启动时发送，之后每小时看一次，当天已发过就跳过。从源码构建的版本从不发送。</p>
+    <p>这批事件里有一个 <code>Agent Link active</code>，包含：</p>
+    <ul>
+      <li>本机随机生成的 ID（32 位十六进制，与你和这台电脑无关），作为 <code>distinct_id</code>；</li>
+      <li>Agent Link 版本、<code>kind</code>（<code>app</code> 或 <code>serve</code>）、系统（<code>$os</code>）和架构；</li>
+      <li>用了几个 agent、供应商和模型，以及几个路由组（关掉“分享我用的”后不发送）。</li>
+    </ul>
+    <p>除非你关掉这一部分，后面还有每个 agent、供应商和模型各一个 <code>Agent Link uses</code> 事件，只用 Agent Link 自己的 ID（每类最多 50 个）：</p>
+    <ul>
+      <li><b>agent</b>：接入 Agent Link 的 agent，如 <code>claude</code>、<code>codex</code>。WSL 发行版名和 omp 配置名会去掉（只记 <code>omp</code>）。</li>
+      <li><b>供应商</b>：开启的供应商。预设的 ID（<code>deepseek</code>）、订阅的（<code>codex</code>、<code>copilot</code>）、已知社区插件的（<code>plugin:kiro</code>）。你自己添加的供应商只记作 <code>custom</code>，其他插件只记作 <code>plugin</code>。</li>
+      <li><b>模型</b>：接入的 agent 设定的模型，记为供应商 ID 加厂商模型 ID（<code>deepseek/deepseek-v4</code>）。密钥类供应商上 <a href="https://models.dev">models.dev</a> 没收录的模型 ID（本地模型、微调模型）只记作 <code>&lt;供应商&gt;/other</code>；你自己供应商上的模型记作 <code>custom</code>；路由组记作 <code>group</code>。</li>
+    </ul>
+    <p>同时发送 <code>Agent Link partner</code> 事件：添加供应商页里排在最前的每个合作伙伴，按它的 ID，在已结束的某一天里被展示、行被打开、Key 页面被打开、从它添加供应商的次数（<code>what</code>：<code>shown</code>、<code>opened</code>、<code>keys</code>、<code>added</code>；每天每项最多 20 次，添加最多 5 次）。只有次数，从不包含你自己的供应商。</p>
+    <p>每个事件都带 <code>$process_person_profile: false</code>，PostHog 不为这个 ID 建用户档案。不发送名称、Base URL、账号、密钥、提示词、回复和用量。一整批大致如下：</p>
+    <div class="code">
+      <span class="lang">POST https://us.i.posthog.com/batch/</span>
+      <button class="copy" data-copy="ex-payload">复制</button>
+      <pre id="ex-payload">{
+  &quot;api_key&quot;: &quot;phc_nyDyYyrUTRGvNq5U7FBesCyM2j4GdKeqGp8ko7DBerTC&quot;,
+  &quot;batch&quot;: [
+    {
+      &quot;event&quot;: &quot;Agent Link active&quot;,
+      &quot;distinct_id&quot;: &quot;3f9c…(32 hex)&quot;,
+      &quot;timestamp&quot;: &quot;2026-10-13T08:00:00Z&quot;,
+      &quot;properties&quot;: {
+        &quot;version&quot;: &quot;0.1.1190&quot;, &quot;kind&quot;: &quot;app&quot;, &quot;$os&quot;: &quot;Mac OS X&quot;, &quot;arch&quot;: &quot;arm64&quot;,
+        &quot;agents&quot;: 2, &quot;providers&quot;: 3, &quot;models&quot;: 2, &quot;groups&quot;: 1,
+        &quot;$process_person_profile&quot;: false, &quot;distinct_id&quot;: &quot;3f9c…&quot;
+      }
+    },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;distinct_id&quot;: &quot;3f9c…&quot;, &quot;timestamp&quot;: &quot;2026-10-13T08:00:00Z&quot;,
+      &quot;properties&quot;: { &quot;kind&quot;: &quot;agent&quot;, &quot;id&quot;: &quot;claude&quot;, &quot;$process_person_profile&quot;: false, &quot;distinct_id&quot;: &quot;3f9c…&quot; } },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;properties&quot;: { &quot;kind&quot;: &quot;provider&quot;, &quot;id&quot;: &quot;custom&quot;, … } },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;properties&quot;: { &quot;kind&quot;: &quot;model&quot;, &quot;id&quot;: &quot;deepseek/deepseek-v4&quot;, … } },
+    { &quot;event&quot;: &quot;Agent Link partner&quot;, &quot;timestamp&quot;: &quot;2026-10-12T12:00:00Z&quot;,
+      &quot;properties&quot;: { &quot;id&quot;: &quot;&lt;partner id&gt;&quot;, &quot;what&quot;: &quot;shown&quot;, &quot;count&quot;: 3, &quot;day&quot;: &quot;2026-10-12&quot;, … } }
+  ]
+}</pre>
+    </div>
+    <p><code>api_key</code> 是项目的 PostHog 密钥，只能发送事件，不能读取。代码见 <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/stats/stats.go">internal/stats</a> 和 <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/provider/partner_events.go">partner_events.go</a>。</p>
+
+    <h2 id="off"><a class="anchor" href="#off">关闭</a></h2>
+    <p>下面每个开关关掉其中一部分或全部：</p>
+    <ul>
+      <li>关掉 <span class="ui">设置</span> → <span class="ui">隐私</span> → <span class="ui">计入用户数</span>，或在 <code>settings.json</code> 里写 <code>"noStats": true</code>：整个每日计数。</li>
+      <li>在 Agent Link 的环境变量里设 <code>DO_NOT_TRACK=1</code> 或 <code>AGENT_LINK_NO_STATS=1</code>（除空、<code>0</code>、<code>false</code> 之外的任何值）：整个每日计数，不管设置里怎么选。</li>
+      <li>关掉 <span class="ui">设置</span> → <span class="ui">隐私</span> → <span class="ui">分享我用的 agent、provider 和模型</span>，或 <code>"noUsageStats": true</code>：<code>Agent Link uses</code>、<code>Agent Link partner</code> 事件和 <code>Agent Link active</code> 里的数量；ID、版本和系统仍会发送。合作伙伴次数也不再记录。</li>
+      <li>关掉 <span class="ui">设置</span> → <span class="ui">关于</span> → <span class="ui">自动更新</span>，或 <code>"noAutoUpdate": true</code>：Agent Link 自己向 <code>useAgent Link.ai</code> 询问新版本（否则每 6 小时一次）。这不属于计数。</li>
+    </ul>
+    <p>设置里的改动在下一次每小时检查时生效，不用重启。<code>settings.json</code> 在 Agent Link 的文件夹里（见<a href="#files">下文</a>）：</p>
+    <div class="code">
+      <span class="lang">settings.json</span>
+      <button class="copy" data-copy="ex-settings">复制</button>
+      <pre id="ex-settings">{
+  "noStats": true,
+  "noUsageStats": true,
+  "noAutoUpdate": true
+}</pre>
+    </div>
+    <p><code>AGENT_LINK_STATS_HOST</code> 会把计数发到另一个主机（用于测试，设置后源码构建也会发送）。</p>
+
+    <h2 id="files"><a class="anchor" href="#files">本机上的文件</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>文件</th><th>用途</th></tr>
+      <tr><td><code>install-id</code></td><td>随机 ID，第一次发送计数时生成</td></tr>
+      <tr><td><code>stats-sent</code></td><td>上次发送的日期（UTC），保证每天只发一次</td></tr>
+      <tr><td><code>partner-counts.json</code>（缓存文件夹）</td><td>还没发送的合作伙伴次数，最多保留 14 天</td></tr>
+    </table></div>
+    <p><code>install-id</code> 和 <code>stats-sent</code> 在 Agent Link 的文件夹里：macOS 和 Linux 上是 <code>~/.config/Agent Link</code>，Windows 上是 <code>%USERPROFILE%\.config\Agent Link</code>，设置了 <code>$XDG_CONFIG_HOME</code> 时是 <code>$XDG_CONFIG_HOME/Agent Link</code>，便携版则在它的数据文件夹里。<code>partner-counts.json</code> 在 <code>~/.cache/Agent Link</code>（或 <code>$XDG_CACHE_HOME/Agent Link</code>，便携版数据文件夹里的 <code>cache</code>）。这些文件都可以删：删掉 <code>install-id</code> 后，下次发送会生成新的随机 ID，你会被算作新用户；关掉计数后，它们都不会再写入。</p>
+
+    <h2 id="site"><a class="anchor" href="#site">useAgent Link.ai 能看到什么</a></h2>
+    <p>Agent Link 会向自己的网站请求几样东西，不受隐私设置影响，就像任何应用访问自己的更新服务器。这些请求都不带安装 ID 或账号。</p>
+    <ul>
+      <li><code>/api/latest</code>：更新信息，每 6 小时一次（开了 <code>noAutoUpdate</code> 则不请求），带 <code>?lang=</code> 取对应语言的说明。<code>/api/notes</code> 在更新后给出“新功能”。</li>
+      <li><code>/api/partners</code>：添加供应商页的合作伙伴列表，每 6 小时一次。在有合作伙伴上架时，每十次拉取记一次 <code>Agent Link partners fetch</code> 事件，附 Cloudflare 给出的国家。</li>
+      <li><code>/go/&lt;合作伙伴&gt;/site</code> 和 <code>/go/&lt;合作伙伴&gt;/keys</code>：在浏览器里打开合作伙伴的官网和 Key 页面链接时，先记一次 <code>Agent Link partner go</code>（哪个合作伙伴、哪个链接、地区、国家），再跳转。</li>
+      <li><code>/api/icon?url=…</code>：插件、导入链接和库里的图标经它获取，图标所在的服务器只看到 Cloudflare 的地址，看不到你的。它只转发图片，不计数也不记录。</li>
+    </ul>
+    <p>网站自己的页面（这些文档、首页）带 Cloudflare Web Analytics，不用 Cookie 统计页面访问。应用不加载它。代码见 <a href="https://github.com/crazymsn/Agent-Link/blob/main/site/worker.js">site/worker.js</a>。</p>
+
+    <h2 id="lists"><a class="anchor" href="#lists">Agent Link 拉取的公开列表</a></h2>
+    <p>为了给模型定价和命名，Agent Link 会拉取 <a href="https://models.dev">models.dev</a> 的模型目录（<code>models.dev/api.json</code>）；为了用你的货币显示价格，会从 <code>open.er-api.com</code> 拉取美元汇率（缓存 12 小时）。插件及其更新来自 npm 仓库，库里的内容来自 GitHub。这些都是公开数据的普通下载，不发送任何关于你、你的供应商或用量的信息；和任何请求一样，这些主机能看到你的 IP（或代理的 IP）。Agent Link 还会用你自己的密钥或登录向各个供应商读取额度和模型列表；<span class="ui">设置</span> → <span class="ui">额度</span> → <span class="ui">额度刷新</span> → <span class="ui">仅手动</span> 可以只在你要求时才读。</p>
+
+    <h2 id="otel"><a class="anchor" href="#otel">OTLP 导出</a></h2>
+    <p>Agent Link 可以把每个网关请求导出到你自己的 OpenTelemetry 收集器（比如 Langfuse）。它<b>默认关闭</b>，只发到你设置的地址，从不发给我们。开启后发送每个请求的 span：agent、供应商、模型、token 数、状态、耗时和估算费用。另有开关可以加上指标、本地 agent 对话，以及请求和回复正文（密钥已遮盖）。在 <span class="ui">设置</span> → <span class="ui">可观测性</span> 里开启，<code>Agent Link serve</code> 也可以用 <code>AGENT_LINK_OTEL_ENABLED</code>、<code>AGENT_LINK_OTEL_ENDPOINT</code>、<code>AGENT_LINK_OTEL_HEADERS</code>、<code>AGENT_LINK_OTEL_METRICS</code>、<code>AGENT_LINK_OTEL_SESSIONS</code>、<code>AGENT_LINK_OTEL_BODIES</code> 和 <code>AGENT_LINK_OTEL_BODIES_WHOLE</code>。只设地址不会开启导出。细节见<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#otlp-export">参考文档</a>。</p>
+
+    <h2 id="why"><a class="anchor" href="#why">为什么计数默认开启</a></h2>
+    <p>Agent Link 支持几十个 agent 和供应商，维护的人不多。每日计数让我们知道大家实际在用哪些，好先保证它们能用。正式版默认开启，是因为只靠主动开启的人，数量太少，看不出这些。作为交换，它尽量少：一个随机 ID、内置 ID 和数字；一个开关或 <code>DO_NOT_TRACK=1</code> 就能关掉，源码构建从不发送，发送的全部内容都列在这一页。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 Agent Link</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

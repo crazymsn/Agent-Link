@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>プラグインの作り方 · Agent Link ドキュメント</title>
+<meta name="description" content="Agent Link プラグインの書き方：Agent Link が呼び出す OpenCode プラグインのフック、Agent Link が動かす pi パッケージ、それをアカウント・モデル・リクエスト・使用量を備えたプロバイダにする仕組み、そしてテスト・公開・掲載の方法。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/plugins">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/plugins">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/plugins">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="プラグインの作り方">
+<meta property="og:description" content="OpenCode プラグインか pi パッケージひとつで、どんなサービスも Agent Link のプロバイダにできます。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/ja/plugins">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート Agent Link</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/plugins" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/plugins" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/plugins" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>プラグイン</p>
+    <a href="#overview">概要</a>
+    <a href="#quick">5 分でプラグインを作る</a>
+    <a href="#run">Agent Link がプラグインを動かす仕組み</a>
+    <a href="#package">パッケージ</a>
+    <a href="#provider">プロバイダとモデル</a>
+    <a href="#signin">サインイン</a>
+    <a href="#requests">リクエスト</a>
+    <a href="#signin-state">サインイン状態</a>
+    <a href="#usage">使用量</a>
+    <a href="#input">プラグインに渡されるもの</a>
+    <a href="#ids">プロバイダ id</a>
+    <a href="#test">テスト</a>
+    <a href="#publish">公開と掲載</a>
+    <a href="#gateway-request">非同期ゲートウェイリクエストフック</a>
+    <a href="#middleware">ゲートウェイミドルウェア</a>
+    <a href="#tools">すべてのエージェントのツール</a>
+    <a href="#agents">エージェントプラグイン</a>
+    <a href="#pages">ウィンドウのページ</a>
+    <a href="#pi">pi パッケージ</a>
+    <a href="#protocol">ホストプロトコル</a>
+    <a href="#faq">よくある質問</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · プラグイン</p>
+    <h1>プラグインを書く</h1>
+    <p class="lede">プラグインはサービスにサインインし、そのサービスへのリクエストを送ります。Agent Link はそれを、すべてのエージェントが使えるプロバイダに変えます。複数アカウント、フェイルオーバー、使用量表示なども備わります。Agent Link は <a href="https://opencode.ai/docs/plugins/">OpenCode のプロバイダプラグイン</a>を動かすので、OpenCode 向けに書いたプラグインはそのままここで動きます。プロバイダを登録する <a href="https://github.com/earendil-works/pi">pi</a> のパッケージも動きます（<a href="#pi">pi パッケージ</a>を参照）。このページでは、プラグイン作者に必要なこと、つまり Agent Link が呼び出すフック、その戻り値を Agent Link がどう扱うか、そしてプラグインのテスト・公開・掲載の方法を説明します。</p>
+
+    <div class="callout"><b>ひとことで言うと。</b>プラグインは npm パッケージ、git リポジトリ、またはフォルダです。そのモジュールは OpenCode v1 プラグイン形式の async 関数をエクスポートします。Agent Link はすべてのプラグインをひとつの <a href="https://bun.sh">Bun</a> プロセス、つまり<em>プラグインホスト</em>に読み込みます。関数はフックを返します：
+      <ul>
+        <li><code>config</code> はプロバイダとそのデフォルトのモデルを宣言します。</li>
+        <li><code>auth</code> はサインイン方法と、各リクエストを送る <code>fetch</code> を持つ <code>loader</code> を提供します。</li>
+        <li><code>provider.models</code> はアカウントごとのモデルを列挙します。</li>
+        <li><code>auth.usage</code> はプランをどれだけ使ったかを返します。Agent Link 独自のフックで、OpenCode は無視します。</li>
+        <li><code>auth.refresh</code> はアカウントのトークンを期限切れ前に、一度にひとつずつ更新します。これも Agent Link 独自のフックです。</li>
+      </ul>
+      エージェントはどの API で送ってきても構いません。ゲートウェイはリクエストをモデルが話す API（chat completions、Responses、Anthropic Messages、Gemini）に変換し、プラグインの <code>fetch</code> に渡して、応答をストリームで返します。</div>
+
+    <h2 id="quick"><a class="anchor" href="#quick">5 分でプラグインを作る</a></h2>
+    <p>この例は架空のコーディングプラン Acme にサインインします。Acme は API キーを受け取り、OpenAI 互換のエンドポイントを持ち、アカウントごとのモデルと使用量を返します。実際のプラグインとの違いは主に、サインインの方法とリクエストへの署名の仕方です。この例はすべて Agent Link v0.1.676 と、Acme の API のローカルな代用品で実際に動かしています。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="q-pkg">コピー</button>
+      <pre id="q-pkg">{
+  "name": "opencode-acme-auth",
+  "version": "0.1.0",
+  "description": "OpenCode provider plugin: Acme Coding Plan",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": ["index.mjs", "README.md"],
+  "keywords": ["opencode", "opencode-plugin", "acme"],
+  "license": "MIT",
+  "Agent Link": { "maxConcurrency": 4 }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <button class="copy" data-copy="q-index">コピー</button>
+      <pre id="q-index">const PROVIDER = <span class="s">"acme"</span>
+const BASE = <span class="s">"https://api.acme.example/v1"</span>
+
+export const AcmeAuthPlugin = async ({ client }) =&gt; ({
+  <span class="c">// the provider and the models it has before anyone signs in</span>
+  config: async (cfg) =&gt; {
+    cfg.provider ??= {}
+    cfg.provider[PROVIDER] ??= {
+      name: <span class="s">"Acme"</span>,
+      npm: <span class="s">"@ai-sdk/openai-compatible"</span>, <span class="c">// chat completions</span>
+      api: BASE,
+      models: {
+        <span class="s">"acme-coder"</span>: { name: <span class="s">"Acme Coder"</span>, limit: { context: 200000, output: 32000 }, tool_call: true },
+      },
+    }
+  },
+
+  auth: {
+    provider: PROVIDER,
+    methods: [{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }],
+    <span class="c">// what every request of this account is sent with</span>
+    async loader(getAuth) {
+      const auth = await getAuth()
+      if (auth?.type !== <span class="s">"api"</span>) return {}
+      return {
+        baseURL: BASE,
+        async fetch(input, init) {
+          const headers = new Headers(init?.headers)
+          headers.set(<span class="s">"authorization"</span>, `Bearer ${auth.key}`)
+          headers.set(<span class="s">"x-acme-client"</span>, <span class="s">"opencode-acme-auth/0.1.0"</span>)
+          return fetch(input, { ...init, headers })
+        },
+      }
+    },
+    <span class="c">// Agent Link's own hook: how much of the plan is used</span>
+    async usage(getAuth) {
+      const auth = await getAuth()
+      const res = await fetch(`${BASE}/usage`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return { error: `Acme answered ${res.status}`, windows: [] }
+      const u = await res.json()
+      return {
+        plan: u.plan,
+        windows: [{ name: <span class="s">"5 hours"</span>, used: u.percent, resetsAt: u.resets_at, span: 5 * 3600 }],
+      }
+    },
+  },
+
+  <span class="c">// the models this account has, asked of Acme</span>
+  provider: {
+    id: PROVIDER,
+    async models(provider, { auth } = {}) {
+      if (auth?.type !== <span class="s">"api"</span>) return provider.models
+      const res = await fetch(`${BASE}/models`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return provider.models <span class="c">// Agent Link keeps the list it had</span>
+      const { data } = await res.json()
+      const base = provider.models[<span class="s">"acme-coder"</span>]
+      return Object.fromEntries(data.map((m) =&gt; [m.id, { ...base, id: m.id, name: m.name ?? m.id }]))
+    },
+  },
+})</pre>
+    </div>
+    <p>フォルダを Agent Link に追加し、サインインして試してみます：</p>
+    <div class="code">
+      <span class="lang">ターミナル</span>
+      <button class="copy" data-copy="q-cli">コピー</button>
+      <pre id="q-cli">Agent Link plugin add ./opencode-acme-auth   <span class="c"># a folder is loaded where it is; nothing is installed</span>
+Agent Link plugin login acme                 <span class="c"># asks for the key</span>
+Agent Link plugin                            <span class="c"># acme (Acme, 2 models)  signed in</span>
+Agent Link provider test acme                <span class="c"># ✓ chat  7 ms · acme-coder</span>
+agent-link quota                             <span class="c"># acme · Pro · 5h 37% ↻59m</span></pre>
+    </div>
+    <p>これでエージェントは、ほかのプロバイダと同じように <code>acme/acme-coder</code> としてそのモデルを使えます。アプリでは <span class="ui">プラグイン</span> を開き、<span class="ui">プラグインを追加</span> をクリックしてフォルダを指定します。その後、プロバイダの行からサインインします。</p>
+    <div class="callout"><b>サンドボックスで試しましょう。</b>開発中のプラグインが普段使いの Agent Link に触れることがあってはいけません。<a href="#test">テスト</a>にあるように、専用の <code>HOME</code> で Agent Link を動かしてください。</div>
+
+    <h2 id="run"><a class="anchor" href="#run">Agent Link がプラグインを動かす仕組み</a></h2>
+    <ul>
+      <li><b>Bun。</b>Agent Link は最初にプラグインが追加されたときに Bun をダウンロードし、すべてのプラグインをその上で動かします。Bun は TypeScript をそのまま実行するので、エントリは <code>index.ts</code> でも構いません。</li>
+      <li><b>ひとつのホストプロセス。</b>有効なプラグインはすべて、ひとつの Bun プロセスに読み込まれます。このプロセスは最初に必要になったときに起動します。Agent Link とホストは stdin と stdout で、1 行にひとつの JSON メッセージをやり取りします。プラグインが出力するものは、<code>console.log</code> や <code>process.stdout</code> も含めてすべて stderr に送られ、Agent Link は <code>plugin: …</code> としてログに記録します。</li>
+      <li><b>インストール。</b>
+        <ul>
+          <li>npm パッケージは <code>bun add</code> でインストールされ、OpenCode と同じくインストールスクリプトは実行されません。<code>postinstall</code> でのビルドが必要な依存は動きません。</li>
+          <li>git リポジトリは Bun が取得します：<code>github:owner/repo[#ref]</code>、<code>git+https://…</code>、<code>owner/repo</code>。</li>
+          <li>フォルダやファイルへのパスは、その場所から読み込まれます。</li>
+        </ul></li>
+      <li><b>再起動。</b>プラグインの追加・削除・更新・有効化・無効化でホストが再起動します。古いホストでストリーム中の応答は先に最後まで流れます。ターミナルの <code>Agent Link</code> コマンドはそれぞれ専用のホストを起動するので、フォルダのプラグインは常にその時点の内容で読み込まれます。アプリでは、プラグインをオフにしてからオンにすると編集内容が読み込まれます。</li>
+      <li><b>プロキシ。</b>プラグインがプロバイダやアカウントのために行う fetch は、ユーザーがそのプロバイダやアカウントに設定したプロキシを経由します。設定がなければ Agent Link 自身のプロキシを経由します（設定が<em>直接接続</em>の場合を除く）。ループバックアドレスはプロキシを通りません。独自の <code>proxy</code> オプションを渡す fetch はそのままにされます。</li>
+      <li><b>更新。</b>
+        <ul>
+          <li>コミュニティのパッケージ（<code>@Agent Link-community/*</code>）は、Agent Link の起動から少し後に自動で更新され、その後は 1 時間ごとに更新されます。</li>
+          <li>そのほかのパッケージは、新しいバージョンがあると <span class="ui">プラグイン</span> にドットが表示され、サイドバーの <span class="ui">インストール済み</span> に「1 件のアップデート」と出ます。このときプラグインを開くとインストール済みが開き、新しいバージョンのあるプラグインが上部に <span class="ui">すべてアップデート</span> と並んで表示されます。ユーザーはクリックか <code>Agent Link plugin update</code> で更新します。</li>
+          <li>バージョンを固定した指定（<code>name@1.2.3</code>）は、ユーザーが更新するまでそのバージョンのままです。<span class="ui">… にアップデート</span>、<span class="ui">すべてアップデート</span>、<code>Agent Link plugin update</code> は最新版をインストールし、固定を外します。</li>
+          <li>git リポジトリには比べるバージョンがありません。ブランチやタグ（<code>#ref</code> がなければデフォルトブランチ）が Bun のインストールしたコミットと違うときだけ、アップデートが表示されます。GitHub のものは GitHub の API に、ほかのホストは <code>git ls-remote</code> で、最大 10 分に 1 回問い合わせ、1 時間ごとのチェックでも問い合わせます。コミットに固定した指定にはアップデートはありません。行にはインストールしたコミットが表示されます。</li>
+        </ul></li>
+    </ul>
+    <p>Agent Link が設定フォルダ（<code>~/.config/Agent Link</code> または <code>$XDG_CONFIG_HOME/Agent Link</code>）に保存するもの：</p>
+    <div class="table-wrap"><table>
+      <tr><th>ファイル</th><th>内容</th></tr>
+      <tr><td><code>plugins.json</code></td><td>追加したプラグイン：<code>{"plugins": [{"spec", "off"?, "options"?}], "config"?}</code>。<code>options</code> はプラグインの第 2 引数で、OpenCode の <code>["name", {…}]</code> が渡すものと同じです。<code>config</code> はプラグインに渡される OpenCode の設定です。</td></tr>
+      <tr><td><code>plugins/</code></td><td>インストールされた npm と git のパッケージ。独立した Bun プロジェクトです。</td></tr>
+      <tr><td><code>plugin-auth.json</code></td><td>サインイン情報（モード 600）。OpenCode の <code>auth.json</code> と同じ形式なので、両者の間でサインインを移せます。</td></tr>
+      <tr><td><code>plugin-providers.json</code></td><td>プラグインが最後に列挙したプロバイダとモデル。Agent Link はこれを使い、プラグインに問い合わせずに起動できます。</td></tr>
+    </table></div>
+
+    <h2 id="package"><a class="anchor" href="#package">パッケージ</a></h2>
+    <h3>Agent Link がどこから読み込むか</h3>
+    <p>Agent Link はプラグインのサーバー側を OpenCode と同じ場所から探し、プラグインをエクスポートしている最初のファイルを読み込みます：</p>
+    <ol>
+      <li><code>package.json</code> の <code>exports["./server"]</code>、次に <code>main</code>、次に <code>exports["."]</code>（文字列なら <code>exports</code>）。</li>
+      <li>それがなければ <code>index.ts</code>、<code>index.tsx</code>、<code>index.js</code>、<code>index.mjs</code>、<code>index.cjs</code>。</li>
+    </ol>
+    <p>単一ファイルへのパスなら、そのファイルを読み込みます。</p>
+    <h3>モジュールがエクスポートするもの</h3>
+    <ul>
+      <li><code>export default { id, server }</code>（OpenCode v1）：<code>server</code> がプラグインです。</li>
+      <li>それ以外の場合、モジュールが<b>エクスポートするすべての関数</b>がプラグインとして呼び出されます。エクスポートされた <code>{ server }</code> オブジェクトも同様です。</li>
+    </ul>
+    <p>ですから、エントリファイルからヘルパー関数をエクスポートしないでください。テストに必要なものはオブジェクトにまとめましょう。コミュニティのプラグインは <code>export const _internal = { … }</code> としています。</p>
+    <h3>関数</h3>
+    <div class="code">
+      <span class="lang">形式</span>
+      <pre>async (input, options) =&gt; hooks
+<span class="c">// input:   { client, project, directory, worktree, serverUrl, $, experimental_workspace }</span>
+<span class="c">// options: the entry's "options" in plugins.json, else undefined</span>
+<span class="c">// hooks:   { config?, auth?, provider?, "chat.headers"? }</span></pre>
+    </div>
+    <p>複数の関数をエクスポートすれば、ひとつのプラグインで複数のプロバイダを返せます。それぞれのフックは独立しています。同じプロバイダに対して 2 つのプラグインが <code>auth</code> フックを持つ場合、OpenCode と同じく最後に読み込まれたものが勝ちます。</p>
+    <h3>package.json の Agent Link 用フィールド</h3>
+    <p>OpenCode は <code>Agent Link</code> オブジェクトを無視するので、OpenCode プラグインに追加しても安全です。</p>
+    <div class="table-wrap"><table>
+      <tr><th>フィールド</th><th>意味</th></tr>
+      <tr><td><code>Agent Link.icon</code></td><td>プラグイン自身の画像。「発見」のカード（npm から、GitHub のものはリポジトリから読み込み）と「インストール済み」の行に表示され、自分の画像を持たないプロバイダにも使われます：<code>https://</code> URL または <code>data:image/…</code> URI、最大 1 MB。SVG、PNG など。</td></tr>
+      <tr><td><code>Agent Link.maxConcurrency</code></td><td>各アカウントが同時に受けるリクエスト数。1 から 1000 の整数。ユーザーがプロバイダに設定した上限が優先されます。</td></tr>
+    </table></div>
+    <p>同じフィールドは <code>auth</code> フックにも設定でき（<code>auth.icon</code>、<code>auth.maxConcurrency</code>）、そちらが <code>package.json</code> より優先されます。複数のプロバイダにサインインするプラグインは、プロバイダごとに <code>auth.icon</code> を設定し、<code>Agent Link.icon</code> をプラグイン自身のものにできます。</p>
+
+    <h2 id="provider"><a class="anchor" href="#provider">プロバイダとモデル</a></h2>
+    <h3>プロバイダを宣言する</h3>
+    <p>プロバイダの id は <code>auth.provider</code> です。<a href="https://models.dev">models.dev</a> にその id があれば、Agent Link は OpenCode と同じくそのエントリから始めます。なければ <code>config</code> フックでプロバイダを宣言します。ユーザーが <code>plugins.json</code> で設定したプロバイダを上書きしないよう、<code>??=</code> を使ってください：</p>
+    <div class="code">
+      <span class="lang">config フック</span>
+      <pre>config: async (cfg) =&gt; {
+  cfg.provider ??= {}
+  cfg.provider[<span class="s">"acme"</span>] ??= {
+    name: <span class="s">"Acme"</span>,
+    npm: <span class="s">"@ai-sdk/anthropic"</span>,          <span class="c">// the API its models speak (table below)</span>
+    api: <span class="s">"https://api.acme.example/v1"</span>, <span class="c">// where requests go, unless the loader says otherwise</span>
+    models: {
+      <span class="s">"acme-large"</span>: {
+        name: <span class="s">"Acme Large"</span>,
+        id: <span class="s">"acme-large-2026-09"</span>,          <span class="c">// the id the API takes, when it isn't the key</span>
+        limit: { context: 400000, output: 64000 },
+        reasoning: true,
+        tool_call: true,
+        modalities: { input: [<span class="s">"text"</span>, <span class="s">"image"</span>] },
+        cost: { input: 3, output: 15, cache_read: 0.3 }, <span class="c">// US$ per million tokens; leave out for a plan</span>
+        variants: { low: {}, medium: {}, high: {} },        <span class="c">// reasoning levels</span>
+      },
+    },
+  }
+}</pre>
+    </div>
+    <p>モデルには、プロバイダとは別の API やアドレスを使うための <code>provider: { npm, api }</code>、<code>headers</code>、<code>options</code>、そして非表示にするための <code>disabled: true</code> も指定できます。</p>
+
+        <h3 id="searches">自分でウェブ検索する上流</h3>
+    <p>プラグインが Anthropic や OpenAI 自身の API（ホスト型のウェブ検索ツールを自分で実行する）の前に立つ場合は、<code>config</code> フックでプロバイダに <code>searches: true</code> を設定します。するとクライアントのウェブ検索（Claude Code の WebSearch、Codex の <code>web_search</code>）は、そのプロバイダの Anthropic または Responses のモデルでは送られたまま <code>fetch</code> に届き、Agent Link 自身の検索を通りません。Chat のモデルは変わりません。Agent Link が他のモデルのために自動でこれを使って検索することはありませんが、設定で検索モデルとして指定できます。</p>
+
+        <h3 id="decide">判定 API（System One）</h3>
+    <p>プラグインは自分のプロバイダ向けに TypeSafe の System One API を提供でき、そのモデルを<a href="/docs/ja/intent">ルーティンググループの分類器</a>にできます。<code>config</code> フックでプロバイダに <code>decide: true</code> を、会話ではなく質問に答えるモデルごとに <code>decides: true</code> を設定します（<code>config</code> フックでも <code>models</code> フックのリストでも構いません）。すると Agent Link は各質問を <code>POST {baseURL}/systemone</code> としてローダーの <code>fetch</code> に送ります。アカウントのサインイン情報は他のリクエストと同じく付きます。本文は <code>{"model", "questions", "state"}</code>、返答は <code>{"model", "answers": {"&lt;質問&gt;": {"choice", "score", "confidence"}}}</code> です。</p>
+    <p><code>decides</code> を付けたモデルと <code>jev-*</code> という名前のモデルは分類器として提示され、エージェントには見せません。それらへのチャットリクエストは拒否されます。プロバイダに <code>decide: true</code> がなければ <code>decides</code> は無視され、どのモデルも普通にチャットに使えます。</p>
+
+    <h3 id="apis">モデルが話す API</h3>
+    <p>モデルまたはプロバイダの <code>npm</code> で指定した AI SDK パッケージが API を決めます。それによって、あなたの <code>fetch</code> が受け取るリクエストの形が決まります。エージェントが何を送ってきても、Agent Link のゲートウェイがすでに変換済みです：</p>
+    <div class="table-wrap"><table>
+      <tr><th>npm</th><th>API</th><th>ベース以降のパス</th></tr>
+      <tr><td><code>@ai-sdk/anthropic</code>, <code>@ai-sdk/google-vertex/anthropic</code></td><td>Anthropic Messages</td><td><code>/messages</code></td></tr>
+      <tr><td><code>@ai-sdk/openai</code>, <code>@ai-sdk/azure</code></td><td>OpenAI Responses</td><td><code>/responses</code></td></tr>
+      <tr><td><code>@ai-sdk/google</code></td><td>Gemini</td><td><code>/models/&lt;id&gt;:streamGenerateContent?alt=sse</code></td></tr>
+      <tr><td><code>@ai-sdk/github-copilot</code></td><td>GPT-5 以降（gpt-5-mini を除く）は Responses、それ以外は chat completions</td><td><code>/responses</code> または <code>/chat/completions</code></td></tr>
+      <tr><td>それ以外すべて（<code>@ai-sdk/openai-compatible</code>, <code>xai</code>, <code>groq</code>, <code>deepseek</code>, …）</td><td>Chat completions</td><td><code>/chat/completions</code></td></tr>
+    </table></div>
+    <p>ベースは次の順で決まります：</p>
+    <ol>
+      <li>loader の <code>baseURL</code>；</li>
+      <li>モデルの <code>provider.api</code>；</li>
+      <li>プロバイダの <code>api</code>；</li>
+      <li>AI SDK パッケージ自身のデフォルト（<code>https://api.anthropic.com/v1</code>、<code>https://api.openai.com/v1</code>、…）。</li>
+    </ol>
+    <p>本文の <code>model</code> はモデルの API id です。<code>id</code> があればそれ、なければキーです。</p>
+
+    <h3>アカウントごとのモデル</h3>
+    <p>モデルがアカウントによって変わる場合は、<code>provider</code> フックを追加します：</p>
+    <div class="code">
+      <span class="lang">provider フック</span>
+      <pre>provider: {
+  id: <span class="s">"acme"</span>,
+  async models(provider, { auth }) {
+    <span class="c">// provider.models: what models.dev and the config hook give, keyed by id</span>
+    <span class="c">// auth: this account's sign-in, as plugin-auth.json keeps it</span>
+    return { <span class="s">"acme-large"</span>: { ...provider.models[<span class="s">"acme-large"</span>], name: <span class="s">"Acme Large"</span> } }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li>Agent Link はこれをアカウントごとに 1 回、そのアカウントのスコープで、そのプロキシを通して呼び出します。各アカウントは自分に列挙されたモデルだけを扱うので、小さいプランのアカウントに、持っていないモデルが送られることはありません。</li>
+      <li>モデルは OpenCode の <code>Model</code> です：
+        <ul>
+          <li><code>id</code>、<code>name</code>；</li>
+          <li><code>api: {id, url, npm}</code>；</li>
+          <li><code>limit: {context, input?, output}</code>；</li>
+          <li><code>capabilities: {reasoning, toolcall, attachment, input: {text, image, …}}</code>；</li>
+          <li><code>cost: {input, output, cache: {read, write}}</code>；</li>
+          <li><code>variants</code>、<code>release_date</code>、<code>status</code>。</li>
+        </ul>
+        <code>provider.models</code> のモデルを展開していくつかのフィールドを変えるのが簡単です。<code>status</code> が <code>"deprecated"</code> のモデルは表示されません。</li>
+      <li>Agent Link は、OpenCode が無視する次のフィールドもモデルから読み取ります：
+        <ul>
+          <li><code>free: true</code>：プランの枠を消費せずに使えます。</li>
+          <li><code>rate</code>：1 リクエストが消費するクレジットの倍率。数値（<code>0.5</code>）でも、ベンダーの表記（<code>"x0.5"</code>）でも構いません。</li>
+          <li><code>rateWas</code>：現在実施中の割引の前の倍率。</li>
+        </ul>
+        モデル選択画面に表示されます。</li>
+      <li><code>serviceTiers</code>（<code>models</code> フックが返すモデルに）：ベンダーがそのモデルを提供するサービス階層を id で、たとえば <code>["priority", "ultrafast"]</code>。Codex のモデル一覧に載り（<code>priority</code> は Fast）、そのどれかを指定した Chat または Responses のリクエストは <code>service_tier</code> 付きで <code>fetch</code> に届きます。Agent Link がプロトコルを変換するリクエストでは、モデルが挙げていない階層は送られません。</li>
+      <li>モデルが推論する場合、<code>variants</code> のキーがそのモデルの推論レベルになります。</li>
+    </ul>
+    <h3>ベンダーに接続できないとき</h3>
+    <p>フックが次のいずれかをした場合、Agent Link は一覧を取得できなかった組み込みサブスクリプションと同じく、すでに持っている一覧を保持します：</p>
+    <ul>
+      <li>fetch が失敗した後、<code>provider.models</code> を変更せずに返す；</li>
+      <li>例外を投げる；</li>
+      <li><code>list[Symbol.for("Agent Link.fellBack")] = true</code> を付けた独自の一覧を返す。</li>
+    </ul>
+    <p>失敗の原因がサインインなら、<code>signIn: "expired"</code> を付けたエラーを投げてください。するとアカウントは再サインインが必要と記録されます（<a href="#signin-state">サインイン状態</a>を参照）。</p>
+
+    <h2 id="signin"><a class="anchor" href="#signin">サインイン</a></h2>
+    <p><code>auth</code> フックは <code>{ provider, methods, loader, usage?, refresh?, refreshLead?, icon?, maxConcurrency? }</code> です。各メソッドはユーザーが選べるサインイン方法です。アプリではメソッドがボタンになり、ターミナルでは <code>Agent Link plugin login &lt;id&gt; [&lt;method&gt;]</code> がどれを使うか尋ねます。</p>
+    <h3>API キー</h3>
+    <div class="code">
+      <span class="lang">api メソッド</span>
+      <pre>{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }</pre>
+    </div>
+    <ul>
+      <li><code>label</code> はキー入力欄の見出しです。「API key」とだけ書いたラベルは「Acme API key」と表示されます。</li>
+      <li><code>placeholder</code> は Agent Link 独自のフィールドで、入力欄の中のヒントです。</li>
+      <li><code>authorize</code> 関数がなければ、キーはそのまま <code>{type: "api", key, metadata?}</code> として保存されます。<code>prompts</code> への回答は <code>metadata</code> に入ります。</li>
+      <li><code>authorize(inputs)</code> があれば、プラグイン自身がキーを検証または交換します。戻り値は <code>{type: "success", key, metadata?}</code> または <code>{type: "failed", error?}</code> です。</li>
+    </ul>
+    <h3>ブラウザやデバイスでのサインイン</h3>
+    <div class="code">
+      <span class="lang">oauth メソッド</span>
+      <pre>{
+  type: <span class="s">"oauth"</span>,
+  label: <span class="s">"Sign in with Acme"</span>,
+  async authorize(inputs) {
+    const d = await startDeviceCode()
+    return {
+      url: d.verification_uri,                    <span class="c">// Agent Link opens it</span>
+      instructions: `Enter the code ${d.user_code}`, <span class="c">// and shows this</span>
+      method: <span class="s">"auto"</span>,                              <span class="c">// "auto": callback() resolves on its own</span>
+      async callback() {                           <span class="c">// "code": callback(code), the code the user pastes</span>
+        const t = await pollForToken(d)
+        if (!t) return { type: <span class="s">"failed"</span>, error: <span class="s">"The code expired"</span> }
+        return { type: <span class="s">"success"</span>, refresh: t.refresh_token, access: t.access_token,
+                 expires: Date.now() + t.expires_in * 1000, accountId: t.email }
+      },
+    }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li><code>refresh</code> を含む成功は <code>{type: "oauth", refresh, access, expires, …}</code> として保存され、返したほかのフィールド（<code>accountId</code>、<code>enterpriseUrl</code>、独自のもの）もすべて一緒に保持されます。</li>
+      <li><code>key</code> を含む成功は API キーとして保存されます。</li>
+      <li>結果に <code>provider: "other-id"</code> を付けると、そのプラグインがサインインする別のプロバイダにサインイン情報を保存します。</li>
+      <li>失敗時の <code>error</code> は Agent Link 独自のフィールドで、ユーザーに理由（最大 500 文字）が表示されます。なければ、サインインに失敗したことだけが表示されます。</li>
+      <li><code>inputs</code> は <code>prompts</code> を持つメソッドにだけ渡されます。prompts のないメソッドには、OpenCode の TUI が呼ぶときと同じく <code>undefined</code> が渡ります。空のオブジェクトは OpenCode の CLI の呼び方で、その場合ターミナルで質問するプラグインもあります。</li>
+    </ul>
+    <h3>サインイン前の質問</h3>
+    <p>メソッドの <code>prompts</code> は <code>authorize</code> の前に順番に尋ねられます。それぞれ条件を満たすときだけです：</p>
+    <div class="code">
+      <span class="lang">prompts</span>
+      <pre>prompts: [
+  { type: <span class="s">"select"</span>, key: <span class="s">"region"</span>, message: <span class="s">"Region"</span>,
+    options: [{ label: <span class="s">"Global"</span>, value: <span class="s">"global"</span> }, { label: <span class="s">"China"</span>, value: <span class="s">"cn"</span>, hint: <span class="s">"acme.cn"</span> }] },
+  { type: <span class="s">"text"</span>, key: <span class="s">"team"</span>, message: <span class="s">"Team id"</span>, placeholder: <span class="s">"t-…"</span>,
+    when: { key: <span class="s">"region"</span>, op: <span class="s">"eq"</span>, value: <span class="s">"global"</span> },        <span class="c">// or condition: (inputs) =&gt; boolean</span>
+    validate: (v) =&gt; (/^t-/.test(v) ? undefined : <span class="s">"Starts with t-"</span>) },
+]</pre>
+    </div>
+    <p><code>type: "password"</code> の質問は <code>text</code> と同じですが、入力が表示されません。アプリではマスクされた入力欄、ターミナルの <code>Agent Link plugin login</code> ではエコーなしです。トークンや個人アクセストークン（PAT）に使います。Agent Link 独自の型で、OpenCode にあるのは <code>text</code> と <code>select</code> だけです。</p>
+    <h3>アカウント</h3>
+    <ul>
+      <li><b>保存場所。</b>ひとつのプロバイダに複数回サインインできます。最初のアカウントは OpenCode と同じくプロバイダの id で保存されます。それ以外は <code>id#xxxxxx</code> で保存されます。</li>
+      <li><b>ユーザーが見分ける方法。</b>Agent Link はアカウントを <code>accountId</code>、なければ <code>metadata.email</code>、なければ <code>email</code> で名付けます。どれかを保存してください。メールアドレスがあればそれが最適です。</li>
+      <li><b>再サインイン。</b>新しいサインインは、既存のアカウントと <code>accountId</code> が同じならそれを置き換えます。両方に <code>uid</code>（名前が重複しうるベンダーでの、ベンダー自身の id）もある場合は、それも一致する必要があります。id がなければ、同じシークレットで一致を判断します。それ以外は新しいアカウントになります。</li>
+      <li><b>スコープ。</b>Agent Link があるアカウントのために行う呼び出しは、すべてそのアカウントのスコープで実行されます：
+        <ul>
+          <li><code>getAuth()</code> はそのアカウントを返します。</li>
+          <li><code>client.auth.set({ path: { id: "acme" }, body })</code> はそのアカウントに保存します。</li>
+        </ul>
+        ですから、アカウントごとの状態は渡された auth に紐づけて保持し、プロバイダをキーにしたモジュール変数には置かないでください。</li>
+      <li><b>リフレッシュ。</b><code>auth.refresh</code> を提供すれば、Agent Link がトークンを更新します（<a href="#renew">サインインの更新</a>を参照）。そうでなければ、トークンが切れたときに <code>fetch</code> の中でリフレッシュし、<code>client.auth.set</code> でオブジェクト全体を保存してください。渡したものが保存内容を置き換え、マージはされません。</li>
+    </ul>
+    <h3 id="renew">サインインの更新</h3>
+    <p>Agent Link 0.1.684 以降、プラグインは Agent Link 独自のフック <code>auth.refresh</code> でトークンの更新を Agent Link に任せられます（OpenCode はこれを無視します）：</p>
+    <div class="code">
+      <span class="lang">auth フック</span>
+      <pre>auth: {
+  provider: <span class="s">"acme"</span>,
+  methods: [ … ],
+  <span class="c">// optional: how long before expires to renew (ms), 5 minutes by default</span>
+  refreshLead: 5 * 60 * 1000,
+  async refresh(auth, provider) {  <span class="c">// auth is the account's saved sign-in</span>
+    const t = await exchange(auth.refresh)
+    if (t.error === <span class="s">"invalid_grant"</span>)
+      throw Object.assign(new Error(<span class="s">"Acme refused the sign-in"</span>), { signIn: <span class="s">"expired"</span> })
+    return { access: t.access_token, refresh: t.refresh_token ?? auth.refresh,
+             expires: Date.now() + t.expires_in * 1000 }
+  },
+  loader: async (getAuth) =&gt; ({ … }),  <span class="c">// getAuth() already gives the renewed token</span>
+}</pre>
+    </div>
+    <ul>
+      <li><b>実行されるタイミング。</b><code>expires</code> までの残りが <code>refreshLead</code> 未満の OAuth アカウントについて、そのアカウントの loader、<code>provider.models</code>、<code>auth.usage</code>、またはリクエストの前に実行されます。<code>expires</code> が 0 またはないアカウントは更新されません。</li>
+      <li><b>一度にひとつ。</b>トークンの更新が必要だと気づいたリクエストは、ひとつの更新を待ちます。リフレッシュトークンを一度しか使えないベンダーに、同じトークンが二度送られることはありません。待つのは最大 15 秒で、それより長くかかった更新も終わった時点で保存されます。</li>
+      <li><b>保存されるもの。</b>返したフィールドはアカウントの古いフィールドの上に保持され（<code>client.auth.set</code> と違ってマージされます）、アカウントの記録は消去されます。更新するものがなければ何も返さないでください。</li>
+      <li><b>失敗したとき。</b>アカウントはそのままで、リクエストは古いトークンで送られ、結果はベンダーの応答次第になります。<code>signIn: "expired"</code> を付けたエラーはアカウントに記録を付け（<a href="#signin-state">サインイン状態</a>を参照）、再サインインされるまで Agent Link は再試行しません。それ以外のエラーは 30 秒後に再試行されます。</li>
+      <li><b>OpenCode と古い Agent Link。</b>どちらもこのフックを無視します。プラグインがそちらでも動くなら、<code>fetch</code> 内のチェックも残してください。Agent Link 上ではトークンが新しいので何もしません。</li>
+    </ul>
+
+    <h2 id="requests"><a class="anchor" href="#requests">リクエスト</a></h2>
+    <p><code>loader(getAuth, provider)</code> はアカウントごとに 1 回実行され、サインインが変わると再実行されます。OpenCode が AI SDK に渡すものを返します：</p>
+    <div class="table-wrap"><table>
+      <tr><th>フィールド</th><th>Agent Link での扱い</th></tr>
+      <tr><td><code>baseURL</code></td><td>リクエストの送り先。モデルやプロバイダの <code>api</code> より優先されます。</td></tr>
+      <tr><td><code>apiKey</code></td><td>AI SDK パッケージと同じ方法で送られます：Anthropic なら <code>x-api-key</code>、Google なら <code>x-goog-api-key</code>、それ以外は <code>Authorization: Bearer</code>。API キーでのサインインでは、保存されたキーがデフォルトです。</td></tr>
+      <tr><td><code>headers</code></td><td>すべてのリクエストに追加されます。</td></tr>
+      <tr><td><code>fetch</code></td><td>リクエストを送ります。なければ Agent Link のホストは標準の <code>fetch</code> を使います。</td></tr>
+    </table></div>
+    <p>あなたの <code>fetch(input, init)</code> が受け取るリクエスト：</p>
+    <ul>
+      <li><code>input</code> は完全な URL です：ベースに、モデルの API のパスを足したものです。</li>
+      <li><code>init.method</code> は通常 <code>POST</code> です。</li>
+      <li><code>init.headers</code> は次の順に設定され、後のものが前のものを上書きします：
+        <ol>
+          <li><code>apiKey</code> によるキーのヘッダー；</li>
+          <li>loader の <code>headers</code>；</li>
+          <li>ゲートウェイのリクエストヘッダー；</li>
+          <li><code>chat.headers</code> フックが追加するもの。</li>
+        </ol></li>
+      <li><code>init.body</code> はその API の形式の JSON 文字列です（UTF-8 テキストでなければバイト列）。中の <code>model</code> は API id で、<code>stream</code> はエージェントが要求したとおりです。</li>
+      <li><code>init.signal</code> はエージェントがリクエストを諦めると中断されます。</li>
+    </ul>
+    <p><code>Response</code> を返してください。そのステータス、ヘッダー、本文はそのまま、チャンクごとにストリームで返されます。ストリーミングの本文を書き換える場合は、ヘッダーから <code>content-length</code> と <code>content-encoding</code> を取り除いてください。</p>
+    <h3>失敗とフェイルオーバー</h3>
+    <ul>
+      <li>2xx 以外の応答はベンダーの応答です。ゲートウェイはほかのプロバイダと同じように扱います：レート制限やサーバーエラーならリクエストを次のアカウントやモデルに移し、401 ならアカウントに記録を付けます（<a href="#signin-state">サインイン状態</a>を参照）。</li>
+      <li>例外を投げるとリクエストは失敗し、フェイルオーバーが次に進みます。</li>
+      <li>可能なら API 自身のエラー形式で応答してください。エージェントがベンダーのメッセージを表示できます。</li>
+    </ul>
+    <h3>chat.headers</h3>
+    <p>OpenCode の <code>chat.headers</code> フックはリクエストごとに実行されます。その <code>input.sessionID</code> は Agent Link の会話 id で、会話のターンをまたいで同じままです。ベンダーのセッションヘッダーやキャッシュヘッダーに使ってください：</p>
+    <div class="code">
+      <span class="lang">chat.headers</span>
+      <pre><span class="s">"chat.headers"</span>: async (input, output) =&gt; {
+  if (input.model.providerID === <span class="s">"acme"</span>) output.headers[<span class="s">"x-acme-session"</span>] = input.sessionID
+}</pre>
+    </div>
+
+    <h2 id="signin-state"><a class="anchor" href="#signin-state">サインイン状態</a></h2>
+    <p>Agent Link は、ベンダーにサインインを拒否されたアカウントに記録を付けます。その記録をユーザーに表示し、再び使えるようになるまでそのアカウントには送信しません。デフォルトでは 401 で記録が付き、成功すると消えます。プラグインは <code>X-Agent Link-Sign-In</code> レスポンスヘッダーで、応答の意味をより正確に伝えられます。このヘッダーは応答が先に渡される前に Agent Link が取り除きます：</p>
+    <div class="table-wrap"><table>
+      <tr><th>値</th><th>意味</th></tr>
+      <tr><td><code>expired</code></td><td>ステータスにかかわらず、サインインが拒否された（そのために 403 や 502 を返すベンダー）。</td></tr>
+      <tr><td><code>kept</code></td><td>アカウントをそのままにする（別の理由による 401）。</td></tr>
+      <tr><td><code>renewed</code></td><td>サインインが更新された：リクエストがその後どうなっても記録を消す。</td></tr>
+    </table></div>
+    <p><code>fetch</code> や <code>provider.models</code> から <code>signIn: "expired"</code> を付けたエラーを投げても同じ効果があります：</p>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <pre>throw Object.assign(new Error(<span class="s">"Acme refused the sign-in; sign in again"</span>), { signIn: <span class="s">"expired"</span> })</pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">使用量</a></h2>
+    <p><code>auth.usage(getAuth, provider)</code> は Agent Link 独自のフックです。アカウントの枠をどれだけ使ったかを返します。アカウントのスコープで実行されるので、ここでリフレッシュしたトークンはそのアカウントに保存されます。Agent Link はその結果を <span class="ui">プロバイダ</span> のアカウント、<code>agent-link quota</code>、ゲートウェイの <code>GET /v1/Agent Link/quotas</code> に表示します。フィールドはすべて省略可能です：</p>
+    <div class="code">
+      <span class="lang">usage の戻り値</span>
+      <pre>{
+  plan: <span class="s">"Pro"</span>,
+  user: <span class="s">"ada@example.com"</span>,     <span class="c">// the account as the vendor names it</span>
+  until: <span class="s">"2026-11-01T00:00:00Z"</span>, <span class="c">// the plan's end</span>
+  renew: <span class="s">"auto"</span>,                <span class="c">// or "off"</span>
+  balance: <span class="s">"$12.40"</span>,
+  error: <span class="s">""</span>,                    <span class="c">// shown in place of the windows</span>
+  windows: [{
+    name: <span class="s">"5 hours"</span>,
+    used: 37,                   <span class="c">// percent; past 100 when overspent</span>
+    resetsAt: <span class="s">"2026-10-03T18:00:00Z"</span>, <span class="c">// or resetSecs: 3600</span>
+    span: 18000,                <span class="c">// seconds the window runs</span>
+    display: <span class="s">"370 / 1000 credits"</span>,
+    amount: 370, limit: 1000, unit: <span class="s">"credits"</span>, <span class="c">// its own count, when it counts amounts</span>
+    model: <span class="s">"opus"</span>,              <span class="c">// counts only models whose ids hold this word</span>
+    models: [], notModels: [],  <span class="c">// or exactly these ids, or all but these</span>
+    aside: false,               <span class="c">// true: using it up doesn't stop the account</span>
+    runsOutAt: <span class="s">"2026-10-05T00:00:00Z"</span>, runsOut: 120, <span class="c">// when the soonest credits left are lost, and how many</span>
+  }],
+  resets: { count: 2, until: <span class="s">"…"</span>, byWindow: false, fiveHour: 1, weekly: 1 }, <span class="c">// resets the account may spend</span>
+  signIn: <span class="s">"kept"</span>,               <span class="c">// as X-Agent Link-Sign-In</span>
+}</pre>
+    </div>
+    <p>時刻は ISO 文字列か、秒またはミリ秒のエポック数値です。<code>signIn</code> がない場合、再サインインを求める <code>error</code> はアカウントに記録を付け、問題なく読み取れれば記録は消えます。</p>
+
+    <h2 id="input"><a class="anchor" href="#input">プラグインに渡されるもの</a></h2>
+    <p>Agent Link は OpenCode の <code>PluginInput</code> の内容を、OpenCode サーバーなしで意味をなす範囲でプラグインに渡します：</p>
+    <div class="table-wrap"><table>
+      <tr><th>フィールド</th><th>Agent Link では</th></tr>
+      <tr><td><code>client.auth.set</code> / <code>.remove</code></td><td>スコープ内のアカウントのサインインを保存または削除します。</td></tr>
+      <tr><td><code>client.app.log</code></td><td>Agent Link のログに <code>plugin [level]: [service] message</code> として書き込みます。</td></tr>
+      <tr><td><code>client.tui.showToast</code></td><td>Agent Link のログに書き込まれます。</td></tr>
+      <tr><td><code>client.config.get</code></td><td>すべてのプラグインの <code>config</code> フックを経た後の設定。</td></tr>
+      <tr><td>そのほかの <code>client.*</code></td><td><code>{ data: undefined }</code> を返します。</td></tr>
+      <tr><td><code>directory</code>, <code>worktree</code></td><td>Agent Link の設定フォルダ。ファイルの保存場所に使えます。</td></tr>
+      <tr><td><code>project</code></td><td><code>{ id: "Agent Link", worktree }</code>。</td></tr>
+      <tr><td><code>$</code></td><td>Bun のシェル。</td></tr>
+      <tr><td><code>serverUrl</code></td><td>プレースホルダーです。背後に OpenCode サーバーはありません。</td></tr>
+    </table></div>
+    <p>Agent Link が呼び出すフックは <code>config</code>、<code>auth</code>（そのメソッド、<code>loader</code>、<code>usage</code>）、<code>provider.models</code>、<code>chat.headers</code> です。プラグインのほかのフック（<code>tool</code>、<code>event</code>、<code>chat.params</code>、…）は呼び出されません。ツールはエージェント自身が実行します。</p>
+
+    <h2 id="ids"><a class="anchor" href="#ids">プロバイダ id</a></h2>
+    <ul>
+      <li>エージェントはプラグインのモデルを <code>&lt;id&gt;/&lt;model&gt;</code> と呼びます。id はプラグインの <code>auth.provider</code> です。</li>
+      <li>その id が Agent Link ですでに使われている場合（組み込みサブスクリプション、プリセット（<code>google</code>、<code>openai</code>、<code>anthropic</code>、…）、<code>Agent Link</code> 自身）、プラグインのプロバイダは <code>&lt;id&gt;-plugin</code> という名前になります。自分だけの id を選んでください。</li>
+      <li>例外は、Agent Link の非推奨の組み込みサブスクリプション向けのコミュニティプラグインです。これらは組み込みの id（<code>cursor</code>、<code>zed</code>、…）を使い、ユーザーがプラグインに移行するとそれを引き継ぐので、エージェントは変更なしで動き続けます。</li>
+      <li>インストール済みの 2 つのプラグインが同じ id にサインインする場合（公開プラグインと自分のコピーなど）、提供するのは 1 つだけです。選んだ方、選んでいなければ後から追加した方です。どちらも <span class="ui">プラグイン → インストール済み</span> に残り、各行にどちらが提供しているかが表示されます。もう一方の行の <span class="ui">… に使う</span>、または <code>Agent Link plugin use &lt;名前&gt; &lt;id&gt;</code> で切り替えられます。</li>
+    </ul>
+
+    <h2 id="test"><a class="anchor" href="#test">テスト</a></h2>
+    <p>Agent Link はサンドボックスで動かしましょう。普段の Agent Link、そのエージェントやサインインに触れずに済みます：</p>
+    <div class="code">
+      <span class="lang">ターミナル</span>
+      <button class="copy" data-copy="t-cli">コピー</button>
+      <pre id="t-cli">sb=$(mktemp -d)
+m() { env HOME=$sb XDG_CONFIG_HOME=$sb/.config XDG_CACHE_HOME=$sb/.cache AGENT_LINK_ADDR=127.0.0.1:3499 agent-link <span class="s">"$@"</span>; }
+m plugin add ./opencode-acme-auth &lt;/dev/null
+m plugin --json                     <span class="c"># what the plugin lists: methods, accounts, models, load errors</span>
+m plugin login acme                 <span class="c"># each method, each prompt</span>
+m provider test acme                <span class="c"># one tiny request per API</span>
+m provider test acme acme-coder     <span class="c"># or to the models named</span>
+m quota                             <span class="c"># the usage hook</span>
+m plugin logout acme</pre>
+    </div>
+    <ul>
+      <li>読み込みに失敗したプラグインは、<code>Agent Link plugin</code> に理由が表示されます。</li>
+      <li>フックのエラーとプラグインが出力したものはすべて、<code>plugin: …</code> の行として出力に含まれます。</li>
+      <li>ユニットテストには、<code>_internal</code> に置いた関数に対して <code>bun test</code> を実行してください。</li>
+      <li><a href="https://github.com/Agent Link-community/plugins">コミュニティリポジトリ</a>にはいくつかスクリプトがあります：
+        <ul>
+          <li><code>bun scripts/check.mjs</code> は各パッケージを Agent Link と同じように読み込み、フックをチェックします。</li>
+          <li><code>scripts/try.sh &lt;name&gt;</code> は上のようなサンドボックスで実行します。</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="publish"><a class="anchor" href="#publish">公開と掲載</a></h2>
+    <ul>
+      <li><b>npm。</b>パッケージを通常どおり公開します。ユーザーは名前（<code>Agent Link plugin add opencode-acme-auth</code>）、バージョン（<code>…@0.2.0</code>）、git、フォルダから追加できます。</li>
+      <li><b>検索。</b><span class="ui">プラグイン</span> の検索は npm に <code>&lt;query&gt; opencode</code> を問い合わせます。名前かキーワードに <code>opencode</code> と、<code>auth</code>、<code>plugin</code>、<code>provider</code> のいずれかを含むパッケージが表示されます。<code>["opencode", "opencode-plugin", "&lt;vendor&gt;"]</code> のようなキーワードで条件を満たせます。あわせて <code>keywords:pi-package &lt;query&gt;</code> も問い合わせ、名前かキーワードに <code>auth</code> か <code>provider</code> を含む pi パッケージを表示します。</li>
+      <li><b>README。</b>Agent Link のプラグインページには npm の README が表示されます。何にサインインするのか、どうやって、サインイン情報をどこに保存するのか、どのモデルがあるのかを書いてください。</li>
+      <li><b>一覧。</b><span class="ui">プラグイン</span> は、コミュニティリポジトリの <a href="https://github.com/Agent Link-community/plugins/blob/main/registry.json"><code>registry.json</code></a> にあるプラグインをおすすめします。Agent Link は最大で 6 時間ごとにこれを取得し、取得できないときのためのコピーを内蔵しています。掲載してほしい場合は、項目を追加するプルリクエストを送ってください：
+        <div class="code">
+          <span class="lang">registry.json</span>
+          <pre>{ <span class="s">"package"</span>: <span class="s">"opencode-acme-auth"</span>, <span class="s">"name"</span>: <span class="s">"Acme"</span>, <span class="s">"icon"</span>: <span class="s">"https://acme.example/icon.svg"</span>,
+  <span class="s">"providers"</span>: [<span class="s">"acme"</span>],
+  <span class="s">"summary"</span>: { <span class="s">"en"</span>: <span class="s">"Your Acme Coding Plan."</span>, <span class="s">"zh"</span>: <span class="s">"使用你的 Acme Coding Plan。"</span> } }</pre>
+        </div>
+        ミドルウェアのエントリには <code>"kind": "middleware"</code> を書き、<code>providers</code> は書きません。<span class="ui">ゲートウェイミドルウェア</span> の下に表示されます。ほかの種類も同じで、<code>"kind": "tools"</code> は <span class="ui">エージェント向けツール</span>、<code>"kind": "page"</code> は <span class="ui">ページ</span>、<code>"kind": "agent"</code> は <span class="ui">エージェント</span> の下に表示されます。<code>AGENT_LINK_PLUGIN_MARKET=&lt;url&gt;</code> は Agent Link に別の一覧を参照させます（自分の一覧の確認に便利です）。<code>off</code> にすると内蔵のコピーだけを使います。</li>
+      <li><b>GitHub のトピック。</b>GitHub で <code>Agent Link-plugin</code> トピックを付けたリポジトリは、<span class="ui">プラグイン → 発見 → 非公式 · GitHub</span> に、スターの多い順に、誰もレビューしていないものとして表示されます。<code>package.json</code> はリポジトリのルートに置いてください。<code>repository</code> がそのリポジトリを指す形で npm に公開されていれば npm からインストールされ、そうでなければリポジトリの現在のコードがインストールされます。そのため読み込むファイルはコミットしておく必要があり、<code>dist</code> を公開時にしかビルドしないリポジトリは表示されません。フォーク、アーカイブ済みのリポジトリ、Agent Link-community 自身のものも表示されません。Agent Link が GitHub に問い合わせるのは最大で 10 分に 1 回なので、トピックを付けたリポジトリは数分で表示されます。カードには <code>package.json</code> の <code>"Agent Link": { "icon": "…" }</code> で指定したアイコンが表示され、ない場合はパズルのアイコンになります。</li>
+      <li><b>コミュニティのパッケージ。</b><a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a> に貢献するには：
+        <ul>
+          <li><code>packages/&lt;name&gt;</code> に置き、名前はプロバイダなら <code>@Agent Link-community/opencode-&lt;name&gt;-auth</code>、ミドルウェアやルーティング戦略なら <code>@Agent Link-community/middleware-&lt;name&gt;</code>、ツールなら <code>@Agent Link-community/tools-&lt;name&gt;</code>、ページなら <code>@Agent Link-community/page-&lt;name&gt;</code>、エージェントなら <code>@Agent Link-community/agent-&lt;name&gt;</code> とします。本当に必要でない限り、ランタイムの依存は持たせないでください。</li>
+          <li>バージョンを上げて <code>main</code> にプッシュすると公開されます。</li>
+          <li>これらのパッケージは、どの Agent Link でも自動で更新されます。</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="gateway-request"><a class="anchor" href="#gateway-request">非同期ゲートウェイリクエストフック</a></h2>
+    <p>プラグインはエージェントのリクエストをルーティングする前に I/O を待てます。package.json に <code>"Agent Link": { "hooks": "./hooks.js" }</code> を宣言するか、<code>*.hooks.js</code> / <code>.mjs</code> / <code>.ts</code> / <code>.mts</code> を追加し（Bun は TypeScript をビルドなしで実行します）、名前付きの非同期 <code>onRequest(body, ctx)</code> をエクスポートします。専用パッケージに OpenCode main/exports は不要です。</p>
+    <p>任意の非同期 <code>onResponse(reply, ctx)</code> は出力完了後にベストエフォートの通知を受け取ります。応答やライブストリームは変更せず、ツール宣言と実行ループはクライアントが担当します。</p>
+<p>Bun でリクエストごとに一度、JS ゲートウェイミドルウェアの前に実行し、Codex 自身の ChatGPT サインインを含むすべてのプロバイダーに適用します。body はエージェント API のオブジェクトです。ctx は <code>protocol</code>、<code>model</code>、<code>stream</code>、<code>path</code>、<code>agent</code>、<code>session</code>、<code>cwd</code>、<code>query</code>、<code>options</code>、<code>signal</code> を持ちます。query は最後のユーザーテキストで、ツール結果と画像を除きます。ない識別情報は空で、Authorization は渡しません。</p>
+<p>オブジェクトを返すと置き換え、undefined は元を保ちます。モデル、ストリーミング、クライアントのツールやツール選択を変えたフックは取り消され、失敗として扱われ、そのリクエストでは <code>onResponse</code> が呼ばれません。コピーを渡すので失敗や undefined の直接変更は破棄します。成功した変更は有効な順に渡ります。各フックは既定で 1 秒です。<code>gatewayTimeoutMs</code> は 100〜10000 ミリ秒の整数です。全体は合計予算を 2〜10 秒に制限し、起動と RPC を含めて 11 秒です。設定 → プラグインでオプションと呼び出し回数、時間、失敗、最新の結果を確認できます。<code>ctx.report(code, bytes)</code> は ready/empty/unbound/unauthorized/unavailable/invalid/skipped とバイト数のみを受け付けます。私的なテキストは保存せず、再読み込みで統計をリセットします。fetch に <code>ctx.signal</code> を使ってください。例外、不正な戻り値、タイムアウト、起動中のホストは元を保ちます。Bun はホスト権限で動くので信頼できるコードを使ってください。</p>
+<p><code>Agent Link plugin add ./my-plugin</code> で追加し、<code>Agent Link plugin options my-plugin '&lbrace;"serverUrl":"http://127.0.0.1:8000"&rbrace;'</code> で設定します。on/off と設定変更は再読み込みします。ソースだけの変更は設定の再読み込みが必要です。内部のタイトルや分類リクエストは対象外です。</p>
+
+    <h2 id="middleware"><a class="anchor" href="#middleware">ゲートウェイミドルウェア</a></h2>
+    <p>プラグインは<em>ゲートウェイミドルウェア</em>にもなれます。エージェントが Agent Link のゲートウェイに送るすべてのリクエストに対して、ルーティングの前に実行され、戻ってくる応答に対しても実行されるコードです。モデルに別名を付ける、システムプロンプトに追記する、リクエストを断る、モデルの出力を書き換えたり隠したりする、通ったものを独自に数える、といったことができます。プラグインのものかどうかに関係なく、すべてのプロバイダで動きます。</p>
+    <div class="code">
+      <span class="lang">alias.middleware.js</span>
+      <button class="copy" data-copy="mw-ex">コピー</button>
+      <pre id="mw-ex"><span class="c">// alias.middleware.js</span>
+<span class="k">export const</span> events = [<span class="s">"message_start"</span>]
+
+<span class="k">export function</span> onRequest(body, ctx) {
+  ctx.state.asked = body.model
+  <span class="k">if</span> (body.model === <span class="s">"fast"</span>) body.model = <span class="s">"deepseek/deepseek-chat"</span>
+  <span class="k">if</span> ((ctx.options.blocked ?? []).includes(body.model)) <span class="k">return</span> ctx.reject(403, <span class="s">"not this model"</span>)
+  <span class="k">return</span> body
+}
+
+<span class="k">export function</span> onEvent(ev, ctx) {
+  ev.message.model = ctx.state.asked  <span class="c">// the agent sees the name it asked for</span>
+  <span class="k">return</span> ev
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-cli">コピー</button>
+      <pre id="mw-cli">Agent Link plugin add ./alias.middleware.js   <span class="c"># または package.json に "Agent Link": { "middleware": "./mw.js" } を書いたパッケージ</span></pre>
+    </div>
+    <h3 id="middleware-community"><a class="anchor" href="#middleware-community">すぐ使えるミドルウェア</a></h3>
+    <p>コミュニティリポジトリには、そのまま追加できるミドルウェアがあります。多くは <a href="https://github.com/QuantumNous/new-api">New API</a> がチャネルに対して行うことで、同じ JSON を受け取ります。<span class="ui">プラグイン → 発見 → ゲートウェイミドルウェア</span> にあり、そこのカードにはプロバイダかミドルウェアかが表示されます。</p>
+    <div class="table-wrap"><table>
+      <tr><th>パッケージ</th><th>すること</th></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/param-override"><code>param-override</code></a></td><td>New API の <code>param_override</code>：リクエストのフィールドを設定・削除・移動・コピー・書き換えします。特定のモデルや条件に絞ることも、リクエストを断ることもできます。New API からコピーした <code>param_override</code> はそのまま動きます。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/model-map"><code>model-map</code></a></td><td>New API の <code>model_mapping</code>：モデルを別の名前で送ります。名前か <code>/パターン/</code> で指定します。応答にはエージェントが指定したモデル名が入ります。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/system-prompt"><code>system-prompt</code></a></td><td>すべてのリクエスト（または特定のエージェントやモデルのもの）に自分のシステムプロンプトを、各 API の決まった場所に加えます。リクエストに独自のものがあれば、<code>override</code> を有効にしない限りそのままにします。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/word-guard"><code>word-guard</code></a></td><td>New API の禁止語フィルタ：ユーザーが送る内容にある語やパターンを断るか伏せ字にします。応答も伏せ字にできます。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/think-tags"><code>think-tags</code></a></td><td>応答本文の先頭にある <code>&lt;think&gt;…&lt;/think&gt;</code> を取り除くか、Chat の応答の <code>reasoning_content</code> を本文に入れます（New API の <code>thinking_to_content</code>）。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/antigravity-cloak"><code>antigravity-cloak</code></a></td><td>Antigravity が Claude Code と Agent SDK のシステムプロンプトを断る理由になる語を、Antigravity に送る分だけで分割します。他のプロバイダには元のプロンプトのまま送ります。</td></tr>
+    </table></div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-add">コピー</button>
+      <pre id="mw-add">Agent Link plugin add @Agent Link-community/middleware-model-map
+Agent Link plugin options model-map '{"mapping": {"fast": "deepseek/deepseek-chat"}}'</pre>
+    </div>
+    <h3 id="middleware-options"><a class="anchor" href="#middleware-options">オプション</a></h3>
+    <p>ミドルウェアは設定を <code>ctx.options</code> から読みます。これは <code>plugins.json</code> のそのエントリの <code>options</code> です。<span class="ui">プラグイン → インストール済み</span> でミドルウェアの <span class="ui">オプション</span> ボタンを押すとその行で JSON として編集でき、<code>Agent Link plugin options &lt;名前&gt; '&lt;json&gt;'</code> でも設定できます（<code>off</code> で消去）。名前はパッケージ名、spec、短い名前のどれでもかまいません：<code>@Agent Link-community/middleware-model-map</code> なら <code>model-map</code> です。次のリクエストから反映されます。パッケージは <code>package.json</code> の <code>"Agent Link": { "options": { … } }</code> でオプションの例を示せます。未設定のときエディタはそれから始まりますが、保存するまでミドルウェアはオプションなしで動きます。</p>
+    <h3>動き方</h3>
+    <p>ミドルウェアは Bun では動きません。ゲートウェイ自身のプロセスの中で、Go で書かれた JavaScript エンジン <a href="https://github.com/Calcium-Ion/moejs">moejs</a> によって動きます。応答は数千のイベントとしてストリームされ、各イベントがミドルウェアの処理を待つからです。1 イベントでのフック呼び出しは約 1 マイクロ秒で済みますが、Bun との往復だと数十マイクロ秒かかります。各ミドルウェアのコンパイルは一度だけで、リクエストごとに専用のランタイムを使います。そのためリクエストは並行に処理され、同じリクエストのフック同士は <code>ctx.state</code> を共有します。</p>
+    <ul>
+      <li><b>宣言のしかた。</b><code>package.json</code> に <code>"Agent Link": { "middleware": "./mw.js" }</code> と書くか、<code>*.middleware.js</code>（または <code>.mjs</code>）という名前の単一ファイルにします。<code>main</code> も <code>exports</code> もないパッケージはミドルウェア専用で、プラグインホストは読み込みません。両方あるパッケージはプロバイダプラグインとミドルウェアを兼ねます。</li>
+      <li><b>インポート。</b>プラグイン内のファイルだけを相対パスで読み込めます。ここに <code>node_modules</code> はないので、使う依存はファイルにバンドルしてください。</li>
+      <li><b>使えるもの。</b>標準の JavaScript と <code>console.log</code>（Agent Link のログに出ます。1 分あたり最大 60 行）。タイマー、<code>fetch</code>、Node の API はありません。フックは <code>async</code> にできますが、待つ対象はありません。</li>
+      <li><b>変更の反映。</b>Agent Link はファイルと <code>plugins.json</code> を 1 秒ごとに確認し、変わっていればミドルウェアを読み込み直します。</li>
+    </ul>
+    <h3>フック</h3>
+    <p>各フックは名前付きエクスポートか、<code>export default { … }</code> のメンバーです。本文とイベントはプロバイダではなく、エージェント自身の API の形式（<code>ctx.protocol</code>）です。送り出すオブジェクトを返すか、何も返さなければ元のまま送られます。</p>
+    <div class="table-wrap"><table>
+      <tr><th>フック</th><th>渡されるもの</th><th>戻り値</th></tr>
+      <tr><td><code>onRequest(body, ctx)</code></td><td>ルーティング前のリクエスト本文。<code>model</code> を変えると別の宛先にルーティングされます。</td><td>本文、または何も返さない。<code>ctx.reject(status, message)</code> はリクエストを断り、そのエラーをエージェントの API の形式で返します（ステータスを省くと 403）。</td></tr>
+      <tr><td><code>onProvider(body, ctx)</code></td><td>あるプロバイダに送る直前のリクエスト本文。<code>ctx.provider</code> にはその <code>id</code>、<code>name</code>、<code>account</code>（サブスクリプションの種類。<code>claude</code> や <code>antigravity</code> など。API キーにはありません）と <code>model</code> があります。リクエストを試すプロバイダごとに呼ばれ、毎回 <code>onRequest</code> が残した本文を受け取るので、あるプロバイダ向けの変更は他のプロバイダに届きません。</td><td>本文、または何も返さない。この時点でルーティングは済んでいるので、拒否も行き先の変更もできません。</td></tr>
+      <tr><td><code>onEvent(event, ctx)</code></td><td>ストリーム応答の各イベントの <code>data:</code> JSON。</td><td>イベント、何も返さない、またはイベントを落とす <code>null</code>。</td></tr>
+      <tr><td><code>onResponse(body, ctx)</code></td><td>ストリームでない応答の全体。<code>ctx.status</code> がそのステータスです。</td><td>本文、または何も返さない。</td></tr>
+    </table></div>
+    <p><code>export const events = ["content_block_delta"]</code> と書くと、<code>onEvent</code> はその名前のイベントだけで呼ばれます（Anthropic Messages と Responses のイベントには名前があります）。Chat Completions と Gemini のイベントには名前がないので、それらでは <code>events</code> を書かないでください。1 つのイベントは応答の一部なので、1 つの単語が 2 つのイベントに分かれることがあります。<code>data: [DONE]</code> の行とコメントはフックを通らずにそのまま流れます。圧縮された応答もそのまま流れます。</p>
+    <p><code>ctx</code> には次のものがあります：<code>protocol</code>（<code>anthropic</code>・<code>chat</code>・<code>responses</code>・<code>gemini</code>）、エージェントが指定した <code>model</code> と <code>stream</code>、<code>path</code>、Agent Link が把握している場合の <code>agent</code>、<code>options</code>（そのプラグインの<a href="#middleware-options">オプション</a>）、そしてリクエストごとのオブジェクト <code>state</code>。</p>
+    <h3>フックが失敗したとき</h3>
+    <p>フックの持ち時間は、リクエスト、プロバイダへの 1 回の試行、または応答全体で 250 ms、1 イベントで 50 ms、読み込みで 1 秒です。例外を投げたフック、時間切れになったフック、想定外の値を返したフックは、なかったものとして扱われます。つまりリクエストやイベントは元のまま送られます。設定 → プラグインには、ミドルウェアごとのフック、呼び出し回数、1 回あたりの平均時間、失敗回数と直近のエラーが表示されます。フックが見るのは、エージェントが送ったものと受け取るものそのものです。送信時は Agent Link のマスキングより前、受信時はマスク解除の後です。Agent Link 自身のリクエスト（スレッドのタイトル、ルーターの分類器）はミドルウェアを通りません。</p>
+
+    <h3 id="gateway-points"><a class="anchor" href="#gateway-points">ルーティングと使用量の行</a></h3>
+    <p>同じモジュールは <code>strategies</code> と <code>onUsage</code> もエクスポートできます。そのファイルは <code>*.gateway.js</code> と名付けてもよく、パッケージなら <code>"Agent Link": { "gateway": "./gw.js" }</code> と書けます。</p>
+    <ul>
+      <li><b>ルーティング。</b><code>strategies[name]</code> はそれぞれ <code>&lt;プラグイン&gt;/&lt;name&gt;</code> という名前のルーティングになり（パッケージの短い名前、または <code>.gateway.js</code> を除いたファイル名）、プラグインがオンの間、プロバイダ・プール・グループのルーティング選択に並びます。関数 <code>(pool, seats, options)</code> か <code>order</code> を持つオブジェクトで、席を試す順番をインデックスで返します。各席には <code>key</code>、<code>account</code>、<code>known</code>、<code>learns</code>、<code>used</code>、<code>soon</code>（枠が更新される時刻、ms）、<code>pace</code>、<code>weight</code>、<code>resting</code>、<code>tokens</code>（最近送った量）があります。持ち時間は 20 ms で、例外・時間切れ・それ以外の値のときは一覧の順に試します。オフにすると、それでルーティングするプロバイダやグループも一覧の順になります。</li>
+      <li><b>使用量。</b><code>onUsage(row, options)</code> は各リクエストの終了後に使用量の行を受け取ります：プロバイダ、アカウントとキー、モデル、トークン、<code>ms</code>、<code>ttftMs</code>、ステータス、エラーの種類、コスト。本文・プロンプト・エラーの文面は含みません。別に動くのでリクエストが待つことはなく、処理中にキューがあふれた行は破棄して数えます。持ち時間は 250 ms です。</li>
+    </ul>
+    <div class="code">
+      <span class="lang">spread.gateway.js</span>
+      <button class="copy" data-copy="gp-ex">コピー</button>
+      <pre id="gp-ex"><span class="c">// spread.gateway.js</span>
+<span class="k">export const</span> strategies = {
+  <span class="s">"fewest-tokens"</span>: (pool, seats) =&gt;
+    seats.map((_, i) =&gt; i).sort((a, b) =&gt;
+      (seats[a].resting - seats[b].resting) || (seats[a].tokens - seats[b].tokens)),
+}
+
+<span class="k">let</span> slow = 0
+
+<span class="k">export function</span> onUsage(row, options) {
+  <span class="k">if</span> (row.ms &gt; (options.slowMs ?? 30000)) {
+    slow++
+    console.log(`slow: ${row.provider} ${row.model} ${row.ms} ms (${slow} so far)`)
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="gp-cli">コピー</button>
+      <pre id="gp-cli">Agent Link plugin add ./spread.gateway.js
+Agent Link group set fast routing=spread/fewest-tokens</pre>
+    </div>
+
+    <h2 id="tools"><a class="anchor" href="#tools">すべてのエージェントのツール</a></h2>
+    <p>プラグインは OpenCode の <code>tool</code> フックでツールを提供でき、Agent Link はそれを OpenCode だけでなくすべてのエージェントに提供します。ツールは Agent Link 自身の MCP サーバー <code>/mcp/Agent Link/tools</code>（Streamable HTTP）になります。MCP サーバーを使えるエージェントにこのアドレスを追加すると、そのモデルはオンのプラグインが提供するすべてのツールを呼び出せます。名前は <code>&lt;プラグイン&gt;_&lt;ツール&gt;</code> で、プラグインの短い名前が先頭に付きます（下の例では <code>weather-tools_now</code>）。</p>
+    <div class="code">
+      <span class="lang">index.js</span>
+      <button class="copy" data-copy="tools-ex">コピー</button>
+      <pre id="tools-ex"><span class="k">import</span> { tool } <span class="k">from</span> <span class="s">"@opencode-ai/plugin"</span>
+
+<span class="k">export const</span> WeatherTools = <span class="k">async</span> () =&gt; ({
+  tool: {
+    now: tool({
+      description: <span class="s">"ある都市の今の天気。"</span>,
+      args: { city: tool.schema.string().describe(<span class="s">"都市名（例: Berlin）"</span>) },
+      <span class="k">async</span> execute({ city }, ctx) {
+        <span class="k">const</span> r = <span class="k">await</span> fetch(<span class="s">`https://wttr.in/${encodeURIComponent(city)}?format=3`</span>, { signal: ctx.abort })
+        <span class="k">return</span> <span class="k">await</span> r.text()  <span class="c">// テキスト。オブジェクトは JSON で返ります</span>
+      },
+    }),
+  },
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="tools-cli">コピー</button>
+      <pre id="tools-cli">Agent Link plugin add ./weather-tools
+claude mcp add --transport http Agent Link-tools http://127.0.0.1:7500/mcp/Agent Link/tools   <span class="c"># Claude Code。ほかのエージェントも同じアドレスを使います</span></pre>
+    </div>
+    <p>設定 → プラグインには各プラグインのツールがこの名前で表示され、サーバーのアドレスをコピーできます。<code>args</code> は zod のフィールド定義（<code>tool.schema</code> は zod）、zod オブジェクト、または JSON Schema オブジェクトです。エージェントにはこれが示され、Agent Link は <code>execute</code> の前に呼び出しの引数をこれで検証します。引数が正しくなければ、その引数を示すエラーを返します。<code>ctx</code> は OpenCode と同じで、<code>agent</code> は呼び出したエージェントです。ツールの実行時間は 55 秒までで、時間切れになると <code>ctx.abort</code> が発火します。</p>
+    <p>このサーバーは組み込みプラグイン <span class="ui">プラグインのツール</span> が提供します。オンのプラグインがツールを提供している間はオンのままで、オフのときはツールが一覧に出ず、呼び出しにはオフであることが返ります。ゲートウェイキーでの呼び出しはそのキーの上限に数えられます。ツールはプロバイダープラグインと同じくあなたの権限でプラグインホスト内で動き、結果は呼び出したエージェントにだけ返ります。</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">エージェントプラグイン</a></h2>
+    <p>プラグインは<em>エージェント</em>を追加することもできます。Agent Link に組み込みの設定がないエージェントです。そのエージェントがモデルをどこに書くか、Agent Link のゲートウェイを使うために他に何を書くかを伝えます。するとエージェントは Agent Link 自身のものと同じように<span class="ui">エージェント</span>ページに並びます。その行で Agent Link のモデルを選ぶと、Agent Link はモデルをゲートウェイのアドレスとエージェント専用のキーと一緒に設定へ書き込み、スイッチを切るとすべてユーザーの元の状態に戻します。下の例は <a href="https://aider.chat">Aider</a> を追加します。</p>
+    <div class="code">
+      <span class="lang">agent.js</span>
+      <button class="copy" data-copy="ag-ex">コピー</button>
+      <pre id="ag-ex"><span class="c">// agent.js（package.json の "Agent Link": { "agent": "./agent.js" } で指定）</span>
+<span class="k">export const</span> agent = {
+  id: <span class="s">"aider"</span>, name: <span class="s">"Aider"</span>, bin: <span class="s">"aider"</span>,
+  config: <span class="s">"~/.aider.conf.yml"</span>,  <span class="c">// Agent Link が編集するファイル</span>
+  model: <span class="s">"model"</span>,                 <span class="c">// その中のモデルのキー</span>
+  prefix: <span class="s">"openai/"</span>,              <span class="c">// Agent Link のモデル id の前に付ける</span>
+  ua: [<span class="s">"aider"</span>, <span class="s">"litellm"</span>],
+  notice: <span class="s">"Aider reads its settings when it starts: restart it to use the new model."</span>,
+}
+
+<span class="k">export function</span> connect({ gateway, model }) {
+  <span class="k">return</span> {
+    <span class="s">"openai-api-base"</span>: gateway.v1,
+    <span class="s">"openai-api-key"</span>: gateway.key,
+    <span class="s">"show-model-warnings"</span>: <span class="k">false</span>,
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="ag-cli">コピー</button>
+      <pre id="ag-cli">Agent Link plugin add ./agent-aider   <span class="c"># 単一の *.agent.js ファイルでも可</span></pre>
+    </div>
+    <h3>agent エクスポート</h3>
+    <div class="table-wrap"><table>
+      <tr><th>フィールド</th><th>意味</th></tr>
+      <tr><td><code>id</code></td><td>エージェントページ、使用量、CLI で使う id。小文字、数字、<code>.</code>、<code>_</code>、<code>-</code> のみ。Agent Link 組み込みのエージェントの id（<code>codex</code>、<code>claude</code> など）は拒否されます。プラグインはエージェントを追加するもので、置き換えるものではありません。</td></tr>
+      <tr><td><code>name</code></td><td>ページでの表示名。省略すると id。</td></tr>
+      <tr><td><code>config</code></td><td>Agent Link が編集するファイル。<code>~</code> と <code>$VAR</code> は展開されます。なければ作成します。</td></tr>
+      <tr><td><code>format</code></td><td>ファイル名から分からないときの <code>json</code>、<code>yaml</code>、<code>env</code>（<code>.json</code>/<code>.jsonc</code>、<code>.yaml</code>/<code>.yml</code>、<code>.env</code>）。TOML はまだ対応していません。</td></tr>
+      <tr><td><code>model</code></td><td>ファイル内のモデルのキー。JSON と YAML ではドット区切りのパス（<code>llm.model</code>）。モデルをエージェント自身で、<code>connect</code> が書くモデルの中から選ぶ場合（Raycast など）は省略します。その行は接続スイッチだけになってモデルの選択欄は出ず、<code>connect</code>（このプラグインには必須）は <code>model</code> なしで呼ばれます。</td></tr>
+      <tr><td><code>prefix</code></td><td>Agent Link のモデル id の前に書くもの。LiteLLM 経由で OpenAI 互換エンドポイントを使うエージェントなら <code>openai/</code>。id 自体はゲートウェイが受け付ける <code>&lt;プロバイダー&gt;/&lt;モデル&gt;</code> です。</td></tr>
+      <tr><td><code>bin</code>、<code>dir</code></td><td>エージェントがインストール済みかを示す <code>PATH</code> 上のコマンドとフォルダー。</td></tr>
+      <tr><td><code>ua</code></td><td>キーなしで来たリクエストを使用量で名付けるための、エージェントの User-Agent に含まれる語。</td></tr>
+      <tr><td><code>icon</code></td><td>行のアイコン。アイコン名、<code>https://</code> または <code>data:</code> URL。省略するとプラグインのアイコン、それもなければ汎用のもの。</td></tr>
+      <tr><td><code>notice</code></td><td>モデルを変えた後に表示する案内。組み込みのエージェントと同じです。</td></tr>
+      <tr><td><code>library</code></td><td><span class="ui">ライブラリ</span>が渡すものをエージェントがどこで読むか：<code>instructions</code>（毎回の会話の前に読む Markdown ファイル）、<code>mcp</code>（MCP サーバーのファイル）とその書き方を表す <code>mcpFormat</code>（どのエージェントのファイルと同じ形か：<code>alma</code>, <code>antigravity</code>, <code>claude</code>, <code>cline</code>, <code>codex</code>, <code>commandcode</code>, <code>copilot</code>, <code>crush</code>, <code>cursor</code>, <code>devin</code>, <code>gemini</code>, <code>goose</code>, <code>grok</code>, <code>hermes</code>, <code>kimi</code>, <code>omp</code>, <code>opencode</code>, <code>zed</code>。<code>claude</code> は <code>{"mcpServers": {…}}</code>）、<code>skills</code>（<code>SKILL.md</code> のフォルダを置くフォルダ）。どれも省略でき、<code>~</code> と <code>$VAR</code> は展開されます：<code>library: { instructions: "~/.toy/AGENTS.md", mcp: "~/.toy/mcp.json", mcpFormat: "claude", skills: "~/.toy/skills" }</code>。書かなければライブラリからは何も渡されず、渡そうとするとプラグインが書くべきキーを示して断られます。</td></tr>
+    </table></div>
+    <h3>connect</h3>
+    <p><code>connect(input)</code> はモデルの横に書き込む他のキーを、キーのパスと値で返します。<code>async</code> でも構いません。受け取るのは <code>gateway</code>（<code>url</code>、<code>/v1</code> で終わる URL の <code>v1</code>、エージェント専用のキー <code>key</code>。リクエストはその id で数えられます）、<code>model</code>（<code>id</code>、<code>name</code>、<code>context</code>、<code>output</code>、<code>images</code>、<code>efforts</code>）、<code>models</code>（Agent Link がエージェントに出すすべてのモデル、同じ形）、<code>agent</code>（<code>id</code>、<code>config</code>）です。<code>connect</code> がないプラグインはモデルだけを書きます。Agent Link のモデルが変わると <code>connect</code> がもう一度呼ばれるので、書いたモデル一覧は最新のまま保たれます。</p>
+    <h3>Agent Link がすること</h3>
+    <ul>
+      <li><b>書き込み。</b>各キーをその場で書き換え、ユーザーのコメントや他のキーは残します。最初に書く前に、各キーの元の値を型ごと（数値は数値のまま）取っておきます。</li>
+      <li><b>元に戻す。</b>エージェント自身のモデルを選び直すか、スイッチを切ると、すべてのキーを元の値に戻し、なかったキーは取り除きます。ファイルを丸ごと上書きすることはありません。</li>
+      <li><b>接続の判定。</b>Agent Link のキーを入れたキーがまだそのキーを持っている間、行は接続中と表示します。後から手で変えられたキーは、組み込みのエージェントと同じく行に表示されます。</li>
+      <li><b>実行のされ方。</b><a href="#middleware">ミドルウェア</a>と同じく、Agent Link 自身のプロセスの moejs で動きます。インポートはプラグイン内のファイルのみ、Node API はなく、<code>console.log</code> は Agent Link のログに出ます。読み込みと <code>connect</code> はそれぞれ 1 秒まで。モジュールが読み込めない、または <code>connect</code> が例外を投げたプラグインは、プラグインページの行に理由を表示し、何も書き込みません。</li>
+      <li><b>ライブラリ。</b><code>library</code> があれば、組み込みのエージェントと同じくライブラリの中身を受け取ります：指示はファイル内の Agent Link の目印の行の間に、MCP サーバーはユーザー自身のものと同じファイルに（ユーザーが足したフィールドは残ります）、スキルはリンクかコピーでフォルダに入ります。外すときは Agent Link が書いた分だけを取り除き、元の内容は Agent Link のバックアップに残ります。<code>mcpFormat</code> がリストにない、または <code>mcp</code> に <code>mcpFormat</code> がないと、プラグインは読み込まれません。</li>
+      <li><b>宣言。</b><code>package.json</code> の <code>"Agent Link": { "agent": "./agent.js" }</code>、または <code>*.agent.js</code>（または <code>.mjs</code>）という単一ファイル。1 つのパッケージがプロバイダー、ミドルウェア、エージェントを兼ねられます。プラグインマーケットではエージェントのエントリーに <code>"kind": "agent"</code> を付け、<span class="ui">エージェント</span>の下に並びます。コミュニティのものは <code>@Agent Link-community/agent-&lt;name&gt;</code> と名付けます。</li>
+    </ul>
+
+    <h2 id="pages"><a class="anchor" href="#pages">ウィンドウのページ</a></h2>
+    <p>プラグインは Agent Link のウィンドウに自分のページを追加できます。オンにすると、サイドバーの<span class="ui">プラグイン</span>グループの、Agent Link 自身のページの後ろにタブが出ます。ページはプラグインのフォルダにある HTML、CSS、JavaScript だけで、Bun もビルドも要りません。下の例は今日の使用量を表示します。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-pkg">コピー</button>
+      <pre id="pg-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-usage-glance"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"page"</span>: {
+      <span class="s">"title"</span>: <span class="s">"Usage glance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"icon"</span>: <span class="s">"page/icon.svg"</span>,
+      <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"用量速览"</span>, <span class="s">"ja"</span>: <span class="s">"使用量の概要"</span> }
+    },
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/index.html</span>
+      <button class="copy" data-copy="pg-html">コピー</button>
+      <pre id="pg-html">&lt;!doctype html&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;
+&lt;script src="_Agent Link/bridge.js"&gt;&lt;/script&gt;   <span class="c">&lt;!-- served beside every page --&gt;</span>
+&lt;script src="app.js" defer&gt;&lt;/script&gt;
+&lt;p id="calls"&gt;…&lt;/p&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-js">コピー</button>
+      <pre id="pg-js"><span class="k">await</span> Agent Link.ready                                  <span class="c">// the window's theme, painted</span>
+<span class="k">const</span> s = <span class="k">await</span> Agent Link.read(<span class="s">"usage:summary"</span>, { period: <span class="s">"today"</span> })
+document.getElementById(<span class="s">"calls"</span>).textContent = `${s.calls} calls`
+<span class="k">const</span> opts = <span class="k">await</span> Agent Link.options.get()            <span class="c">// this plugin's own options</span>
+<span class="k">await</span> Agent Link.options.set({ ...opts, hideCost: <span class="k">true</span> })</pre>
+    </div>
+    <p>プラグインページの行には、オンにする前からページと読めるものが表示されます。<code>page.file</code> と <code>page.icon</code> はプラグイン内のパスです。ページのファイルは <code>file</code> のフォルダにあるものだけで、外を指すパスやリンクは配信されません。1 つのパッケージがページとプロバイダ、ミドルウェア、エージェントを兼ねることもできます。ページだけのプラグインはプラグインホストを起動しません。<code>page.titles</code>（パネルでは <code>titles</code>）は、言語コード（<code>zh</code>、<code>zh-TW</code>、<code>ja</code>、<code>de</code>）ごとのタブ名です。ほかの言語では <code>title</code> を使います。</p>
+    <p>ページがスタイルを付けていないところは、最初から Agent Link の見た目になります。bridge がフォント、色、見出し、ボタン、入力欄、表のスタイルシートを重みなし（<code>:where()</code>）で加えるので、ページ自身のルールが常に勝ちます。自分のスタイルでは <code>--Agent Link-*</code> 変数を使うとウィンドウに揃います。</p>
+    <h3>ページが頼めること</h3>
+    <div class="table-wrap"><table>
+      <tr><th>フィールド / 呼び出し</th><th>返すもの</th></tr>
+      <tr><td><code>Agent Link.ready</code></td><td>ウィンドウが応答すると、ウィンドウのテーマが得られます。それまでページは Agent Link と何も話していません。10 秒以内に話さないページは応答なしと表示されます。</td></tr>
+      <tr><td><code>Agent Link.theme, Agent Link.onTheme(fn)</code></td><td><code>{ dark, lang, tokens }</code>。bridge は <code>&lt;html&gt;</code> に <code>data-theme</code>、<code>lang</code>、<code>color-scheme</code> と <code>--Agent Link-bg</code>、<code>--Agent Link-fg</code>、<code>--Agent Link-accent</code> なども設定し、変わるたびに設定し直します。</td></tr>
+      <tr><td><code>Agent Link.options.get(), .set(o)</code></td><td>plugins.json にあるそのプラグイン自身のオプションです。ほかのプラグインのものは扱えません。<code>set</code> はオブジェクトを受け取り、保存されたオプションを返します。呼べるのは 1 秒に 1 回までです。</td></tr>
+      <tr><td><code>Agent Link.read(name, params)</code></td><td><code>Agent Link.permissions</code> で宣言した読み取りです。それ以外はウィンドウが拒否し、Agent Link ももう一度拒否します。<code>usage:summary</code>（<code>period</code>：<code>today</code>、<code>7d</code>、<code>30d</code>）は呼び出し数、エラー数、トークン、費用と上位 20 モデルを、<code>providers:list</code> は各プロバイダの id と名前を返します。キー、アカウント、サインイン、リクエスト本文を返す読み取りはありません。</td></tr>
+    </table></div>
+    <h3>ページにできないこと</h3>
+    <ul>
+      <li>ページはスクリプトだけを許したサンドボックスのフレーム（<code>sandbox="allow-scripts"</code>、<code>Content-Security-Policy</code> でも同じ）で、独自のオリジンで動きます。ウィンドウにも、Agent Link の cookie にも、ウィンドウのストレージにも届きません。</li>
+      <li>ポリシーで読み込めるのは自分のファイルだけです。<code>connect-src 'none'</code> なので <code>fetch</code>、WebSocket、beacon は使えず、フォームやフレームもありません。スクリプトはファイル（<code>&lt;script src&gt;</code>）にする必要があり、インラインは使えません。インラインのスタイルと <code>data:</code> の画像は使えます。</li>
+      <li>このようなフレームが送れるリクエスト（<code>Origin: null</code>、フレームからのリクエスト、ほかのサイトのリクエスト）は Agent Link の API がすべて拒否するので、ポリシーがなくてもページは API に入れません。ファイルは <code>/_Agent Link/plugin/&lt;token&gt;/</code> から配信され、token は Agent Link を起動するたびに変わります。</li>
+      <li>それでもページは自分をほかのサイトへ移動できます。そのサイトがフレームを持つことになるので、読み取りは秘密でないものだけを返します。ページが読めるものは公開されたものとして扱ってください。</li>
+      <li>ページが捕まえなかったエラーは、その場所に<span class="ui">このページは動作を停止しました</span>と<span class="ui">再試行</span>を表示します。ページ自身のスクリプトのエラーはページには「Script error.」としか届かないので、詳しくはウィンドウのコンソールを見てください。</li>
+    </ul>
+
+    <h3 id="panels"><a class="anchor" href="#panels">Agent Link 自身のページに入るパネル</a></h3>
+    <p>プラグインは、Agent Link 自身が描くページにパネルを加えることもできます。パネルはそれぞれプラグインのフォルダーにある小さなページで、ブリッジ、読み取り、オプション、サンドボックスはページと同じです。タイトルの見出しの下のカードに収まり、高さは描いた内容に合わせて決まります。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pn-pkg">コピー</button>
+      <pre id="pn-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-provider-notes"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"panels"</span>: [
+      { <span class="s">"slot"</span>: <span class="s">"provider"</span>, <span class="s">"file"</span>: <span class="s">"ui/notes.html"</span>, <span class="s">"title"</span>: <span class="s">"Notes"</span> },
+      { <span class="s">"slot"</span>: <span class="s">"usage"</span>, <span class="s">"file"</span>: <span class="s">"ui/spend.html"</span>, <span class="s">"title"</span>: <span class="s">"Top models today"</span> }
+    ],
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th><code>slot</code></th><th>パネルが入る場所</th><th><code>Agent Link.context</code></th></tr>
+      <tr><td><code>agents</code></td><td>「エージェント」ページの末尾</td><td><code>{}</code></td></tr>
+      <tr><td><code>usage</code></td><td>使用量の「概要」の末尾</td><td><code>{}</code></td></tr>
+      <tr><td><code>settings</code></td><td>設定の「<span class="ui">プラグイン</span>」タブ（プラグインがそこにパネルを置いているときだけ表示）</td><td><code>{}</code></td></tr>
+      <tr><td><code>provider</code></td><td>保存した各プロバイダーの編集画面</td><td><code>{ provider: { id, name } }</code></td></tr>
+    </table></div>
+    <p>パネルは 1 つのプラグインにつき 8 個まで。パネルの高さは <code>&lt;html&gt;</code> に合わせて決まる（最大 2400px）ので、ページ自身に高さを任せ、<code>html</code> や <code>body</code> に固定の高さを付けないでください。パネルがエラーを出すか 10 秒以内に応答しないと、その場所に「<span class="ui">{name} は動作を停止しました</span>」と「<span class="ui">再試行</span>」が表示されます。周りのページと隣のパネルはそのまま動き続けます。</p>
+    <h3 id="replaces"><a class="anchor" href="#replaces">組み込みページの代わりになる</a></h3>
+    <p>ページは Agent Link 自身のページの代わりになれます。<code>Agent Link.page</code> に <code>"replaces"</code> を加え、<code>sessions</code>、<code>library</code>、<code>routing</code>、<code>usage</code> のどれかを指定します。そのタブが組み込みページのあった場所に入り、そのページへのリンクはプラグインのページを開きます。2 つのプラグインが同じページを指定したときは、プラグイン一覧で先にあるほうが代わりになり、もう一方は独立したページになります。プラグインをオフにすると、組み込みページが元どおりに戻ります。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-replaces">コピー</button>
+      <pre id="pg-replaces"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"My library"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"replaces"</span>: <span class="s">"library"</span> }</pre>
+    </div>
+    <h3 id="actions"><a class="anchor" href="#actions">Agent Link のメニューに入る項目</a></h3>
+    <p>ページを持つプラグインは、Agent Link の行のメニューに項目を加えられます。プロバイダの行（右クリック）とエージェントの行（ハンドル、または右クリック）です。項目は Agent Link 自身の項目のあとに並び、ページのタイトルと同じくウィンドウの言語で表示されます。項目を選ぶとプラグインのページが開き、どの項目か、その行の id と名前だけが伝えられます。ページは <code>Agent Link.onAction</code> で受け取ります。ハンドラーを渡す前に選ばれた項目は、渡されるまで待ちます。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-actions">コピー</button>
+      <pre id="pg-actions"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"Balance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span> },
+<span class="s">"actions"</span>: [
+  { <span class="s">"id"</span>: <span class="s">"check"</span>, <span class="s">"menu"</span>: <span class="s">"provider"</span>, <span class="s">"title"</span>: <span class="s">"Check balance"</span>, <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"查余额"</span> } }
+]</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-onaction">コピー</button>
+      <pre id="pg-onaction">Agent Link.onAction(({ id, provider }) =&gt; {
+  <span class="c">// id: "check"; provider: { id, name }</span>
+});</pre>
+    </div>
+    <p><code>menu</code> は <code>provider</code> か <code>agent</code> です。<code>id</code> は小文字、数字、ハイフンで、40 文字まで。項目はプラグインごとに最大 8 個で、<code>title</code> のない項目はページのタイトルを使います。ページのないプラグインは項目を加えません。「プラグイン」ページには、プラグインがどのメニューに項目を加えるかが表示されます。</p>
+    <h2 id="pi"><a class="anchor" href="#pi">pi パッケージ</a></h2>
+    <p>Agent Link は <a href="https://github.com/earendil-works/pi">pi</a> のパッケージも動かします。<code>pi.registerProvider</code> でプロバイダを登録する pi 拡張は、何も変えずに pi と同じように Agent Link で動き、ほかのプラグインと同じ方法で追加できます（<code>Agent Link plugin add pi-antigravity</code>）。</p>
+    <ul>
+      <li><b>pi のパッケージとみなす条件。</b><code>package.json</code> に <code>pi</code> マニフェスト（<code>"pi": { "extensions": [...] }</code>）があるか、<code>pi-package</code> キーワードがあるか、<code>dependencies</code> か <code>peerDependencies</code> に <code>@earendil-works/pi-coding-agent</code>（または旧名の <code>@mariozechner/pi-coding-agent</code>）があること。単体のファイルは pi を import していれば該当します。</li>
+      <li><b>読み込み。</b>Agent Link はパッケージの隣に pi をインストールし、pi 自身のローダーで同じプラグインホストに読み込みます。登録されたプロバイダは Agent Link のプロバイダになり、モデルは pi がそれぞれに挙げるもの（pi がアカウントごとの一覧を取得できるときはその一覧）です。コマンド、ツール、レンダラー、イベントハンドラは使いません。</li>
+      <li><b>サインイン。</b>OAuth のログインは pi と同じように進みます。質問（<code>onPrompt</code>）は Agent Link のサインインの中で聞かれ、ページ（<code>onAuth</code>）はブラウザで開き、<code>refreshToken</code> で更新されます。パッケージが <code>ctx.ui</code> で出すダイアログ（<code>select</code>、<code>confirm</code>、<code>input</code>、<code>editor</code>）や <code>ctx.ui.custom</code> に渡すターミナルコンポーネントも、Agent Link の質問として表示されます。API キーを受け付けるプロバイダにはキーの入力欄が出ます。サインインごとにアカウントになるので、pi のプロバイダも複数アカウントを持てます。</li>
+      <li><b>pi のファイル。</b>pi の設定、<code>auth.json</code>（pi と同じ形で各プロバイダの最初のアカウント）、パッケージが書くファイルは、Agent Link の設定ディレクトリの <code>pi/</code> に置かれ、<code>PI_CODING_AGENT_DIR</code> を設定しない限りユーザーの <code>~/.pi</code> には触れません。アカウント自体はほかのプラグインと同じく <code>plugin-auth.json</code> に保存されます。</li>
+      <li><b>リクエスト。</b>pi のプロバイダのモデルは Anthropic Messages を受け取ります。ゲートウェイがエージェントのリクエストを変換し、Agent Link が pi を通してストリーミングし、応答の思考・署名・ツール呼び出しはそのまま保たれます。ベンダーのエラーはステータス付きで返るので、フェイルオーバーもほかのプラグインと同じく働きます。</li>
+      <li><b>id。</b>pi のプロバイダの id もほかのプラグインと同じ規則です。<a href="#ids">プロバイダ id</a> を参照してください。</li>
+    </ul>
+
+    <h2 id="protocol"><a class="anchor" href="#protocol">ホストプロトコル</a></h2>
+    <p>プラグインを書くのにこの節は不要です。Agent Link 自体の開発や、ホストのデバッグをする人向けです。Agent Link はホストの stdin に <code>{id, method, params}</code> を 1 行にひとつずつ書き込みます。ホストは <code>{id, result}</code> または <code>{id, error: {message}}</code> で応答します。</p>
+    <div class="table-wrap"><table>
+      <tr><th>メソッド</th><th>動作</th></tr>
+      <tr><td><code>init</code></td><td>プラグインを読み込み、その <code>config</code> フックを実行します。ほかのすべての呼び出しはこれを待ちます。</td></tr>
+      <tr><td><code>providers</code></td><td>各プロバイダとそのメソッド、アカウント、アカウントごとのモデル。</td></tr>
+      <tr><td><code>prompt</code>, <code>validate</code></td><td>メソッドの次の質問、回答のチェック。</td></tr>
+      <tr><td><code>authorize</code>, <code>callback</code>, <code>apiKey</code></td><td>サインイン。</td></tr>
+      <tr><td><code>load</code></td><td>アカウントに対する loader のオプション。</td></tr>
+      <tr><td><code>fetch</code></td><td>1 件のリクエスト。<code>{id, event: "head", status, headers}</code>、次に <code>{id, event: "chunk", data}</code>（base64）、最後に <code>{id, result: null}</code> をストリームで返します。<code>{method: "abort", params: {id}}</code> で取り消せます。</td></tr>
+      <tr><td><code>usage</code>, <code>check</code></td><td>アカウントの使用量、リクエストと同じ方法でのアカウントの確認。</td></tr>
+      <tr><td><code>import</code>, <code>take</code>, <code>signOut</code>, <code>reload</code></td><td>アカウントの取り込みと取り出し、削除、loader の再実行。</td></tr>
+    </table></div>
+    <p>ホストは独自のイベントも送ります：<code>log</code>、<code>toast</code>、<code>auth</code>（サインインが保存またはリフレッシュされた）、<code>signIn</code>（アカウントのサインイン状態、前述のとおり）。ソースは <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/plugin/host.js"><code>internal/plugin/host.js</code></a> です。</p>
+
+    <h2 id="faq"><a class="anchor" href="#faq">よくある質問</a></h2>
+    <h3>OpenCode のプラグインは Agent Link でそのまま動きますか？</h3>
+    <p>はい。<code>auth</code>、<code>config</code>、<code>provider</code>、<code>chat.headers</code> を通してサインインとリクエストを行っていれば動きます。Agent Link が追加するもの（<code>auth.usage</code>、<code>auth.refresh</code>、<code>Agent Link.icon</code>、<code>maxConcurrency</code>、<code>free</code>、<code>rate</code>、<code>X-Agent Link-Sign-In</code>）は OpenCode が無視するので、ひとつのパッケージで両方に対応できます。</p>
+    <h3>pi のパッケージは Agent Link で動きますか？</h3>
+    <p>はい。<code>pi.registerProvider</code> でサインインとモデルを提供していれば動きます。Agent Link が使うのは登録されたプロバイダだけです。<a href="#pi">pi パッケージ</a>を参照してください。<code>pi-package</code> キーワードを付ければ検索で見つかります。</p>
+    <h3>プロバイダの名前が <code>…-plugin</code> になるのはなぜですか？</h3>
+    <p>その id が Agent Link ですでに使われているからです。<a href="#ids">プロバイダ id</a>を参照してください。</p>
+    <h3>ヘルパー関数の一部がプラグインとして実行されます。</h3>
+    <p>エントリモジュールがエクスポートする関数はすべてプラグインとして呼び出されます。プラグイン関数だけをエクスポートするか、<code>export default { id, server }</code> を使ってください。</p>
+    <h3>npm の依存を使えますか？</h3>
+    <p>はい。プラグインと一緒にインストールされますが、インストールスクリプトは実行されません。Bun の <code>fetch</code>、<code>crypto</code>、<code>fs</code>、<code>$</code> でたいていは足ります。</p>
+    <h3>プラグインからベンダーの CLI を実行できますか？</h3>
+    <p>はい。Bun の <code>$</code> か <code>child_process</code> を使います。いくつかのコミュニティプラグインはベンダー自身の CLI でサインインします。CLI が入っていないマシンもあると想定し、エラーでインストール方法を伝えてください。</p>
+    <h3>プラグインにはユーザーの作業のどこまでが見えますか？</h3>
+    <p>プラグインが送るリクエストに含まれるものすべて、つまり会話、ツールとその結果です。ユーザーが指定した送り先にだけ送り、ログには残さないでください。</p>
+    <h3>編集内容を Agent Link に反映させるには？</h3>
+    <p>ターミナルの <code>Agent Link</code> コマンドは、フォルダをその時点の内容で読み込みます。アプリでは、<span class="ui">プラグイン</span> でプラグインをオフにしてからオンにしてください。</p>
+
+    <p style="margin-top:48px">質問や、共有したいプラグインがありますか？ <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> で聞くか、<a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a> に issue を立ててください。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート Agent Link</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

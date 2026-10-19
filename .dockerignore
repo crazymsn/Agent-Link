@@ -1,0 +1,9 @@
+# internal/ 不可排除: web 资源与提示词通过 go:embed 整目录嵌入二进制
+.git
+.github
+dist
+site
+build
+magpie.app
+/*.md
+.DS_Store

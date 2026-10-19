@@ -1,0 +1,154 @@
+name: Docker
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    paths: [Dockerfile, .dockerignore, .github/workflows/docker.yml]
+  workflow_dispatch:
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/agentlink
+
+jobs:
+  build:
+    name: build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [linux/amd64, linux/arm64]
+    # native arm runner instead of QEMU
+    runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Smoke test the image
+        run: |
+          docker build --load \
+            --cache-from type=gha,scope=${{ matrix.platform }} \
+            --cache-to type=gha,scope=${{ matrix.platform }},mode=max \
+            -t agentlink-smoke .
+
+          docker run -d --name smoke -v smoke-ci:/config -p 13425:3425 agentlink-smoke
+
+          READY=0
+          for _ in $(seq 1 30); do
+            if curl -s -o /dev/null http://127.0.0.1:13425/v1/models; then READY=1; break; fi
+            sleep 1
+          done
+          test "$READY" = 1
+
+          # a NAS panel's terminal opens bash or sh, with agentlink on PATH
+          docker exec smoke /bin/bash -c 'agentlink healthcheck && ls /config >/dev/null'
+          docker exec smoke /bin/sh -c 'echo sh works'
+
+          CODE=$(curl -s -o /tmp/body.json -w '%{http_code}' \
+            -H 'Authorization: Bearer agentlink' -H 'Content-Type: application/json' \
+            -d '{"model":"ci-unknown-model","messages":[{"role":"user","content":"hi"}]}' \
+            http://127.0.0.1:13425/v1/chat/completions)
+          echo "chat/completions answered HTTP $CODE"
+          cat /tmp/body.json; echo
+          (( CODE >= 400 && CODE < 500 ))
+          jq -e '.error.type' /tmp/body.json > /dev/null
+
+          OUT=$(docker run --rm -v smoke-ci:/config agentlink-smoke provider add ci-smoke key=sk-ci url=https://example.com)
+          echo "$OUT"
+          echo "$OUT" | grep -q 'added ci-smoke'
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          provenance: false
+          push: ${{ github.event_name != 'pull_request' }}
+          build-args: |
+            VERSION=${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || github.sha }}
+          outputs: |
+            type=image,name=${{ env.IMAGE }},push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,scope=${{ matrix.platform }},mode=max
+
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p ${{ runner.temp }}/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "${{ runner.temp }}/digests/${digest#sha256:}"
+
+      - uses: actions/upload-artifact@v6
+        if: github.event_name != 'pull_request'
+        with:
+          name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: ${{ runner.temp }}/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    if: github.event_name != 'pull_request'
+    needs: [build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.manifest.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          path: ${{ runner.temp }}/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+
+      - name: Create manifest and tag
+        id: manifest
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            V="${GITHUB_REF_NAME#v}"
+            TAGS=(-t "$IMAGE:$V")
+            REF_TAG="$V"
+            if [[ "$V" != *-* ]]; then
+              TAGS+=(-t "$IMAGE:${V%.*}" -t "$IMAGE:${V%%.*}" -t "$IMAGE:latest")
+            fi
+          else
+            TAGS=(-t "$IMAGE:edge")
+            REF_TAG=edge
+          fi
+          DIGEST_ARGS=()
+          for d in *; do DIGEST_ARGS+=("$IMAGE@sha256:$d"); done
+          docker buildx imagetools create "${TAGS[@]}" "${DIGEST_ARGS[@]}"
+          docker buildx imagetools inspect "$IMAGE:$REF_TAG"
+          DIGEST=$(docker buildx imagetools inspect "$IMAGE:$REF_TAG" --format '{{json .}}' | jq -r '.manifest.digest')
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          push-to-registry: true
+          subject-name: ${{ env.IMAGE }}
+          subject-digest: ${{ steps.manifest.outputs.digest }}

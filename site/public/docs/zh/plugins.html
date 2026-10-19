@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>插件开发 · Agent Link 文档</title>
+<meta name="description" content="如何编写 Agent Link 插件：Agent Link 调用哪些 OpenCode 插件钩子、运行哪些 pi 扩展包，如何把它们变成带账号、模型、请求和用量的供应商，以及怎么测试、发布和上架。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/plugins">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/plugins">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/plugins">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="插件开发">
+<meta property="og:description" content="用一个 OpenCode 插件或 pi 扩展包，把任何服务变成 Agent Link 的供应商。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/zh/plugins">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 Agent Link</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/plugins" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/plugins" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/plugins" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>插件开发</p>
+    <a href="#overview">概览</a>
+    <a href="#quick">五分钟写一个插件</a>
+    <a href="#run">Agent Link 如何运行插件</a>
+    <a href="#package">包的结构</a>
+    <a href="#provider">供应商与模型</a>
+    <a href="#signin">登录</a>
+    <a href="#requests">请求</a>
+    <a href="#signin-state">登录状态</a>
+    <a href="#usage">用量</a>
+    <a href="#input">插件能拿到什么</a>
+    <a href="#ids">供应商 id</a>
+    <a href="#test">测试</a>
+    <a href="#publish">发布与上架</a>
+    <a href="#gateway-request">异步网关请求钩子</a>
+    <a href="#middleware">网关中间件</a>
+    <a href="#tools">给每个智能体的工具</a>
+    <a href="#agents">Agent 插件</a>
+    <a href="#pages">窗口里的页面</a>
+    <a href="#pi">pi 扩展包</a>
+    <a href="#protocol">宿主协议</a>
+    <a href="#faq">答疑</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 插件</p>
+    <h1>编写插件</h1>
+    <p class="lede">插件负责登录某个服务、替它发请求。Agent Link 把插件变成一个供应商，所有 agent 都能用，多账号、故障切换、用量这些也都有。Agent Link 运行的是 <a href="https://opencode.ai/docs/plugins/">OpenCode 的供应商插件</a>，为 OpenCode 写的插件不用改就能在这里用；注册了供应商的 <a href="https://github.com/earendil-works/pi">pi</a> 扩展包也能直接用（见 <a href="#pi">pi 扩展包</a>）。本页讲插件作者需要知道的：Agent Link 调用哪些钩子、拿到返回值后做什么，以及怎么测试、发布和上架插件。</p>
+
+    <div class="callout"><b>一段话说清楚。</b>插件是一个 npm 包、一个 git 仓库或一个文件夹。它的模块导出一个 async 函数，形式是 OpenCode v1 插件。Agent Link 把所有插件加载进同一个 <a href="https://bun.sh">Bun</a> 进程，也就是<em>插件宿主</em>。函数返回一组钩子：
+      <ul>
+        <li><code>config</code> 声明供应商和它的默认模型。</li>
+        <li><code>auth</code> 给出登录方式，以及一个 <code>loader</code>，由它的 <code>fetch</code> 发出每个请求。</li>
+        <li><code>provider.models</code> 列出某个账号有哪些模型。</li>
+        <li><code>auth.usage</code> 说明套餐用了多少。这是 Agent Link 自己的钩子，OpenCode 会忽略它。</li>
+        <li><code>auth.refresh</code> 在账号的 token 过期前续期，同一时间只续一次。它也是 Agent Link 自己的钩子。</li>
+      </ul>
+      agent 用什么 API 发来都可以。网关把请求转成模型使用的 API（chat completions、Responses、Anthropic Messages 或 Gemini），交给插件的 <code>fetch</code>，再把回答流式传回去。</div>
+
+    <h2 id="quick"><a class="anchor" href="#quick">五分钟写一个插件</a></h2>
+    <p>这个例子登录 Acme，一个虚构的编程套餐。Acme 用 API key 登录，接口兼容 OpenAI，并能报告每个账号的模型和用量。真实的插件主要区别在于怎么登录、怎么给请求签名。整个例子已在 Agent Link v0.1.676 和本地模拟的 Acme API 上跑通。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="q-pkg">复制</button>
+      <pre id="q-pkg">{
+  "name": "opencode-acme-auth",
+  "version": "0.1.0",
+  "description": "OpenCode provider plugin: Acme Coding Plan",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": ["index.mjs", "README.md"],
+  "keywords": ["opencode", "opencode-plugin", "acme"],
+  "license": "MIT",
+  "Agent Link": { "maxConcurrency": 4 }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <button class="copy" data-copy="q-index">复制</button>
+      <pre id="q-index">const PROVIDER = <span class="s">"acme"</span>
+const BASE = <span class="s">"https://api.acme.example/v1"</span>
+
+export const AcmeAuthPlugin = async ({ client }) =&gt; ({
+  <span class="c">// 供应商，以及还没人登录时它有的模型</span>
+  config: async (cfg) =&gt; {
+    cfg.provider ??= {}
+    cfg.provider[PROVIDER] ??= {
+      name: <span class="s">"Acme"</span>,
+      npm: <span class="s">"@ai-sdk/openai-compatible"</span>, <span class="c">// chat completions</span>
+      api: BASE,
+      models: {
+        <span class="s">"acme-coder"</span>: { name: <span class="s">"Acme Coder"</span>, limit: { context: 200000, output: 32000 }, tool_call: true },
+      },
+    }
+  },
+
+  auth: {
+    provider: PROVIDER,
+    methods: [{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }],
+    <span class="c">// 这个账号的每个请求带上什么</span>
+    async loader(getAuth) {
+      const auth = await getAuth()
+      if (auth?.type !== <span class="s">"api"</span>) return {}
+      return {
+        baseURL: BASE,
+        async fetch(input, init) {
+          const headers = new Headers(init?.headers)
+          headers.set(<span class="s">"authorization"</span>, `Bearer ${auth.key}`)
+          headers.set(<span class="s">"x-acme-client"</span>, <span class="s">"opencode-acme-auth/0.1.0"</span>)
+          return fetch(input, { ...init, headers })
+        },
+      }
+    },
+    <span class="c">// Agent Link 自己的钩子：套餐用了多少</span>
+    async usage(getAuth) {
+      const auth = await getAuth()
+      const res = await fetch(`${BASE}/usage`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return { error: `Acme answered ${res.status}`, windows: [] }
+      const u = await res.json()
+      return {
+        plan: u.plan,
+        windows: [{ name: <span class="s">"5 hours"</span>, used: u.percent, resetsAt: u.resets_at, span: 5 * 3600 }],
+      }
+    },
+  },
+
+  <span class="c">// 向 Acme 查询这个账号有哪些模型</span>
+  provider: {
+    id: PROVIDER,
+    async models(provider, { auth } = {}) {
+      if (auth?.type !== <span class="s">"api"</span>) return provider.models
+      const res = await fetch(`${BASE}/models`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return provider.models <span class="c">// Agent Link 保留原来的列表</span>
+      const { data } = await res.json()
+      const base = provider.models[<span class="s">"acme-coder"</span>]
+      return Object.fromEntries(data.map((m) =&gt; [m.id, { ...base, id: m.id, name: m.name ?? m.id }]))
+    },
+  },
+})</pre>
+    </div>
+    <p>把文件夹加到 Agent Link，登录，然后试一下：</p>
+    <div class="code">
+      <span class="lang">终端</span>
+      <button class="copy" data-copy="q-cli">复制</button>
+      <pre id="q-cli">Agent Link plugin add ./opencode-acme-auth   <span class="c"># 文件夹就地加载，不安装任何东西</span>
+Agent Link plugin login acme                 <span class="c"># 询问 key</span>
+Agent Link plugin                            <span class="c"># acme (Acme, 2 models)  signed in</span>
+Agent Link provider test acme                <span class="c"># ✓ chat  7 ms · acme-coder</span>
+agent-link quota                             <span class="c"># acme · Pro · 5h 37% ↻59m</span></pre>
+    </div>
+    <p>现在 agent 可以用 <code>acme/acme-coder</code> 访问它的模型，和其他供应商的模型一样。在应用里，打开<span class="ui">插件</span>，点<span class="ui">添加插件</span>，填入文件夹路径，再在这个供应商那一行登录。</p>
+    <div class="callout"><b>在沙箱里试。</b>正在写的插件不应碰到你真正在用的 Agent Link。给 Agent Link 一个单独的 <code>HOME</code>，做法见<a href="#test">测试</a>。</div>
+
+    <h2 id="run"><a class="anchor" href="#run">Agent Link 如何运行插件</a></h2>
+    <ul>
+      <li><b>Bun。</b>第一次添加插件时，Agent Link 会下载 Bun，所有插件都跑在它上面。Bun 能直接运行 TypeScript，所以入口可以是 <code>index.ts</code>。</li>
+      <li><b>一个宿主进程。</b>所有开着的插件都加载进同一个 Bun 进程，第一次用到时启动。Agent Link 和宿主通过 stdin、stdout 通信，每行一条 JSON 消息。插件打印的任何内容，包括 <code>console.log</code> 和 <code>process.stdout</code>，都会被转到 stderr，Agent Link 以 <code>plugin: …</code> 记进日志。</li>
+      <li><b>安装。</b>
+        <ul>
+          <li>npm 包用 <code>bun add</code> 安装，不运行安装脚本，和 OpenCode 安装插件的方式一样。依赖 <code>postinstall</code> 构建的包无法使用。</li>
+          <li>git 仓库由 Bun 拉取：<code>github:owner/repo[#ref]</code>、<code>git+https://…</code> 或 <code>owner/repo</code>。</li>
+          <li>文件夹或文件的路径就地加载。</li>
+        </ul></li>
+      <li><b>重启。</b>添加、移除、更新、开关插件都会重启宿主。还在通过旧宿主流式返回的回答会先完成。终端里每条 <code>Agent Link</code> 命令都启动自己的宿主，所以文件夹插件总是按当前内容加载。在应用里，把插件关掉再打开即可加载你的修改。</li>
+      <li><b>代理。</b>插件为某个供应商或账号发出的每个 fetch，都走用户给这个供应商或账号设置的代理；没有设置就走 Agent Link 自己的代理，除非设成<em>直连</em>。回环地址从不走代理。自己传了 <code>proxy</code> 选项的 fetch 不会被改动。</li>
+      <li><b>更新。</b>
+        <ul>
+          <li>社区的包（<code>@Agent Link-community/*</code>）在 Agent Link 启动后不久自动更新，之后每小时一次。</li>
+          <li>其他包有新版本时，<span class="ui">插件</span>上会出现一个小圆点，侧栏里的<span class="ui">已安装</span>显示“1 个更新”。这时打开插件会直接到已安装，顶部列出有新版本的插件和<span class="ui">全部更新</span>；用户点一下或运行 <code>Agent Link plugin update</code> 更新。</li>
+          <li>固定了版本的写法（<code>name@1.2.3</code>）会停在那个版本，直到用户自己更新：<span class="ui">更新到 …</span>、<span class="ui">全部更新</span>和 <code>Agent Link plugin update</code> 会装上最新版并取消固定。</li>
+          <li>git 仓库没有版本号可比。它的分支或标签（不写 <code>#ref</code> 时是默认分支）指向的提交和 Bun 装的那个不一样时，才显示有更新：GitHub 上的通过 GitHub API 查询，其他主机用 <code>git ls-remote</code>，最多每十分钟问一次，每小时的检查也会再问。固定到某个提交的写法不会有更新。这一行会显示已安装的提交。</li>
+        </ul></li>
+    </ul>
+    <p>Agent Link 在它的配置目录（<code>~/.config/Agent Link</code> 或 <code>$XDG_CONFIG_HOME/Agent Link</code>）里保存这些：</p>
+    <div class="table-wrap"><table>
+      <tr><th>文件</th><th>内容</th></tr>
+      <tr><td><code>plugins.json</code></td><td>已添加的插件：<code>{"plugins": [{"spec", "off"?, "options"?}], "config"?}</code>。<code>options</code> 是插件的第二个参数，和 OpenCode 的 <code>["name", {…}]</code> 一样。<code>config</code> 是交给插件的 OpenCode 配置。</td></tr>
+      <tr><td><code>plugins/</code></td><td>已安装的 npm 和 git 包，是一个独立的 Bun 项目。</td></tr>
+      <tr><td><code>plugin-auth.json</code></td><td>登录信息（权限 600），格式和 OpenCode 的 <code>auth.json</code> 相同，所以登录可以在两者之间迁移。</td></tr>
+      <tr><td><code>plugin-providers.json</code></td><td>插件上次列出的供应商和模型，Agent Link 启动时不必再问插件。</td></tr>
+    </table></div>
+
+    <h2 id="package"><a class="anchor" href="#package">包的结构</a></h2>
+    <h3>Agent Link 从哪里加载</h3>
+    <p>Agent Link 查找插件服务端入口的位置和 OpenCode 一样，加载第一个导出了插件的文件：</p>
+    <ol>
+      <li><code>package.json</code> 里的 <code>exports["./server"]</code>，然后 <code>main</code>，然后 <code>exports["."]</code>（<code>exports</code> 是字符串时就用它）。</li>
+      <li>否则是 <code>index.ts</code>、<code>index.tsx</code>、<code>index.js</code>、<code>index.mjs</code> 或 <code>index.cjs</code>。</li>
+    </ol>
+    <p>路径指向单个文件时，就加载那个文件。</p>
+    <h3>模块导出什么</h3>
+    <ul>
+      <li><code>export default { id, server }</code>（OpenCode v1）：<code>server</code> 就是插件。</li>
+      <li>否则，<b>模块导出的每个函数</b>都会被当作插件调用，导出的 <code>{ server }</code> 对象也一样。</li>
+    </ul>
+    <p>所以不要从入口文件导出辅助函数。测试需要的东西放在一个对象上，社区插件的做法是 <code>export const _internal = { … }</code>。</p>
+    <h3>插件函数</h3>
+    <div class="code">
+      <span class="lang">形式</span>
+      <pre>async (input, options) =&gt; hooks
+<span class="c">// input:   { client, project, directory, worktree, serverUrl, $, experimental_workspace }</span>
+<span class="c">// options: plugins.json 中这一项的 "options"，没有则为 undefined</span>
+<span class="c">// hooks:   { config?, auth?, provider?, "chat.headers"? }</span></pre>
+    </div>
+    <p>导出多个函数，一个插件就能提供多个供应商，每个函数的钩子互不相干。两个插件为同一个供应商提供了 <code>auth</code> 钩子时，后加载的生效，和 OpenCode 一样。</p>
+    <h3>package.json 里 Agent Link 的字段</h3>
+    <p>OpenCode 会忽略 <code>Agent Link</code> 对象，所以给 OpenCode 插件加上它是安全的。</p>
+    <div class="table-wrap"><table>
+      <tr><th>字段</th><th>含义</th></tr>
+      <tr><td><code>Agent Link.icon</code></td><td>插件自己的图标，用在「发现」里的卡片（从 npm 读取，GitHub 上的插件从仓库读取）和「已安装」里的那一行；没有自己图标的供应商也用它：<code>https://</code> 地址或 <code>data:image/…</code> URI，最大 1 MB，SVG、PNG 等都行。</td></tr>
+      <tr><td><code>Agent Link.maxConcurrency</code></td><td>每个账号同时接多少个请求，1 到 1000 的整数。用户在供应商上设置的上限优先。</td></tr>
+    </table></div>
+    <p>同样的字段也可以写在 <code>auth</code> 钩子上（<code>auth.icon</code>、<code>auth.maxConcurrency</code>），优先于 <code>package.json</code>。一个插件登录多个供应商时，可以给每个供应商各写一个 <code>auth.icon</code>，<code>Agent Link.icon</code> 留给插件本身。</p>
+
+    <h2 id="provider"><a class="anchor" href="#provider">供应商与模型</a></h2>
+    <h3>声明供应商</h3>
+    <p>供应商的 id 就是 <code>auth.provider</code>。如果 <a href="https://models.dev">models.dev</a> 收录了这个 id，Agent Link 会以那里的条目为起点，和 OpenCode 一样。否则就在 <code>config</code> 钩子里声明供应商。用 <code>??=</code>，以免覆盖用户在 <code>plugins.json</code> 里配置的供应商：</p>
+    <div class="code">
+      <span class="lang">config 钩子</span>
+      <pre>config: async (cfg) =&gt; {
+  cfg.provider ??= {}
+  cfg.provider[<span class="s">"acme"</span>] ??= {
+    name: <span class="s">"Acme"</span>,
+    npm: <span class="s">"@ai-sdk/anthropic"</span>,          <span class="c">// 模型使用的 API（见下表）</span>
+    api: <span class="s">"https://api.acme.example/v1"</span>, <span class="c">// 请求发往哪里，除非 loader 另有指定</span>
+    models: {
+      <span class="s">"acme-large"</span>: {
+        name: <span class="s">"Acme Large"</span>,
+        id: <span class="s">"acme-large-2026-09"</span>,          <span class="c">// API 接受的 id，和键不同时填</span>
+        limit: { context: 400000, output: 64000 },
+        reasoning: true,
+        tool_call: true,
+        modalities: { input: [<span class="s">"text"</span>, <span class="s">"image"</span>] },
+        cost: { input: 3, output: 15, cache_read: 0.3 }, <span class="c">// 每百万 token 的美元价格；套餐可不填</span>
+        variants: { low: {}, medium: {}, high: {} },        <span class="c">// 推理档位</span>
+      },
+    },
+  }
+}</pre>
+    </div>
+    <p>模型还可以写 <code>provider: { npm, api }</code>，使用和供应商不同的 API 或地址；也可以写 <code>headers</code>、<code>options</code>，以及用 <code>disabled: true</code> 隐藏它。</p>
+
+        <h3 id="searches">自己能联网搜索的上游</h3>
+    <p>如果插件转发的是 Anthropic 或 OpenAI 官方 API（它们自己执行托管的联网搜索工具），在 <code>config</code> 钩子里给提供商设 <code>searches: true</code>。之后客户端的联网搜索（Claude Code 的 WebSearch、Codex 的 <code>web_search</code>）会原样发到你的 <code>fetch</code>，只作用于该提供商走 Anthropic 或 Responses 的模型，不再经过 Agent Link 自己的代搜；Chat 模型不受影响。Agent Link 不会自动用它替其他模型搜索，但可以在设置里手动指定它为搜索模型。</p>
+
+        <h3 id="decide">决策 API（System One）</h3>
+    <p>插件可以为自己的提供商提供 TypeSafe 的 System One API，这样它的模型就能当<a href="/docs/zh/intent">路由组的分类器</a>。在 <code>config</code> 钩子里给提供商设 <code>decide: true</code>，并给每个只回答问题、不用来对话的模型设 <code>decides: true</code>（写在 <code>config</code> 钩子里或 <code>models</code> 钩子的列表上都行）。之后 Agent Link 会把每个问题以 <code>POST {baseURL}/systemone</code> 发给 loader 的 <code>fetch</code>，带上账号的登录信息，和其他请求一样。请求体是 <code>{"model", "questions", "state"}</code>；回答 <code>{"model", "answers": {"&lt;问题&gt;": {"choice", "score", "confidence"}}}</code>。</p>
+    <p>标了 <code>decides</code> 的模型，以及名为 <code>jev-*</code> 的模型，会作为分类器提供，并对智能体隐藏：发给它的对话请求会被拒绝。提供商没有 <code>decide: true</code> 时，<code>decides</code> 不起作用，所有模型照常用于对话。</p>
+
+    <h3 id="apis">模型使用的 API</h3>
+    <p>模型或供应商上 <code>npm</code> 指定的 AI SDK 包决定了 API，也就决定了你的 <code>fetch</code> 收到的请求格式。无论 agent 发来的是什么，Agent Link 的网关都已经转换好了：</p>
+    <div class="table-wrap"><table>
+      <tr><th>npm</th><th>API</th><th>基地址后的路径</th></tr>
+      <tr><td><code>@ai-sdk/anthropic</code>、<code>@ai-sdk/google-vertex/anthropic</code></td><td>Anthropic Messages</td><td><code>/messages</code></td></tr>
+      <tr><td><code>@ai-sdk/openai</code>、<code>@ai-sdk/azure</code></td><td>OpenAI Responses</td><td><code>/responses</code></td></tr>
+      <tr><td><code>@ai-sdk/google</code></td><td>Gemini</td><td><code>/models/&lt;id&gt;:streamGenerateContent?alt=sse</code></td></tr>
+      <tr><td><code>@ai-sdk/github-copilot</code></td><td>GPT-5 及之后（gpt-5-mini 除外）用 Responses，其余用 chat completions</td><td><code>/responses</code> 或 <code>/chat/completions</code></td></tr>
+      <tr><td>其他（<code>@ai-sdk/openai-compatible</code>、<code>xai</code>、<code>groq</code>、<code>deepseek</code> 等）</td><td>Chat completions</td><td><code>/chat/completions</code></td></tr>
+    </table></div>
+    <p>基地址按这个顺序选：</p>
+    <ol>
+      <li>loader 的 <code>baseURL</code>；</li>
+      <li>模型的 <code>provider.api</code>；</li>
+      <li>供应商的 <code>api</code>；</li>
+      <li>AI SDK 包自己的默认地址（<code>https://api.anthropic.com/v1</code>、<code>https://api.openai.com/v1</code> 等）。</li>
+    </ol>
+    <p>请求体里的 <code>model</code> 是模型的 API id：有 <code>id</code> 就用它，否则用键名。</p>
+
+    <h3>每个账号的模型</h3>
+    <p>模型因账号而异时，加一个 <code>provider</code> 钩子：</p>
+    <div class="code">
+      <span class="lang">provider 钩子</span>
+      <pre>provider: {
+  id: <span class="s">"acme"</span>,
+  async models(provider, { auth }) {
+    <span class="c">// provider.models：models.dev 和 config 钩子给出的模型，以 id 为键</span>
+    <span class="c">// auth：这个账号的登录信息，和 plugin-auth.json 中保存的一样</span>
+    return { <span class="s">"acme-large"</span>: { ...provider.models[<span class="s">"acme-large"</span>], name: <span class="s">"Acme Large"</span> } }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li>Agent Link 为每个账号调用一次，在这个账号的作用域里、经过它的代理。每个账号只承接为它列出的模型，所以低档套餐的账号不会收到它没有的模型。</li>
+      <li>模型是 OpenCode 的 <code>Model</code>：
+        <ul>
+          <li><code>id</code>、<code>name</code>；</li>
+          <li><code>api: {id, url, npm}</code>；</li>
+          <li><code>limit: {context, input?, output}</code>；</li>
+          <li><code>capabilities: {reasoning, toolcall, attachment, input: {text, image, …}}</code>；</li>
+          <li><code>cost: {input, output, cache: {read, write}}</code>；</li>
+          <li><code>variants</code>、<code>release_date</code>、<code>status</code>。</li>
+        </ul>
+        最省事的做法是展开 <code>provider.models</code> 里的模型，再改几个字段。<code>status</code> 为 <code>"deprecated"</code> 的模型不会显示。</li>
+      <li>Agent Link 还会读取模型上的这些字段，OpenCode 会忽略它们：
+        <ul>
+          <li><code>free: true</code>：套餐免费提供，不占额度。</li>
+          <li><code>rate</code>：一次请求消耗的点数倍率，可以是数字（<code>0.5</code>），也可以照厂商的写法（<code>"x0.5"</code>）。</li>
+          <li><code>rateWas</code>：当前优惠之前的倍率。</li>
+        </ul>
+        模型选择器会显示它们。</li>
+      <li><code>serviceTiers</code>（在 <code>models</code> 钩子返回的模型上）：厂商为该模型提供的服务档位，写成 id，例如 <code>["priority", "ultrafast"]</code>。Agent Link 会把它们写进 Codex 的模型列表（<code>priority</code> 显示为 Fast）；Chat 或 Responses 请求选了其中一档时，会带着 <code>service_tier</code> 到达你的 <code>fetch</code>。在 Agent Link 转换协议的请求里，模型没列出的档位不会发出。</li>
+      <li>模型支持推理时，<code>variants</code> 的键会成为它的推理档位。</li>
+    </ul>
+    <h3>连不上厂商时</h3>
+    <p>钩子出现以下任一情况，Agent Link 都会保留原有的列表，和内置订阅拉取列表失败时一样：</p>
+    <ul>
+      <li>请求失败后原样返回 <code>provider.models</code>；</li>
+      <li>抛出异常；</li>
+      <li>返回自己的列表，并设置 <code>list[Symbol.for("Agent Link.fellBack")] = true</code>。</li>
+    </ul>
+    <p>如果失败的原因是登录失效，就抛出带 <code>signIn: "expired"</code> 的错误，这个账号会被标记为需要重新登录（见<a href="#signin-state">登录状态</a>）。</p>
+
+    <h2 id="signin"><a class="anchor" href="#signin">登录</a></h2>
+    <p><code>auth</code> 钩子的形式是 <code>{ provider, methods, loader, usage?, refresh?, refreshLead?, icon?, maxConcurrency? }</code>。每个 method 是用户可选的一种登录方式。在应用里它们是按钮；在终端里，<code>Agent Link plugin login &lt;id&gt; [&lt;method&gt;]</code> 会询问选哪个。</p>
+    <h3>API key</h3>
+    <div class="code">
+      <span class="lang">api 方式</span>
+      <pre>{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }</pre>
+    </div>
+    <ul>
+      <li><code>label</code> 是 key 输入框的标题。只写“API key”的会显示成“Acme API key”。</li>
+      <li><code>placeholder</code> 是 Agent Link 自己的字段，显示在输入框里作提示。</li>
+      <li>没有 <code>authorize</code> 函数时，key 原样保存：<code>{type: "api", key, metadata?}</code>。<code>prompts</code> 的回答放在 <code>metadata</code> 里。</li>
+      <li>有 <code>authorize(inputs)</code> 时，由插件自己校验或换取 key，返回 <code>{type: "success", key, metadata?}</code> 或 <code>{type: "failed", error?}</code>。</li>
+    </ul>
+    <h3>浏览器或设备码登录</h3>
+    <div class="code">
+      <span class="lang">oauth 方式</span>
+      <pre>{
+  type: <span class="s">"oauth"</span>,
+  label: <span class="s">"Sign in with Acme"</span>,
+  async authorize(inputs) {
+    const d = await startDeviceCode()
+    return {
+      url: d.verification_uri,                    <span class="c">// Agent Link 打开它</span>
+      instructions: `Enter the code ${d.user_code}`, <span class="c">// 并显示这段说明</span>
+      method: <span class="s">"auto"</span>,                              <span class="c">// "auto"：callback() 自己完成</span>
+      async callback() {                           <span class="c">// "code"：callback(code)，用户粘贴的码</span>
+        const t = await pollForToken(d)
+        if (!t) return { type: <span class="s">"failed"</span>, error: <span class="s">"The code expired"</span> }
+        return { type: <span class="s">"success"</span>, refresh: t.refresh_token, access: t.access_token,
+                 expires: Date.now() + t.expires_in * 1000, accountId: t.email }
+      },
+    }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li>带 <code>refresh</code> 的成功结果保存为 <code>{type: "oauth", refresh, access, expires, …}</code>，你返回的其他字段（<code>accountId</code>、<code>enterpriseUrl</code>、你自己的字段）都一并保存。</li>
+      <li>带 <code>key</code> 的成功结果保存为 API key。</li>
+      <li>结果里写 <code>provider: "other-id"</code>，登录就保存到插件负责的另一个供应商下。</li>
+      <li>失败结果里的 <code>error</code> 是 Agent Link 自己的字段：用户会看到原因（最多 500 字符）。不写的话，用户只能看到登录失败。</li>
+      <li>只有带 <code>prompts</code> 的方式才会收到 <code>inputs</code>。没有 prompts 的方式收到 <code>undefined</code>，和 OpenCode 的 TUI 一样。OpenCode 的 CLI 传的是空对象，有些插件因此会在终端里自己提问。</li>
+    </ul>
+    <h3>登录前的提问</h3>
+    <p>method 的 <code>prompts</code> 在 <code>authorize</code> 之前依次提问，每一项只在条件成立时出现：</p>
+    <div class="code">
+      <span class="lang">prompts</span>
+      <pre>prompts: [
+  { type: <span class="s">"select"</span>, key: <span class="s">"region"</span>, message: <span class="s">"Region"</span>,
+    options: [{ label: <span class="s">"Global"</span>, value: <span class="s">"global"</span> }, { label: <span class="s">"China"</span>, value: <span class="s">"cn"</span>, hint: <span class="s">"acme.cn"</span> }] },
+  { type: <span class="s">"text"</span>, key: <span class="s">"team"</span>, message: <span class="s">"Team id"</span>, placeholder: <span class="s">"t-…"</span>,
+    when: { key: <span class="s">"region"</span>, op: <span class="s">"eq"</span>, value: <span class="s">"global"</span> },        <span class="c">// 或 condition: (inputs) =&gt; boolean</span>
+    validate: (v) =&gt; (/^t-/.test(v) ? undefined : <span class="s">"Starts with t-"</span>) },
+]</pre>
+    </div>
+    <p><code>type: "password"</code> 的问题和 <code>text</code> 一样，只是输入时不显示：应用里是掩码输入框，终端里的 <code>Agent Link plugin login</code> 不回显。适合 token、个人访问令牌（PAT）。这是 Agent Link 自己的类型，OpenCode 只有 <code>text</code> 和 <code>select</code>。</p>
+    <h3>账号</h3>
+    <ul>
+      <li><b>保存位置。</b>一个供应商可以登录多次。第一个账号保存在供应商 id 下，和 OpenCode 一样；其他账号保存在 <code>id#xxxxxx</code> 下。</li>
+      <li><b>用户怎么区分它们。</b>Agent Link 依次用 <code>accountId</code>、<code>metadata.email</code>、<code>email</code> 给账号命名。至少保存其中一个，能拿到邮箱就用邮箱。</li>
+      <li><b>重新登录。</b>新的登录和已有账号 <code>accountId</code> 相同时，会替换那个账号。如果两边都有 <code>uid</code>（厂商自己的 id，用于名字可能重复的厂商），它也必须相同。没有 id 时，比较密钥是否相同。都不匹配就成为新账号。</li>
+      <li><b>作用域。</b>Agent Link 为某个账号发起的每次调用，都在这个账号的作用域里运行：
+        <ul>
+          <li><code>getAuth()</code> 返回这个账号。</li>
+          <li><code>client.auth.set({ path: { id: "acme" }, body })</code> 保存到这个账号。</li>
+        </ul>
+        所以每个账号的状态要按拿到的 auth 来保存，不要放进以供应商为键的模块变量。</li>
+      <li><b>刷新。</b>提供 <code>auth.refresh</code>，Agent Link 就会替你续期（见<a href="#renew">续期登录</a>）。否则 token 过期时，在 <code>fetch</code> 里刷新，再用 <code>client.auth.set</code> 保存完整对象。你给的内容会替换原有内容，不做合并。</li>
+    </ul>
+    <h3 id="renew">续期登录</h3>
+    <p>从 Agent Link 0.1.684 起，插件可以用 <code>auth.refresh</code> 把 token 续期交给 Agent Link。这是 Agent Link 自己的钩子（OpenCode 会忽略它）：</p>
+    <div class="code">
+      <span class="lang">auth 钩子</span>
+      <pre>auth: {
+  provider: <span class="s">"acme"</span>,
+  methods: [ … ],
+  <span class="c">// 可选：在 expires 之前多久续期（毫秒），默认 5 分钟</span>
+  refreshLead: 5 * 60 * 1000,
+  async refresh(auth, provider) {  <span class="c">// auth 是这个账号保存的登录信息</span>
+    const t = await exchange(auth.refresh)
+    if (t.error === <span class="s">"invalid_grant"</span>)
+      throw Object.assign(new Error(<span class="s">"Acme 拒绝了登录"</span>), { signIn: <span class="s">"expired"</span> })
+    return { access: t.access_token, refresh: t.refresh_token ?? auth.refresh,
+             expires: Date.now() + t.expires_in * 1000 }
+  },
+  loader: async (getAuth) =&gt; ({ … }),  <span class="c">// getAuth() 拿到的已经是续期后的 token</span>
+}</pre>
+    </div>
+    <ul>
+      <li><b>什么时候运行。</b>OAuth 账号的 <code>expires</code> 距现在不到 <code>refreshLead</code> 时，在这个账号的 loader、<code>provider.models</code>、<code>auth.usage</code> 或请求之前运行。<code>expires</code> 为 0 或没有的账号不会续期。</li>
+      <li><b>同一时间只续一次。</b>发现 token 快过期的请求会一起等同一次续期，所以只允许 refresh token 用一次的厂商不会收到两次。最多等 15 秒；超时的续期在完成时照样保存。</li>
+      <li><b>保存什么。</b>你返回的字段会覆盖账号原有的同名字段（会合并，这点和 <code>client.auth.set</code> 不同），账号的标记也会清除。没什么可续的就什么都不返回。</li>
+      <li><b>失败时。</b>账号保持原样，请求带着旧 token 继续发，由厂商的回答来说明结果。带 <code>signIn: "expired"</code> 的错误会标记账号（见<a href="#signin-state">登录状态</a>），重新登录之前 Agent Link 不再尝试。其他错误 30 秒后再试。</li>
+      <li><b>OpenCode 和旧版 Agent Link。</b>它们会忽略这个钩子。如果插件也要在那里运行，<code>fetch</code> 里的检查请保留：在 Agent Link 下它会发现 token 是新的，什么也不做。</li>
+    </ul>
+
+    <h2 id="requests"><a class="anchor" href="#requests">请求</a></h2>
+    <p><code>loader(getAuth, provider)</code> 每个账号运行一次，账号登录信息变化后会重新运行。它返回 OpenCode 会交给 AI SDK 的内容：</p>
+    <div class="table-wrap"><table>
+      <tr><th>字段</th><th>Agent Link 怎么用</th></tr>
+      <tr><td><code>baseURL</code></td><td>请求发往的地址，优先于模型和供应商的 <code>api</code>。</td></tr>
+      <tr><td><code>apiKey</code></td><td>按 AI SDK 包的方式发送：Anthropic 用 <code>x-api-key</code>，Google 用 <code>x-goog-api-key</code>，其他用 <code>Authorization: Bearer</code>。API key 登录时默认就是保存的 key。</td></tr>
+      <tr><td><code>headers</code></td><td>加到每个请求上。</td></tr>
+      <tr><td><code>fetch</code></td><td>发出请求。不提供时，Agent Link 的宿主用标准 <code>fetch</code>。</td></tr>
+    </table></div>
+    <p>你的 <code>fetch(input, init)</code> 收到的请求：</p>
+    <ul>
+      <li><code>input</code> 是完整 URL：基地址加上模型 API 对应的路径。</li>
+      <li><code>init.method</code> 通常是 <code>POST</code>。</li>
+      <li><code>init.headers</code> 按下面的顺序设置，后面的覆盖前面的：
+        <ol>
+          <li><code>apiKey</code> 对应的 key 头；</li>
+          <li>loader 的 <code>headers</code>；</li>
+          <li>网关请求的头；</li>
+          <li><code>chat.headers</code> 钩子加的头。</li>
+        </ol></li>
+      <li><code>init.body</code> 是这种 API 格式的 JSON 字符串（不是 UTF-8 文本时为字节）。其中的 <code>model</code> 是 API id，<code>stream</code> 照 agent 的要求。</li>
+      <li><code>init.signal</code> 在 agent 放弃请求时中止。</li>
+    </ul>
+    <p>返回一个 <code>Response</code>。它的状态码、头和正文原样传回，正文逐块流式传输。如果你改写了流式正文，要去掉头里的 <code>content-length</code> 和 <code>content-encoding</code>。</p>
+    <h3>失败与故障切换</h3>
+    <ul>
+      <li>非 2xx 的响应就是厂商的回答，网关会像对待其他供应商一样处理：限流或服务端错误会把请求转到下一个账号或模型，401 会标记账号（见<a href="#signin-state">登录状态</a>）。</li>
+      <li>抛出异常会让请求失败，然后故障切换继续。</li>
+      <li>尽量用该 API 自己的错误格式回答，这样 agent 会显示厂商的原话。</li>
+    </ul>
+    <h3>chat.headers</h3>
+    <p>OpenCode 的 <code>chat.headers</code> 钩子对每个请求都会运行。它的 <code>input.sessionID</code> 是 Agent Link 的会话 id，在同一段对话的各轮之间保持不变。可以用它填厂商的会话头或缓存头：</p>
+    <div class="code">
+      <span class="lang">chat.headers</span>
+      <pre><span class="s">"chat.headers"</span>: async (input, output) =&gt; {
+  if (input.model.providerID === <span class="s">"acme"</span>) output.headers[<span class="s">"x-acme-session"</span>] = input.sessionID
+}</pre>
+    </div>
+
+    <h2 id="signin-state"><a class="anchor" href="#signin-state">登录状态</a></h2>
+    <p>厂商拒绝了某个账号的登录时，Agent Link 会给它打上标记，告诉用户，并且在它恢复之前不再往它发请求。默认情况下，401 打标记，成功清除标记。插件可以用 <code>X-Agent Link-Sign-In</code> 响应头更准确地说明一个回答的含义，Agent Link 会在转发前去掉这个头：</p>
+    <div class="table-wrap"><table>
+      <tr><th>值</th><th>含义</th></tr>
+      <tr><td><code>expired</code></td><td>登录被拒绝，无论状态码是什么（有些厂商为此返回 403 或 502）。</td></tr>
+      <tr><td><code>kept</code></td><td>账号保持原样（这个 401 说的是别的问题）。</td></tr>
+      <tr><td><code>renewed</code></td><td>登录已续期：清除标记，无论请求接下来遇到什么。</td></tr>
+    </table></div>
+    <p>在 <code>fetch</code> 或 <code>provider.models</code> 里，抛出带 <code>signIn: "expired"</code> 的错误效果相同：</p>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <pre>throw Object.assign(new Error(<span class="s">"Acme refused the sign-in; sign in again"</span>), { signIn: <span class="s">"expired"</span> })</pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">用量</a></h2>
+    <p><code>auth.usage(getAuth, provider)</code> 是 Agent Link 自己的钩子，说明一个账号的额度用了多少。它在账号的作用域里运行，所以它刷新的 token 会保存到这个账号。Agent Link 把结果显示在<span class="ui">供应商</span>里的账号上、<code>agent-link quota</code> 里，以及网关的 <code>GET /v1/Agent Link/quotas</code>。所有字段都可选：</p>
+    <div class="code">
+      <span class="lang">usage 返回值</span>
+      <pre>{
+  plan: <span class="s">"Pro"</span>,
+  user: <span class="s">"ada@example.com"</span>,     <span class="c">// 厂商那边的账号名</span>
+  until: <span class="s">"2026-11-01T00:00:00Z"</span>, <span class="c">// 套餐到期时间</span>
+  renew: <span class="s">"auto"</span>,                <span class="c">// 或 "off"</span>
+  balance: <span class="s">"$12.40"</span>,
+  error: <span class="s">""</span>,                    <span class="c">// 显示在额度窗口的位置</span>
+  windows: [{
+    name: <span class="s">"5 hours"</span>,
+    used: 37,                   <span class="c">// 百分比；超用时大于 100</span>
+    resetsAt: <span class="s">"2026-10-03T18:00:00Z"</span>, <span class="c">// 或 resetSecs: 3600</span>
+    span: 18000,                <span class="c">// 窗口长度，单位秒</span>
+    display: <span class="s">"370 / 1000 credits"</span>,
+    amount: 370, limit: 1000, unit: <span class="s">"credits"</span>, <span class="c">// 按数量计时，窗口自己的用量</span>
+    model: <span class="s">"opus"</span>,              <span class="c">// 只统计 id 含这个词的模型</span>
+    models: [], notModels: [],  <span class="c">// 或恰好这些 id，或除这些外的全部</span>
+    aside: false,               <span class="c">// true：用完也不影响账号使用</span>
+    runsOutAt: <span class="s">"2026-10-05T00:00:00Z"</span>, runsOut: 120, <span class="c">// 剩余额度中最早作废的一笔何时作废、作废多少</span>
+  }],
+  resets: { count: 2, until: <span class="s">"…"</span>, byWindow: false, fiveHour: 1, weekly: 1 }, <span class="c">// 账号可用的重置次数</span>
+  signIn: <span class="s">"kept"</span>,               <span class="c">// 同 X-Agent Link-Sign-In</span>
+}</pre>
+    </div>
+    <p>时间可以是 ISO 字符串，也可以是以秒或毫秒为单位的时间戳。没有 <code>signIn</code> 时，提示要重新登录的 <code>error</code> 会标记账号，一次正常读取会清除标记。</p>
+
+    <h2 id="input"><a class="anchor" href="#input">插件能拿到什么</a></h2>
+    <p>Agent Link 交给插件的是 OpenCode <code>PluginInput</code> 里的内容，只要它在没有 OpenCode 服务端时还有意义：</p>
+    <div class="table-wrap"><table>
+      <tr><th>字段</th><th>在 Agent Link 里</th></tr>
+      <tr><td><code>client.auth.set</code> / <code>.remove</code></td><td>保存或删除当前作用域账号的登录信息。</td></tr>
+      <tr><td><code>client.app.log</code></td><td>写入 Agent Link 的日志，格式为 <code>plugin [level]: [service] message</code>。</td></tr>
+      <tr><td><code>client.tui.showToast</code></td><td>写入 Agent Link 的日志。</td></tr>
+      <tr><td><code>client.config.get</code></td><td>所有插件的 <code>config</code> 钩子运行之后的配置。</td></tr>
+      <tr><td>其他 <code>client.*</code></td><td>返回 <code>{ data: undefined }</code>。</td></tr>
+      <tr><td><code>directory</code>、<code>worktree</code></td><td>Agent Link 的配置目录，可以在这里存文件。</td></tr>
+      <tr><td><code>project</code></td><td><code>{ id: "Agent Link", worktree }</code>。</td></tr>
+      <tr><td><code>$</code></td><td>Bun 的 shell。</td></tr>
+      <tr><td><code>serverUrl</code></td><td>占位值，后面没有 OpenCode 服务端。</td></tr>
+    </table></div>
+    <p>Agent Link 调用的钩子是 <code>config</code>、<code>auth</code>（它的 methods、<code>loader</code> 和 <code>usage</code>）、<code>provider.models</code> 和 <code>chat.headers</code>。插件的其他钩子（<code>tool</code>、<code>event</code>、<code>chat.params</code> 等）不会被调用，工具由 agent 自己运行。</p>
+
+    <h2 id="ids"><a class="anchor" href="#ids">供应商 id</a></h2>
+    <ul>
+      <li>agent 用 <code>&lt;id&gt;/&lt;model&gt;</code> 指代插件的模型，id 就是插件的 <code>auth.provider</code>。</li>
+      <li>这个 id 在 Agent Link 里已被占用时，比如内置订阅、预设（<code>google</code>、<code>openai</code>、<code>anthropic</code> 等）或 <code>Agent Link</code> 本身，插件的供应商会叫 <code>&lt;id&gt;-plugin</code>。请选一个只属于你的 id。</li>
+      <li>社区为 Agent Link 已弃用的内置订阅做的插件是例外。它们用内置订阅的 id（<code>cursor</code>、<code>zed</code> 等），用户迁移到插件后就接管这个 id，agent 无需任何改动。</li>
+      <li>两个已安装的插件登录同一个 id 时（比如已发布的插件和你自己的副本），只由其中一个提供：选定的那个，否则是后添加的那个。两个插件都留在<span class="ui">插件 → 已安装</span>里，各自那一行会写明由哪个提供。在另一行点<span class="ui">用于 …</span>，或运行 <code>Agent Link plugin use &lt;名字&gt; &lt;id&gt;</code>，即可改选。</li>
+    </ul>
+
+    <h2 id="test"><a class="anchor" href="#test">测试</a></h2>
+    <p>在沙箱里运行 Agent Link，这样你自己的 Agent Link、agent 和登录信息都不会被碰到：</p>
+    <div class="code">
+      <span class="lang">终端</span>
+      <button class="copy" data-copy="t-cli">复制</button>
+      <pre id="t-cli">sb=$(mktemp -d)
+m() { env HOME=$sb XDG_CONFIG_HOME=$sb/.config XDG_CACHE_HOME=$sb/.cache AGENT_LINK_ADDR=127.0.0.1:3499 agent-link <span class="s">"$@"</span>; }
+m plugin add ./opencode-acme-auth &lt;/dev/null
+m plugin --json                     <span class="c"># 插件列出的内容：方式、账号、模型、加载错误</span>
+m plugin login acme                 <span class="c"># 每种方式、每个提问</span>
+m provider test acme                <span class="c"># 每种 API 发一个很小的请求</span>
+m provider test acme acme-coder     <span class="c"># 或只测指定的模型</span>
+m quota                             <span class="c"># usage 钩子</span>
+m plugin logout acme</pre>
+    </div>
+    <ul>
+      <li>加载失败的插件，在 <code>Agent Link plugin</code> 里会说明原因。</li>
+      <li>钩子的错误和插件打印的内容都在输出里，以 <code>plugin: …</code> 开头。</li>
+      <li>单元测试用 <code>bun test</code>，测试你放在 <code>_internal</code> 上的函数。</li>
+      <li><a href="https://github.com/Agent Link-community/plugins">社区仓库</a>里有几个脚本：
+        <ul>
+          <li><code>bun scripts/check.mjs</code> 像 Agent Link 一样加载每个包，并检查它的钩子。</li>
+          <li><code>scripts/try.sh &lt;name&gt;</code> 在上面那样的沙箱里运行它。</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="publish"><a class="anchor" href="#publish">发布与上架</a></h2>
+    <ul>
+      <li><b>npm。</b>照常发布。用户可以按名字添加（<code>Agent Link plugin add opencode-acme-auth</code>），按版本（<code>…@0.2.0</code>），从 git，或从文件夹。</li>
+      <li><b>搜索。</b><span class="ui">插件</span>里的搜索会向 npm 查询 <code>&lt;关键词&gt; opencode</code>，显示名字或 keywords 里同时含有 <code>opencode</code> 和 <code>auth</code>、<code>plugin</code>、<code>provider</code> 之一的包。keywords 写成 <code>["opencode", "opencode-plugin", "&lt;厂商&gt;"]</code> 就可以。它还会查询 <code>keywords:pi-package &lt;关键词&gt;</code>，显示名字或 keywords 里提到 <code>auth</code> 或 <code>provider</code> 的 pi 扩展包。</li>
+      <li><b>README。</b>插件在 Agent Link 里的详情页显示它在 npm 上的 README。写清楚它登录什么、怎么登录、登录信息存在哪里、有哪些模型。</li>
+      <li><b>推荐列表。</b><span class="ui">插件</span>页推荐的是社区仓库 <a href="https://github.com/Agent Link-community/plugins/blob/main/registry.json"><code>registry.json</code></a> 里的插件。Agent Link 最多每六小时拉取一次，并内置一份副本，拉不到时使用。想被收录，就提一个 PR 加上一项：
+        <div class="code">
+          <span class="lang">registry.json</span>
+          <pre>{ <span class="s">"package"</span>: <span class="s">"opencode-acme-auth"</span>, <span class="s">"name"</span>: <span class="s">"Acme"</span>, <span class="s">"icon"</span>: <span class="s">"https://acme.example/icon.svg"</span>,
+  <span class="s">"providers"</span>: [<span class="s">"acme"</span>],
+  <span class="s">"summary"</span>: { <span class="s">"en"</span>: <span class="s">"Your Acme Coding Plan."</span>, <span class="s">"zh"</span>: <span class="s">"使用你的 Acme Coding Plan。"</span> } }</pre>
+        </div>
+        中间件的条目写 <code>"kind": "middleware"</code>，不写 <code>providers</code>，列在<span class="ui">网关中间件</span>下。其他类型也一样：<code>"kind": "tools"</code> 列在<span class="ui">给 Agent 的工具</span>下，<code>"kind": "page"</code> 列在<span class="ui">页面</span>下，<code>"kind": "agent"</code> 列在 <span class="ui">Agent</span> 下。<code>AGENT_LINK_PLUGIN_MARKET=&lt;url&gt;</code> 让 Agent Link 改用另一份列表，可以用来检查你的条目；设为 <code>off</code> 则只用内置副本。</li>
+      <li><b>GitHub 标签。</b>在 GitHub 上打了 <code>Agent Link-plugin</code> topic 的仓库，会显示在 <span class="ui">插件 → 发现 → 非官方插件 · GitHub</span> 里，Star 多的在前，并标明没有人审阅过。<code>package.json</code> 要放在仓库根目录。发布到 npm 且 <code>repository</code> 指向这个仓库的，从 npm 安装；否则按仓库当前的代码安装，所以它加载的文件必须提交进仓库：<code>dist</code> 只在发布时才构建的仓库不会显示。fork、已归档的仓库和 Agent Link-community 自己的仓库也不显示。Agent Link 最多每十分钟问一次 GitHub，仓库打上标签后几分钟内就会出现。卡片显示 <code>package.json</code> 里 <code>"Agent Link": { "icon": "…" }</code> 给的图标，没有就显示拼图图标。</li>
+      <li><b>社区包。</b>想把插件贡献到 <a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a>：
+        <ul>
+          <li>放在 <code>packages/&lt;name&gt;</code> 下，包名为 <code>@Agent Link-community/opencode-&lt;name&gt;-auth</code>（供应商）、<code>@Agent Link-community/middleware-&lt;name&gt;</code>（中间件或路由策略）、<code>@Agent Link-community/tools-&lt;name&gt;</code>（工具）、<code>@Agent Link-community/page-&lt;name&gt;</code>（页面）或 <code>@Agent Link-community/agent-&lt;name&gt;</code>（Agent），除非确实需要，不要有运行时依赖。</li>
+          <li>把版本号的改动推到 <code>main</code> 就会发布。</li>
+          <li>这些包在每个 Agent Link 里都会自动更新。</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="gateway-request"><a class="anchor" href="#gateway-request">异步网关请求钩子</a></h2>
+    <p>插件可以在 Agent 请求路由前等待外部 I/O，例如召回项目上下文。在 package.json 声明 <code>"Agent Link": { "hooks": "./hooks.js" }</code>，或者添加 <code>*.hooks.js</code> / <code>.mjs</code> / <code>.ts</code> / <code>.mts</code> 文件（Bun 直接运行 TypeScript，无需构建）。导出具名异步 <code>onRequest(body, ctx)</code>。纯网关插件不需要 OpenCode 的 main/exports。</p>
+    <p>可选的异步 <code>onResponse(reply, ctx)</code> 在输出完成后接收尽力投递的通知，不修改回复，也不阻塞实时流。工具声明和工具循环由客户端负责。</p>
+<p>它在 Bun 中运行，每个 Agent 请求调用一次，位于 JS 网关中间件之前，对所有供应商生效，包括 Codex 自己的 ChatGPT 登录。body 是 Agent API 请求对象；ctx 包含 <code>protocol</code>、<code>model</code>、<code>stream</code>、<code>path</code>、<code>agent</code>、<code>session</code>、<code>cwd</code>、<code>query</code>、<code>options</code>、<code>signal</code>。query 是最后一条用户文本，不含工具结果和图片；缺失身份信息为空，HTTP Authorization 不传入。</p>
+<p>返回对象替换请求，undefined 保留此前请求。改动模型、流式、客户端工具或工具选择的钩子会被回滚，算作失败，这次请求不会调用它的 <code>onResponse</code>。每个钩子收到独立副本，失败或返回 undefined 时丢弃其原地修改。成功修改按启用顺序传给后续插件。每个钩子默认 1 秒；选项 <code>gatewayTimeoutMs</code> 可设为 100 到 10000 毫秒的整数。整条链按预算求和，限制为 2 到 10 秒，包含宿主启动及 RPC 共 11 秒。设置 → 插件提供选项编辑及调用次数、耗时、失败与最近结果。<code>ctx.report(code, bytes)</code> 只接受 ready/empty/unbound/unauthorized/unavailable/invalid/skipped 和字节数；不保存私有文本，重载后统计清零。fetch 应使用 <code>ctx.signal</code>。异常、畸形返回、超时、宿主正忙于启动时保留原请求。Bun 插件具有宿主权限，只安装可信代码。</p>
+<p>用 <code>Agent Link plugin add ./my-plugin</code> 安装，<code>Agent Link plugin options my-plugin '&lbrace;"serverUrl":"http://127.0.0.1:8000"&rbrace;'</code> 设置选项。on/off 和选项变更触发宿主重载；仅修改源码需主动触发配置重载。内部标题和分类请求跳过此钩子。</p>
+
+    <h2 id="middleware"><a class="anchor" href="#middleware">网关中间件</a></h2>
+    <p>插件还可以是<em>网关中间件</em>：agent 发给 Agent Link 网关的每个请求，在路由之前先经过它；回复在返回的路上也经过它。它可以给模型起别名、往系统提示词里加内容、拒绝请求、改写或隐藏模型说的话，或者自己统计经过的流量。它对所有供应商都起作用，不管是不是插件提供的。</p>
+    <div class="code">
+      <span class="lang">alias.middleware.js</span>
+      <button class="copy" data-copy="mw-ex">复制</button>
+      <pre id="mw-ex"><span class="c">// alias.middleware.js</span>
+<span class="k">export const</span> events = [<span class="s">"message_start"</span>]
+
+<span class="k">export function</span> onRequest(body, ctx) {
+  ctx.state.asked = body.model
+  <span class="k">if</span> (body.model === <span class="s">"fast"</span>) body.model = <span class="s">"deepseek/deepseek-chat"</span>
+  <span class="k">if</span> ((ctx.options.blocked ?? []).includes(body.model)) <span class="k">return</span> ctx.reject(403, <span class="s">"not this model"</span>)
+  <span class="k">return</span> body
+}
+
+<span class="k">export function</span> onEvent(ev, ctx) {
+  ev.message.model = ctx.state.asked  <span class="c">// the agent sees the name it asked for</span>
+  <span class="k">return</span> ev
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-cli">复制</button>
+      <pre id="mw-cli">Agent Link plugin add ./alias.middleware.js   <span class="c"># 或者 package.json 里写了 "Agent Link": { "middleware": "./mw.js" } 的包</span></pre>
+    </div>
+    <h3 id="middleware-community"><a class="anchor" href="#middleware-community">现成的中间件</a></h3>
+    <p>社区仓库里有现成的中间件可以直接添加，大多是 <a href="https://github.com/QuantumNous/new-api">New API</a> 为渠道提供的功能，用的也是同样的 JSON。它们在<span class="ui">插件 → 发现 → 网关中间件</span>里，那里每张卡片都标明它是供应商还是中间件。</p>
+    <div class="table-wrap"><table>
+      <tr><th>包</th><th>作用</th></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/param-override"><code>param-override</code></a></td><td>New API 的参数覆盖（<code>param_override</code>）：设置、删除、移动、复制或改写请求里的字段，可以只对某些模型或在满足条件时生效，也可以拒绝请求。从 New API 复制来的 <code>param_override</code> 不用改。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/model-map"><code>model-map</code></a></td><td>New API 的模型重定向（<code>model_mapping</code>）：把一个模型换成另一个名字发出，按名字或 <code>/正则/</code>。回复里仍是 agent 请求的模型名。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/system-prompt"><code>system-prompt</code></a></td><td>给每个请求（或只给某些 agent、某些模型）加上你的系统提示词，放在各个 API 自己的位置。请求自带系统提示词时保留原样，除非打开 <code>override</code>。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/word-guard"><code>word-guard</code></a></td><td>New API 的敏感词过滤：用户发送的内容里出现所列词语或正则时拒绝或打码，也可以对回复打码。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/think-tags"><code>think-tags</code></a></td><td>去掉回复正文开头的 <code>&lt;think&gt;…&lt;/think&gt;</code>，或把 Chat 回复的 <code>reasoning_content</code> 放进正文（New API 的 <code>thinking_to_content</code>）。</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/antigravity-cloak"><code>antigravity-cloak</code></a></td><td>把 Antigravity 据以拒绝 Claude Code 和 Agent SDK 系统提示词的那几个词拆开，只改发给 Antigravity 的请求；发给别的供应商的提示词保持原样。</td></tr>
+    </table></div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-add">复制</button>
+      <pre id="mw-add">Agent Link plugin add @Agent Link-community/middleware-model-map
+Agent Link plugin options model-map '{"mapping": {"fast": "deepseek/deepseek-chat"}}'</pre>
+    </div>
+    <h3 id="middleware-options"><a class="anchor" href="#middleware-options">选项</a></h3>
+    <p>中间件从 <code>ctx.options</code> 读取设置，也就是 <code>plugins.json</code> 里它那一项的 <code>options</code>。可以在<span class="ui">插件 → 已安装</span>里点中间件的<span class="ui">选项</span>按钮，在它那一行里以 JSON 编辑；也可以用 <code>Agent Link plugin options &lt;名字&gt; '&lt;json&gt;'</code>（<code>off</code> 清除）。名字可以是包名、spec 或短名：<code>@Agent Link-community/middleware-model-map</code> 的短名是 <code>model-map</code>。从下一个请求起生效。包可以在 <code>package.json</code> 里用 <code>"Agent Link": { "options": { … } }</code> 给出建议的选项：没有设置时编辑框以它为起点，但在你保存之前，中间件运行时没有选项。</p>
+    <h3>运行方式</h3>
+    <p>中间件不在 Bun 里运行，而是在网关自己的进程里，用 Go 写的 JavaScript 引擎 <a href="https://github.com/Calcium-Ion/moejs">moejs</a> 运行。原因是一个回复会流式传输成千上万个事件，每个事件都要等它处理完。在一个事件上调用一次钩子大约耗时 1 微秒，而和 Bun 往返一次要几十微秒。每个中间件只编译一次，每个请求有自己的运行时，所以请求之间可以并行，同一个请求的各个钩子共享 <code>ctx.state</code>。</p>
+    <ul>
+      <li><b>声明方式。</b>在 <code>package.json</code> 里写 <code>"Agent Link": { "middleware": "./mw.js" }</code>，或者用一个名为 <code>*.middleware.js</code>（或 <code>.mjs</code>）的单文件。没有 <code>main</code> 也没有 <code>exports</code> 的包只是中间件，插件宿主不会加载它；两者都有的包既是供应商插件，也是中间件。</li>
+      <li><b>导入。</b>只能用相对路径导入插件目录里的文件。这里没有 <code>node_modules</code>，用到的依赖请打包进文件。</li>
+      <li><b>能用什么。</b>标准 JavaScript 和 <code>console.log</code>（写进 Agent Link 的日志，每分钟最多 60 行）。没有定时器、没有 <code>fetch</code>，也没有 Node API。钩子可以是 <code>async</code> 的，但没有什么可等待的。</li>
+      <li><b>修改后。</b>Agent Link 每秒检查一次这些文件和 <code>plugins.json</code>，有变化就重新加载中间件。</li>
+    </ul>
+    <h3>钩子</h3>
+    <p>每个钩子是一个具名导出，或者 <code>export default { … }</code> 的一个成员。请求体和事件都是 agent 自己的 API 格式（<code>ctx.protocol</code>），不是供应商的。返回要继续发送的对象；什么都不返回，就按原样发送。</p>
+    <div class="table-wrap"><table>
+      <tr><th>钩子</th><th>拿到的内容</th><th>返回</th></tr>
+      <tr><td><code>onRequest(body, ctx)</code></td><td>路由之前的请求体：改了 <code>model</code>，请求就会路由到别处。</td><td>请求体，或者不返回。<code>ctx.reject(status, message)</code> 会拒绝这个请求，并用 agent 的 API 格式返回这个错误（不给状态码时是 403）。</td></tr>
+      <tr><td><code>onProvider(body, ctx)</code></td><td>请求即将发给某个供应商时的请求体；<code>ctx.provider</code> 有它的 <code>id</code>、<code>name</code>、<code>account</code>（订阅的种类，比如 <code>claude</code> 或 <code>antigravity</code>；API 密钥没有这一项）和 <code>model</code>。请求每换一个供应商尝试就再调用一次，每次拿到的都是 <code>onRequest</code> 处理后的请求体，所以为一个供应商做的改动不会带到别的供应商。</td><td>请求体，或者不返回。这时请求已经路由好了：不能再拒绝，也不能改发别处。</td></tr>
+      <tr><td><code>onEvent(event, ctx)</code></td><td>流式回复里的每个事件：它的 <code>data:</code> JSON。</td><td>事件、不返回，或者 <code>null</code> 表示丢掉这个事件。</td></tr>
+      <tr><td><code>onResponse(body, ctx)</code></td><td>非流式的完整回复；<code>ctx.status</code> 是它的状态码。</td><td>回复体，或者不返回。</td></tr>
+    </table></div>
+    <p><code>export const events = ["content_block_delta"]</code> 让 <code>onEvent</code> 只处理这些名字的事件（Anthropic Messages 和 Responses 的事件有名字）。Chat Completions 和 Gemini 的事件没有名字，处理它们时不要写 <code>events</code>。一个事件只是回复的一小段，一个词可能被拆在两个事件里。<code>data: [DONE]</code> 行和注释直接放行，不经过钩子。压缩过的回复原样放行。</p>
+    <p><code>ctx</code> 里有 <code>protocol</code>（<code>anthropic</code>、<code>chat</code>、<code>responses</code> 或 <code>gemini</code>）、agent 请求的 <code>model</code> 和 <code>stream</code>、<code>path</code>、Agent Link 知道时的 <code>agent</code>、<code>options</code>（这个插件的<a href="#middleware-options">选项</a>），以及 <code>state</code>：每个请求独有的对象。</p>
+    <h3>钩子出错时</h3>
+    <p>处理请求、一次供应商尝试或完整回复时，钩子有 250 毫秒；处理一个事件时有 50 毫秒；加载有 1 秒。钩子抛出异常、超时或返回了别的东西，都当作它不存在：请求或事件按原样发送。设置 → 插件会显示每个中间件的钩子、调用次数、平均每次耗时和失败次数，以及最近一次错误。钩子看到的是 agent 发出和收到的原始内容：发出时在 Agent Link 脱敏之前，返回时在还原之后。Agent Link 自己的请求（会话标题、路由分类器）不经过中间件。</p>
+
+    <h3 id="gateway-points"><a class="anchor" href="#gateway-points">路由与用量记录</a></h3>
+    <p>同一个模块还可以导出 <code>strategies</code> 和 <code>onUsage</code>。这样的文件可以命名为 <code>*.gateway.js</code>，包里也可以写 <code>"Agent Link": { "gateway": "./gw.js" }</code>。</p>
+    <ul>
+      <li><b>路由。</b>每个 <code>strategies[name]</code> 是一个名为 <code>&lt;插件&gt;/&lt;name&gt;</code> 的路由（插件包的短名，或去掉 <code>.gateway.js</code> 的文件名），插件开着时，供应商、号池和分组的路由选择里都会列出它。它是函数 <code>(pool, seats, options)</code>，或带 <code>order</code> 的对象，返回尝试各个座位的顺序（下标）。每个座位有 <code>key</code>、<code>account</code>、<code>known</code>、<code>learns</code>、<code>used</code>、<code>soon</code>（额度窗口何时刷新，毫秒）、<code>pace</code>、<code>weight</code>、<code>resting</code> 和 <code>tokens</code>（最近发给它的量）。它有 20 ms；出错、超时或返回别的东西时，按列表顺序尝试。插件关掉后，用它的供应商或分组也按列表顺序。</li>
+      <li><b>用量。</b><code>onUsage(row, options)</code> 在每个请求结束后拿到它的用量记录：供应商、账号和密钥、模型、token、<code>ms</code>、<code>ttftMs</code>、状态、错误类型和费用，不含请求体、提示词或错误文本。它单独运行，请求从不等它；它忙到队列满时到来的记录会被丢弃并计数。它有 250 ms。</li>
+    </ul>
+    <div class="code">
+      <span class="lang">spread.gateway.js</span>
+      <button class="copy" data-copy="gp-ex">复制</button>
+      <pre id="gp-ex"><span class="c">// spread.gateway.js</span>
+<span class="k">export const</span> strategies = {
+  <span class="s">"fewest-tokens"</span>: (pool, seats) =&gt;
+    seats.map((_, i) =&gt; i).sort((a, b) =&gt;
+      (seats[a].resting - seats[b].resting) || (seats[a].tokens - seats[b].tokens)),
+}
+
+<span class="k">let</span> slow = 0
+
+<span class="k">export function</span> onUsage(row, options) {
+  <span class="k">if</span> (row.ms &gt; (options.slowMs ?? 30000)) {
+    slow++
+    console.log(`slow: ${row.provider} ${row.model} ${row.ms} ms (${slow} so far)`)
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="gp-cli">复制</button>
+      <pre id="gp-cli">Agent Link plugin add ./spread.gateway.js
+Agent Link group set fast routing=spread/fewest-tokens</pre>
+    </div>
+
+    <h2 id="tools"><a class="anchor" href="#tools">给每个智能体的工具</a></h2>
+    <p>插件可以用 OpenCode 的 <code>tool</code> 钩子提供工具，Agent Link 把它们提供给每个智能体，不只是 OpenCode：它们组成 Agent Link 自己的一个 MCP 服务器，地址是 <code>/mcp/Agent Link/tools</code>（Streamable HTTP）。把这个地址加到任何支持 MCP 服务器的智能体里，它的模型就能调用你已开启的插件提供的每个工具。每个工具名为 <code>&lt;插件&gt;_&lt;工具&gt;</code>，插件的短名在前，例如下面的 <code>weather-tools_now</code>。</p>
+    <div class="code">
+      <span class="lang">index.js</span>
+      <button class="copy" data-copy="tools-ex">复制</button>
+      <pre id="tools-ex"><span class="k">import</span> { tool } <span class="k">from</span> <span class="s">"@opencode-ai/plugin"</span>
+
+<span class="k">export const</span> WeatherTools = <span class="k">async</span> () =&gt; ({
+  tool: {
+    now: tool({
+      description: <span class="s">"某个城市现在的天气。"</span>,
+      args: { city: tool.schema.string().describe(<span class="s">"城市，例如 Berlin"</span>) },
+      <span class="k">async</span> execute({ city }, ctx) {
+        <span class="k">const</span> r = <span class="k">await</span> fetch(<span class="s">`https://wttr.in/${encodeURIComponent(city)}?format=3`</span>, { signal: ctx.abort })
+        <span class="k">return</span> <span class="k">await</span> r.text()  <span class="c">// 文本；对象会以 JSON 发回</span>
+      },
+    }),
+  },
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="tools-cli">复制</button>
+      <pre id="tools-cli">Agent Link plugin add ./weather-tools
+claude mcp add --transport http Agent Link-tools http://127.0.0.1:7500/mcp/Agent Link/tools   <span class="c"># Claude Code；其他智能体填同一个地址</span></pre>
+    </div>
+    <p>设置 → 插件里会按这些名字列出每个插件的工具，并能复制服务器地址。<code>args</code> 可以是 zod 字段表（<code>tool.schema</code> 就是 zod）、zod 对象或 JSON Schema 对象。智能体会看到它，Agent Link 在 <code>execute</code> 运行前按它检查调用的参数；参数不对时回一个写明是哪个参数的错误。<code>ctx</code> 与 OpenCode 的相同，<code>agent</code> 是发起调用的智能体。每个工具最多运行 55 秒，到时 <code>ctx.abort</code> 触发。</p>
+    <p>这个服务器由内置插件 <span class="ui">插件工具</span> 提供。只要有已开启的插件提供工具，它就保持开启；关闭时不列出任何工具，调用会说明它已关闭。用网关密钥发起的调用计入该密钥的限额。工具和提供方插件一样，以你的权限在插件宿主里运行，结果只回给调用它的智能体。</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">Agent 插件</a></h2>
+    <p>插件还可以添加一个 <em>Agent</em>：Agent Link 没有内置接入的那种。它说明这个 Agent 把模型写在哪里，以及还要写些什么才能让 Agent 走 Agent Link 的网关。这样它就和 Agent Link 内置的 Agent 一样出现在 <span class="ui">Agent</span> 页：在它那一行选一个 Agent Link 的模型，Agent Link 就把模型连同网关地址和这个 Agent 自己的 key 写进它的配置；关掉开关，一切恢复成用户原来的样子。下面的例子添加 <a href="https://aider.chat">Aider</a>。</p>
+    <div class="code">
+      <span class="lang">agent.js</span>
+      <button class="copy" data-copy="ag-ex">复制</button>
+      <pre id="ag-ex"><span class="c">// agent.js，由 package.json 里的 "Agent Link": { "agent": "./agent.js" } 指定</span>
+<span class="k">export const</span> agent = {
+  id: <span class="s">"aider"</span>, name: <span class="s">"Aider"</span>, bin: <span class="s">"aider"</span>,
+  config: <span class="s">"~/.aider.conf.yml"</span>,  <span class="c">// Agent Link 修改的文件</span>
+  model: <span class="s">"model"</span>,                 <span class="c">// 文件里模型的键</span>
+  prefix: <span class="s">"openai/"</span>,              <span class="c">// 写在 Agent Link 模型 id 前面</span>
+  ua: [<span class="s">"aider"</span>, <span class="s">"litellm"</span>],
+  notice: <span class="s">"Aider reads its settings when it starts: restart it to use the new model."</span>,
+}
+
+<span class="k">export function</span> connect({ gateway, model }) {
+  <span class="k">return</span> {
+    <span class="s">"openai-api-base"</span>: gateway.v1,
+    <span class="s">"openai-api-key"</span>: gateway.key,
+    <span class="s">"show-model-warnings"</span>: <span class="k">false</span>,
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="ag-cli">复制</button>
+      <pre id="ag-cli">Agent Link plugin add ./agent-aider   <span class="c"># 也可以是单个 *.agent.js 文件</span></pre>
+    </div>
+    <h3>agent 导出</h3>
+    <div class="table-wrap"><table>
+      <tr><th>字段</th><th>含义</th></tr>
+      <tr><td><code>id</code></td><td>Agent 页、用量和命令行里用的 id：小写字母、数字、<code>.</code>、<code>_</code> 和 <code>-</code>。和 Agent Link 内置 Agent 相同的 id（<code>codex</code>、<code>claude</code> 等）会被拒绝：插件是添加 Agent，不是替换。</td></tr>
+      <tr><td><code>name</code></td><td>页面上显示的名字。不写就用 id。</td></tr>
+      <tr><td><code>config</code></td><td>Agent Link 修改的文件。会展开 <code>~</code> 和 <code>$VAR</code>。文件不存在时会新建。</td></tr>
+      <tr><td><code>format</code></td><td><code>json</code>、<code>yaml</code> 或 <code>env</code>，文件名看不出格式时才需要写（<code>.json</code>/<code>.jsonc</code>、<code>.yaml</code>/<code>.yml</code>、<code>.env</code>）。暂不支持 TOML。</td></tr>
+      <tr><td><code>model</code></td><td>文件里模型的键，JSON 和 YAML 用点分路径（<code>llm.model</code>）。模型在 Agent 自己里面选（从 <code>connect</code> 写入的模型里挑，比如 Raycast）时不写它：这一行就只有连接开关、没有模型选择器，而 <code>connect</code>（这种插件必须有）调用时不带 <code>model</code>。</td></tr>
+      <tr><td><code>prefix</code></td><td>写在 Agent Link 模型 id 前面的内容：通过 LiteLLM 访问 OpenAI 兼容接口的 Agent 用 <code>openai/</code>。id 本身是网关接受的 <code>&lt;供应商&gt;/&lt;模型&gt;</code>。</td></tr>
+      <tr><td><code>bin</code>、<code>dir</code></td><td><code>PATH</code> 上的命令和配置目录，用来判断 Agent 是否已安装。</td></tr>
+      <tr><td><code>ua</code></td><td>Agent 的 User-Agent 里的词，请求没带它的 key 时，用来在用量里认出它。</td></tr>
+      <tr><td><code>icon</code></td><td>这一行的图标：图标名、<code>https://</code> 或 <code>data:</code> URL。不写就用插件自己的图标，再没有就用通用图标。</td></tr>
+      <tr><td><code>notice</code></td><td>换模型之后显示的提示，和内置 Agent 一样。</td></tr>
+      <tr><td><code>library</code></td><td>Agent 从哪里读<span class="ui">资源库</span>给它的东西：<code>instructions</code>（每次对话前读的 Markdown 文件）、<code>mcp</code>（它的 MCP 服务器文件）和 <code>mcpFormat</code>（这个文件的写法跟哪个 Agent 的一样：<code>alma</code>, <code>antigravity</code>, <code>claude</code>, <code>cline</code>, <code>codex</code>, <code>commandcode</code>, <code>copilot</code>, <code>crush</code>, <code>cursor</code>, <code>devin</code>, <code>gemini</code>, <code>goose</code>, <code>grok</code>, <code>hermes</code>, <code>kimi</code>, <code>omp</code>, <code>opencode</code>, <code>zed</code>；<code>claude</code> 即 <code>{"mcpServers": {…}}</code>），以及 <code>skills</code>（放 <code>SKILL.md</code> 文件夹的目录）。每项都可省略，<code>~</code> 和 <code>$VAR</code> 会展开：<code>library: { instructions: "~/.toy/AGENTS.md", mcp: "~/.toy/mcp.json", mcpFormat: "claude", skills: "~/.toy/skills" }</code>。不写的话，资源库不会给它任何东西，给它某一项时会被拒绝，并说明插件该写哪个键。</td></tr>
+    </table></div>
+    <h3>connect</h3>
+    <p><code>connect(input)</code> 返回要在模型旁边一起写入的其他键，按键路径给出各自的值；可以是 <code>async</code>。它拿到 <code>gateway</code>（<code>url</code>、<code>v1</code>——以 <code>/v1</code> 结尾的地址——和 <code>key</code>，即这个 Agent 自己的 key，请求会按它的 id 计入用量）、<code>model</code>（<code>id</code>、<code>name</code>、<code>context</code>、<code>output</code>、<code>images</code>、<code>efforts</code>）、<code>models</code>（Agent Link 给这个 Agent 的所有模型，格式相同）和 <code>agent</code>（<code>id</code>、<code>config</code>）。没有 <code>connect</code> 的插件只写模型。Agent Link 的模型有变化时会再调用一次 <code>connect</code>，它写的模型列表因此保持最新。</p>
+    <h3>Agent Link 怎么用它</h3>
+    <ul>
+      <li><b>写入。</b>每个键原地修改，用户的注释和其他键都保留。第一次写之前，每个键原来的值会按原类型存起来（数字仍是数字）。</li>
+      <li><b>恢复。</b>重新选回 Agent 自己的模型，或关掉开关，每个键都恢复原值，原来没有的键会被删掉。文件从不整体覆盖。</li>
+      <li><b>是否已接入。</b>只要存 Agent Link key 的那个键还是这个 key，这一行就显示已接入。之后手动改过的键会在这一行里指出，和内置 Agent 一样。</li>
+      <li><b>运行方式。</b>和<a href="#middleware">中间件</a>一样：在 Agent Link 自己的进程里用 moejs 运行，只能导入插件内的文件，没有 Node API，<code>console.log</code> 进 Agent Link 的日志。加载和 <code>connect</code> 各有一秒。模块加载失败或 <code>connect</code> 抛错的插件，会在插件页它那一行写明原因，并且什么都不写入。</li>
+      <li><b>资源库。</b>写了 <code>library</code>，这个 Agent 就和内置 Agent 一样拿到资源库的内容：指令写在文件里 Agent Link 的两行标记之间，MCP 服务器和用户自己的写在同一个文件里（用户自己加的字段保留），技能以链接或副本放进文件夹。取消时只拿走 Agent Link 写的部分，文件原来的内容留在 Agent Link 的备份里。<code>mcpFormat</code> 不在列表中，或写了 <code>mcp</code> 却没写 <code>mcpFormat</code>，插件不会加载。</li>
+      <li><b>声明方式。</b><code>package.json</code> 里写 <code>"Agent Link": { "agent": "./agent.js" }</code>，或者一个名为 <code>*.agent.js</code>（或 <code>.mjs</code>）的单文件。一个包可以同时是供应商、中间件和 Agent。插件市场里 Agent 条目写 <code>"kind": "agent"</code>，列在 <span class="ui">Agent</span> 下；社区包命名为 <code>@Agent Link-community/agent-&lt;name&gt;</code>。</li>
+    </ul>
+
+    <h2 id="pages"><a class="anchor" href="#pages">窗口里的页面</a></h2>
+    <p>插件可以在 Agent Link 的窗口里加一个自己的页面。插件打开后，侧边栏的<span class="ui">插件</span>分组里会出现它的标签，排在 Agent Link 自带页面的后面。页面就是插件文件夹里的 HTML、CSS 和 JavaScript，不需要 Bun，也不用构建。下面的例子显示今天的用量。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-pkg">复制</button>
+      <pre id="pg-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-usage-glance"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"page"</span>: {
+      <span class="s">"title"</span>: <span class="s">"Usage glance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"icon"</span>: <span class="s">"page/icon.svg"</span>,
+      <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"用量速览"</span>, <span class="s">"ja"</span>: <span class="s">"使用量の概要"</span> }
+    },
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/index.html</span>
+      <button class="copy" data-copy="pg-html">复制</button>
+      <pre id="pg-html">&lt;!doctype html&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;
+&lt;script src="_Agent Link/bridge.js"&gt;&lt;/script&gt;   <span class="c">&lt;!-- served beside every page --&gt;</span>
+&lt;script src="app.js" defer&gt;&lt;/script&gt;
+&lt;p id="calls"&gt;…&lt;/p&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-js">复制</button>
+      <pre id="pg-js"><span class="k">await</span> Agent Link.ready                                  <span class="c">// the window's theme, painted</span>
+<span class="k">const</span> s = <span class="k">await</span> Agent Link.read(<span class="s">"usage:summary"</span>, { period: <span class="s">"today"</span> })
+document.getElementById(<span class="s">"calls"</span>).textContent = `${s.calls} calls`
+<span class="k">const</span> opts = <span class="k">await</span> Agent Link.options.get()            <span class="c">// this plugin's own options</span>
+<span class="k">await</span> Agent Link.options.set({ ...opts, hideCost: <span class="k">true</span> })</pre>
+    </div>
+    <p>插件打开之前，插件页面就会在它的那一行显示这个页面和它能读什么。<code>page.file</code> 和 <code>page.icon</code> 是插件里面的路径；页面的文件就是 <code>file</code> 所在文件夹里的文件，指向外面的路径或链接不会被提供。一个包可以同时是页面、供应商、中间件或 agent。只有页面的插件不会启动插件宿主。<code>page.titles</code>（以及面板的 <code>titles</code>）按语言代码（<code>zh</code>、<code>zh-TW</code>、<code>ja</code>、<code>de</code>）给出其他语言里的标签名，其余语言用 <code>title</code>。</p>
+    <p>页面没写样式的地方本来就是 Agent Link 的样子：bridge 会加一份样式表，管字体、颜色、标题、按钮、输入框和表格，权重为零（<code>:where()</code>），页面自己的任何规则都会盖过它。自己写样式时，用 <code>--Agent Link-*</code> 变量和窗口保持一致。</p>
+    <h3>页面能请求什么</h3>
+    <div class="table-wrap"><table>
+      <tr><th>字段 / 调用</th><th>给出什么</th></tr>
+      <tr><td><code>Agent Link.ready</code></td><td>窗口回应后得到窗口的主题。在那之前页面还没和 Agent Link 说过话；10 秒内没说的页面会显示为没有回应。</td></tr>
+      <tr><td><code>Agent Link.theme, Agent Link.onTheme(fn)</code></td><td><code>{ dark, lang, tokens }</code>。bridge 也会在 <code>&lt;html&gt;</code> 上设置 <code>data-theme</code>、<code>lang</code>、<code>color-scheme</code> 以及 <code>--Agent Link-bg</code>、<code>--Agent Link-fg</code>、<code>--Agent Link-accent</code> 等，每次变化都会再设一次。</td></tr>
+      <tr><td><code>Agent Link.options.get(), .set(o)</code></td><td>插件自己在 plugins.json 里的选项，不能是别的插件的。<code>set</code> 接受一个对象，返回保存后的选项，每秒最多一次。</td></tr>
+      <tr><td><code>Agent Link.read(name, params)</code></td><td><code>Agent Link.permissions</code> 声明过的读取。其他的一律拒绝，窗口拒绝一次，Agent Link 再拒绝一次。<code>usage:summary</code>（<code>period</code>：<code>today</code>、<code>7d</code> 或 <code>30d</code>）给出调用数、错误数、token 和费用，以及前 20 个模型；<code>providers:list</code> 给出每个供应商的 id 和名字。没有任何读取会给出密钥、账号、登录信息或请求内容。</td></tr>
+    </table></div>
+    <h3>页面不能做什么</h3>
+    <ul>
+      <li>页面运行在只允许脚本的沙盒框架里（<code>sandbox="allow-scripts"</code>，它的 <code>Content-Security-Policy</code> 里也一样），有自己独立的 origin。它碰不到窗口、Agent Link 的 cookie 和窗口的存储。</li>
+      <li>它的策略只允许加载自己的文件：<code>connect-src 'none'</code>，所以没有 <code>fetch</code>、WebSocket 或 beacon，也没有表单和框架。脚本必须是文件（<code>&lt;script src&gt;</code>），不能内联；内联样式和 <code>data:</code> 图片可以。</li>
+      <li>这种框架能发出的请求（<code>Origin: null</code>、框架请求、别的网站的请求），Agent Link 的 API 都会拒绝，所以就算没有策略，页面也进不了 API。它的文件从 <code>/_Agent Link/plugin/&lt;token&gt;/</code> 提供，token 每次 Agent Link 启动都会变。</li>
+      <li>页面仍然可以把自己跳转到别的网站，那个网站就接管了它的框架。所以读取只给不机密的东西：把页面能读到的都当作公开的。</li>
+      <li>页面没接住的错误会在它的位置显示<span class="ui">此页面已停止工作</span>和<span class="ui">重试</span>。它自己脚本的错误在页面里只显示为“Script error.”，详细内容看窗口的控制台。</li>
+    </ul>
+
+    <h3 id="panels"><a class="anchor" href="#panels">放进 Agent Link 自己页面里的面板</a></h3>
+    <p>插件还可以往 Agent Link 自己画的页面里加面板。每个面板是插件文件夹里的一个小页面，桥接脚本、读取、选项和沙盒都跟页面一样。它放在一张卡片里，上面是它的标题，高度随它画出来的内容。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pn-pkg">复制</button>
+      <pre id="pn-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-provider-notes"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"panels"</span>: [
+      { <span class="s">"slot"</span>: <span class="s">"provider"</span>, <span class="s">"file"</span>: <span class="s">"ui/notes.html"</span>, <span class="s">"title"</span>: <span class="s">"Notes"</span> },
+      { <span class="s">"slot"</span>: <span class="s">"usage"</span>, <span class="s">"file"</span>: <span class="s">"ui/spend.html"</span>, <span class="s">"title"</span>: <span class="s">"Top models today"</span> }
+    ],
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th><code>slot</code></th><th>面板放在哪里</th><th><code>Agent Link.context</code></th></tr>
+      <tr><td><code>agents</code></td><td>「Agent」页面的末尾</td><td><code>{}</code></td></tr>
+      <tr><td><code>usage</code></td><td>用量「概览」的末尾</td><td><code>{}</code></td></tr>
+      <tr><td><code>settings</code></td><td>设置里的「<span class="ui">插件</span>」标签页，有插件在这里放了面板时才出现</td><td><code>{}</code></td></tr>
+      <tr><td><code>provider</code></td><td>每个已保存 Provider 的编辑页</td><td><code>{ provider: { id, name } }</code></td></tr>
+    </table></div>
+    <p>一个插件最多 8 个面板。面板的高度跟随它的 <code>&lt;html&gt;</code>（最高 2400px），所以让页面自己决定高度，不要给 <code>html</code> 或 <code>body</code> 固定高度。面板出错，或 10 秒内没有应答，就在它自己的位置显示「<span class="ui">{name} 已停止工作</span>」和「<span class="ui">重试</span>」；所在的页面和旁边的面板照常运行。</p>
+    <h3 id="replaces"><a class="anchor" href="#replaces">替代一个内置页面</a></h3>
+    <p>页面可以替代 Agent Link 自己的某个页面：在 <code>Agent Link.page</code> 里加上 <code>"replaces"</code>，取 <code>sessions</code>、<code>library</code>、<code>routing</code> 或 <code>usage</code> 之一。它的标签就出现在内置页面原来的位置，指向那个页面的链接都会打开插件的页面。两个插件要替代同一个页面时，插件列表里排在前面的那个替代，另一个作为独立页面。关掉插件，内置页面就原样回来。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-replaces">复制</button>
+      <pre id="pg-replaces"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"My library"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"replaces"</span>: <span class="s">"library"</span> }</pre>
+    </div>
+    <h3 id="actions"><a class="anchor" href="#actions">Agent Link 菜单里的菜单项</a></h3>
+    <p>有页面的插件可以往 Agent Link 行的菜单里加菜单项：供应商的（右键点它）和 Agent 的（点它的拖动柄，或右键）。它们排在 Agent Link 自己的菜单项之后，跟页面标题一样按窗口的语言显示。点一个菜单项会打开插件的页面，并告诉它点的是哪一项，以及那一行的 id 和名字，别的都不给。页面用 <code>Agent Link.onAction</code> 处理；页面还没注册处理函数时点的菜单项会等它注册后再送到。</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-actions">复制</button>
+      <pre id="pg-actions"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"Balance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span> },
+<span class="s">"actions"</span>: [
+  { <span class="s">"id"</span>: <span class="s">"check"</span>, <span class="s">"menu"</span>: <span class="s">"provider"</span>, <span class="s">"title"</span>: <span class="s">"Check balance"</span>, <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"查余额"</span> } }
+]</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-onaction">复制</button>
+      <pre id="pg-onaction">Agent Link.onAction(({ id, provider }) =&gt; {
+  <span class="c">// id: "check"; provider: { id, name }</span>
+});</pre>
+    </div>
+    <p><code>menu</code> 是 <code>provider</code> 或 <code>agent</code>。<code>id</code> 由小写字母、数字和短横线组成，最长 40 个字符。一个插件最多 8 个菜单项，没写 <code>title</code> 的用它页面的标题。没有页面的插件不加菜单项。「插件」页面会写出插件往哪些菜单里加了菜单项。</p>
+    <h2 id="pi"><a class="anchor" href="#pi">pi 扩展包</a></h2>
+    <p>Agent Link 也运行 <a href="https://github.com/earendil-works/pi">pi</a> 的扩展包。用 <code>pi.registerProvider</code> 注册了供应商的 pi 扩展，在 Agent Link 里和在 pi 里一样工作，不用改任何东西，添加方式和其他插件相同（<code>Agent Link plugin add pi-antigravity</code>）。</p>
+    <ul>
+      <li><b>怎样算 pi 的包。</b><code>package.json</code> 里有 <code>pi</code> 清单（<code>"pi": { "extensions": [...] }</code>）、有 <code>pi-package</code> 关键词，或者 <code>dependencies</code>、<code>peerDependencies</code> 里有 <code>@earendil-works/pi-coding-agent</code>（或旧的 <code>@mariozechner/pi-coding-agent</code>）。单个文件导入了 pi 也算。</li>
+      <li><b>加载。</b>Agent Link 在包旁边装好 pi，用 pi 自己的加载器在同一个插件宿主里加载它。它注册的供应商成为 Agent Link 的供应商，模型就是 pi 为它们列出的那些（pi 能拉取账号自己的列表时用那份）。它的命令、工具、渲染器和事件处理器都不会用到。</li>
+      <li><b>登录。</b>OAuth 登录按 pi 的方式进行：它的提问（<code>onPrompt</code>）在 Agent Link 的登录流程里问，它的页面（<code>onAuth</code>）在浏览器里打开，<code>refreshToken</code> 负责续期。扩展包用 <code>ctx.ui</code> 弹出的对话框（<code>select</code>、<code>confirm</code>、<code>input</code>、<code>editor</code>）和交给 <code>ctx.ui.custom</code> 的终端组件，也都变成 Agent Link 的提问。要 API key 的供应商会有一个填 key 的输入框。每次登录就是一个账号，所以 pi 的供应商也能有多个账号。</li>
+      <li><b>pi 的文件。</b>pi 的设置、它的 <code>auth.json</code>（按 pi 的方式保存每个供应商的第一个账号）以及扩展包自己写的文件，都放在 Agent Link 配置目录下的 <code>pi/</code> 里，不会动用户的 <code>~/.pi</code>，除非设置了 <code>PI_CODING_AGENT_DIR</code>。账号本身和其他插件一样存在 <code>plugin-auth.json</code> 里。</li>
+      <li><b>请求。</b>pi 供应商的模型接收 Anthropic Messages：网关把 agent 发来的请求翻译过去，Agent Link 通过 pi 流式发送，回复里的思考、签名和工具调用都会保留。厂商的错误会带着状态码传回，所以故障切换和其他插件一样有效。</li>
+      <li><b>id。</b>pi 供应商的 id 和其他插件规则相同，见<a href="#ids">供应商 id</a>。</li>
+    </ul>
+
+    <h2 id="protocol"><a class="anchor" href="#protocol">宿主协议</a></h2>
+    <p>写插件用不到这一节，它是给开发 Agent Link 本身或调试宿主的人看的。Agent Link 向宿主的 stdin 写入 <code>{id, method, params}</code>，每行一条。宿主回复 <code>{id, result}</code> 或 <code>{id, error: {message}}</code>。</p>
+    <div class="table-wrap"><table>
+      <tr><th>方法</th><th>作用</th></tr>
+      <tr><td><code>init</code></td><td>加载插件，运行它们的 <code>config</code> 钩子。其他调用都会等它完成。</td></tr>
+      <tr><td><code>providers</code></td><td>每个供应商、它的登录方式、账号，以及每个账号的模型。</td></tr>
+      <tr><td><code>prompt</code>、<code>validate</code></td><td>登录方式的下一个提问；校验一个回答。</td></tr>
+      <tr><td><code>authorize</code>、<code>callback</code>、<code>apiKey</code></td><td>登录。</td></tr>
+      <tr><td><code>load</code></td><td>某个账号的 loader 选项。</td></tr>
+      <tr><td><code>fetch</code></td><td>一个请求。先流式发出 <code>{id, event: "head", status, headers}</code>，然后是 <code>{id, event: "chunk", data}</code>（base64），最后 <code>{id, result: null}</code>。<code>{method: "abort", params: {id}}</code> 取消它。</td></tr>
+      <tr><td><code>usage</code>、<code>check</code></td><td>账号的用量；像真实请求一样检查一个账号。</td></tr>
+      <tr><td><code>import</code>、<code>take</code>、<code>signOut</code>、<code>reload</code></td><td>账号的迁入迁出、删除，以及重新运行它们的 loader。</td></tr>
+    </table></div>
+    <p>宿主也会主动发送事件：<code>log</code>、<code>toast</code>、<code>auth</code>（登录信息已保存或刷新）和 <code>signIn</code>（账号的登录状态，同上）。源码见 <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/plugin/host.js"><code>internal/plugin/host.js</code></a>。</p>
+
+    <h2 id="faq"><a class="anchor" href="#faq">答疑</a></h2>
+    <h3>我的 OpenCode 插件不改就能在 Agent Link 里用吗？</h3>
+    <p>可以，只要它通过 <code>auth</code>、<code>config</code>、<code>provider</code> 和 <code>chat.headers</code> 来登录和发请求。Agent Link 增加的部分（<code>auth.usage</code>、<code>auth.refresh</code>、<code>Agent Link.icon</code>、<code>maxConcurrency</code>、<code>free</code>、<code>rate</code>、<code>X-Agent Link-Sign-In</code>）OpenCode 都会忽略，所以一个包能同时服务两边。</p>
+    <h3>我的 pi 扩展包能在 Agent Link 里用吗？</h3>
+    <p>能，只要它通过 <code>pi.registerProvider</code> 登录并提供模型。Agent Link 只使用它注册的供应商，见 <a href="#pi">pi 扩展包</a>。给它加上 <code>pi-package</code> 关键词，搜索就能找到它。</p>
+    <h3>为什么我的供应商叫 <code>…-plugin</code>？</h3>
+    <p>它的 id 在 Agent Link 里已经有了。见<a href="#ids">供应商 id</a>。</p>
+    <h3>我的一些辅助函数被当成插件运行了。</h3>
+    <p>入口模块导出的每个函数都会被当作插件调用。只导出插件函数，或者用 <code>export default { id, server }</code>。</p>
+    <h3>可以用 npm 依赖吗？</h3>
+    <p>可以。它们会随插件一起安装，但安装脚本不会运行。Bun 的 <code>fetch</code>、<code>crypto</code>、<code>fs</code> 和 <code>$</code> 能满足大部分需要。</p>
+    <h3>插件可以调用厂商的 CLI 吗？</h3>
+    <p>可以，用 Bun 的 <code>$</code> 或 <code>child_process</code>。好几个社区插件就是通过厂商自己的 CLI 登录的。要考虑到有些机器上没装它，在错误信息里说明怎么安装。</p>
+    <h3>插件能看到用户的哪些内容？</h3>
+    <p>它发出的请求里的一切：对话、工具及其结果。只把它发到用户要求的地方，也不要记进日志。</p>
+    <h3>怎么让 Agent Link 看到我的修改？</h3>
+    <p>终端里的 <code>Agent Link</code> 命令每次都按文件夹的当前内容加载。在应用里，到<span class="ui">插件</span>把它关掉再打开。</p>
+
+    <p style="margin-top:48px">有问题，或者有插件想分享？来 <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> 问，或在 <a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a> 开 issue。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 Agent Link</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

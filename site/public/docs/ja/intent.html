@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>インテントルーティング · Agent Link ドキュメント</title>
+<meta name="description" content="Agent Link がユーザーの求めることに応じてターンをルーティングする仕組み：判定モデルに問い合わせるタイミング、判定モデルに送られる内容、答えの使われ方、失敗したときの動き、そして詳しい FAQ。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/intent">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/intent">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/intent">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="インテントルーティング">
+<meta property="og:description" content="求められていることに応じて、ターンごとに送るモデルを決めます。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/ja/intent">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート Agent Link</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/intent" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/intent" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/intent" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="Discord の Agent Link" title="Discord に参加"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="GitHub の Agent Link" title="GitHub のソースコード"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>インテントルーティング</p>
+    <a href="#overview">概要</a>
+    <a href="#setup">設定する</a>
+    <a href="#how">ターンのルーティング</a>
+    <a href="#prompt">判定モデルに送られる内容</a>
+    <a href="#failures">判定できないとき</a>
+    <a href="#turn">ターンの残り</a>
+    <a href="#trace">トレースの読み方</a>
+    <a href="#cost">レイテンシ・費用・プライバシー</a>
+    <a href="#tips">よいインテントの書き方</a>
+    <a href="#limits">数値一覧</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · ルーティンググループ</p>
+    <h1>インテントルーティング</h1>
+    <p class="lede">ユーザーが何を求めているかで、ターンを送るモデルを決めます。テストは強いモデルへ、ちょっとした質問は速くて安いモデルへ。それぞれの種類を数語で書いておけば、ターンの始まりに、あなたが選んだ小さなモデルがメッセージの種類を判定します。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-rules-ja-light.png" width="2012" height="2538" alt="ルーティンググループの編集画面：ルールが 3 つあり、そのうち 2 つにインテント（“a quick question” と “writing or fixing tests”）が付き、インテント判定は Groq の llama-3.1-8b-instant">
+      <img class="for-dark" src="/img/intent-rules-ja-dark.png" width="2012" height="2538" alt="ルーティンググループの編集画面：ルールが 3 つあり、そのうち 2 つにインテント（“a quick question” と “writing or fixing tests”）が付き、インテント判定は Groq の llama-3.1-8b-instant">
+      <figcaption>Coder グループ：長いターンは Kimi へ、ちょっとした質問は DeepSeek Flash へ、テストは DeepSeek Pro へ。インテントは Groq の Llama 3.1 8B が判定します。</figcaption>
+    </figure>
+
+    <p>インテントは<a href="/docs/ja/start#rules">ルーティンググループのルール</a>に付けられる条件の一つで、長さ・画像・推理・エージェントと並びます。このページでは、v0.1.99 時点で Agent Link がインテントをどう扱うかを正確に説明します。すべての判断を予測でき、ルーティングタブで確かめられるようにするためです。</p>
+
+    <div class="callout"><b>ひとことで言うと。</b>Agent Link の判断はターンごとに 1 回です。あなたがメッセージを送ったときに決め、エージェントがツール呼び出しを重ねている間には決めません。インテント付きのルールが最初に一致する可能性があれば、Agent Link は自分のゲートウェイを通して、グループの<em>判定モデル</em>に短い質問を 1 つ送ります。質問には番号付きのインテント一覧と、あなたの最新メッセージのテキストが入っていて、判定モデルは番号で答えます。Agent Link はその番号を使ってルールを上から順に照合します。最初に一致したルールのモデルが先頭になり、グループのほかのモデルはフェイルオーバー用としてその後ろに残ります。以後、あなたが次に発言するまで、ターンはそのモデルに留まります。判定モデルが失敗したり、タイムアウトしたり、番号以外を答えたりした場合は、どのインテントも一致せず、そうしたルールがないものとしてルーティングされます。埋め込みもキーワードリストも学習もありません。あなたが選んだモデルがメッセージを読み、番号を選ぶだけです。</div>
+
+    <h2 id="setup"><a class="anchor" href="#setup">設定する</a></h2>
+    <p>モデルが 2 つ以上ある<a href="/docs/ja/start#routing">ルーティンググループ</a>と、判定用のモデルがもう 1 つ必要です。判定モデルは Agent Link にあるモデルならどれでもよく、グループに入っているかどうかは問いません。</p>
+    <ol class="steps">
+      <li><b>グループを開く</b><span class="ui">Routing</span> を開き、<em>Routing groups</em> からグループを探して <span class="ui">Edit</span> をクリックします。</li>
+      <li><b>インテント付きのルールを追加する</b><span class="ui">ルールを追加</span> をクリックします。新しいルールは <span class="ui">インテント</span> → モデル の 1 行で、インテント欄にカーソルがあります。メッセージが求めていることを書き（例：<em>writing or fixing tests</em>）、→ の後でモデルを選びます。ほかの条件はルールの <span class="ui">+</span> から追加し、それらも満たされている必要があります。</li>
+      <li><b>判定モデルを選ぶ</b>ルールにインテントが付くと <span class="ui">Intent told by</span> が表示されます。TypeSafe プロバイダーがあれば Jev が選ばれ、なければ推理なしの、小さく速いモデルを選んでください。推論の強さをすでに Jev が選んでいるグループでは、判定モデルの下に同じ入口（<span class="ui">It can pick the model too</span>）があります。インテントがあって判定モデルがないグループは保存できません。</li>
+      <li><b>保存して、メッセージを送る</b>変更は次のターンから反映され、再起動は不要です。<span class="ui">Routing</span> タブに、判定モデルの答えとターンの行き先が表示されます。</li>
+    </ol>
+    <p>ターミナルからも同じことができます。</p>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="ex-cli">コピー</button>
+      <pre id="ex-cli">Agent Link group rule add coder use=deepseek/deepseek-v4-flash intent=<span class="s">"a quick question"</span> classifier=groq/llama-3.1-8b-instant
+Agent Link group rule add coder use=deepseek/deepseek-v4-pro intent=<span class="s">"writing or fixing tests"</span>
+Agent Link group rule add coder use=deepseek/deepseek-v4-pro use-effort=low intent=<span class="s">"a simple edit"</span>   <span class="c"># 同じモデルを low の推論で</span>
+Agent Link group rule coder                           <span class="c"># the rules, numbered, and the classifier</span>
+Agent Link group rule classifier coder groq/llama-3.1-8b-instant   <span class="c"># change the classifier</span>
+Agent Link group rule mv coder 3 1                    <span class="c"># order matters: top first</span>
+Agent Link group rule rm coder 2</pre>
+    </div>
+    <p><code>intent=</code> は <code>asks=</code> と <code>about=</code> とも書けます。<code>classifier=</code> は <code>classify=</code> と <code>by=</code> とも書けます。<code>rule add</code> の <code>classifier=</code> はグループの判定モデルを設定するもので、最初の 1 回だけ必要です。判定モデルは <code>~/.config/Agent Link/providers.json</code> のグループのレコードに <code>"classifier"</code> として、各ルールは <code>{"use": …, "intent": …}</code> として保存されます。</p>
+
+    <p id="effort">ルールはモデルに求める推論も指定できるので、意図でモデルと推論の強さを組で選べます。<code>use-effort=</code>（<code>low</code>、<code>medium</code>、<code>high</code>、<code>xhigh</code>、<code>max</code>）で、<code>"useEffort"</code> として保存されます。例：<code>{"use": "deepseek/deepseek-v4-pro", "intent": "a simple edit", "useEffort": "low"}</code>。エディタではルールの <span class="ui">⋯</span> メニューの <span class="ui">推論を指定</span> から設定し、設定するとモデルの横に表示されます。そのターンのリクエストでは、エージェントの指定にかかわらず、ルールのモデルにその推論をモデルの最も近いレベルで求めます。Agent Link がレベルを知らないモデルはエージェントの指定どおりで、グループがフェイルオーバーする先のモデルも同じです。グループで推論が固定されたモデルはその固定のままです。指定しなければエージェントの指定どおりです。ルールが推論を指定したときは、ルーティングタブにそう表示されます。</p>
+
+    <h2 id="how"><a class="anchor" href="#how">ターンのルーティング</a></h2>
+    <p>ルールのあるグループにエージェントが送るリクエストは、すべて次の手順をこの順に通ります。</p>
+    <ol class="steps">
+      <li><b>新しいターンか？</b>Agent Link はリクエストの最後のユーザーメッセージを見ます。テキストか画像があり、ツール結果がなければ、あなたが発言したばかりなので新しいターンが始まります。ツール結果があれば、エージェントが進行中のターンを続けています（<a href="#turn">ターンの残り</a>を参照）。ターンは会話ごとに数えます。サブエージェントは独立した会話です。エージェントとセッションを共有しますが、最初の言葉が異なります。</li>
+      <li><b>どのインテントが決め手になりうるか？</b>Agent Link はインテントをいったん無視して、ルールを上から順にたどります。インテント以外の条件（トークン数・画像・推理・エージェント）がこのリクエストで満たされるルールが候補です。各候補のインテントを集め、大文字小文字の違いだけの重複は 1 つとして数えます。インテントの<em>ない</em>候補に当たった時点でたどるのをやめます。そのルールは無条件で一致し、それより下のルールが先に来ることはないからです。インテントが 1 つも集まらなければ、判定モデルには問い合わせず、費用もかかりません。</li>
+      <li><b>判定モデルに問い合わせる</b>集めたインテントとあなたのメッセージのテキストを判定モデルに送ります。正確なプロンプトは<a href="#prompt">後述</a>します。この呼び出しはエージェントからのリクエストと同じく Agent Link のゲートウェイを通るので、そのモデルのプロバイダのキーやアカウント、そのフェイルオーバーが使われます。回答の制限時間は 8 秒です。</li>
+      <li><b>答えを読む</b>Agent Link は返答の中で最初に出てくる整数を取ります。<code>1</code> から <code>n</code> はそのインテントを、<code>0</code> はどれでもないことを表します。数字がない、範囲外など、それ以外はすべて失敗として扱います。答えは同じメッセージとインテントに対して 10 分間保持されます。</li>
+      <li><b>ルールを照合する</b>その答えでルールを上から順に照合します。インテント付きのルールは、判定モデルがそのインテントを（大文字小文字を区別せず）挙げ、かつほかの条件もすべて満たすときだけ一致します。最初に一致したルールが採用されます。どれも一致しなければ、グループはいつもどおりにターンをルーティングします。</li>
+      <li><b>モデルを並べる</b>採用されたルールのモデルが先頭になり、グループのほかのモデルはいつもの順でフェイルオーバーとして続きます。会話の前のターンに別のモデルが答えていても同じです。ターンの始まりでは、ルールが <span class="ui">Stays</span> 設定より優先されます。ルールのモデルにいま使えるものがない場合（キーがすべて休止中、プロバイダがオフなど）は、グループのいつもの順のままとなり、トレースにそう記録されます。</li>
+      <li><b>判断を記憶する</b>Agent Link はこの会話（グループ、エージェントのセッション、会話の最初の言葉）についての判断を判定モデルの答えとともに保持し、ターンの残りはそれに従います。</li>
+    </ol>
+
+    <h3>例</h3>
+    <p>上の Coder グループには 3 つのルールがあります。</p>
+    <div class="table-wrap"><table>
+      <tr><th>#</th><th>条件</th><th>送り先</th></tr>
+      <tr><td>1</td><td>≥ 128000 tokens</td><td>kimi/kimi-k2.5</td></tr>
+      <tr><td>2</td><td>asks for “a quick question”</td><td>deepseek/deepseek-v4-flash</td></tr>
+      <tr><td>3</td><td>asks for “writing or fixing tests”</td><td>deepseek/deepseek-v4-pro</td></tr>
+    </table></div>
+    <ul>
+      <li>2 万トークンのターン：ルール 1 は満たされないので、両方のインテントが候補になります。判定モデルは “a quick question” と “writing or fixing tests” のどちらかを選びます。</li>
+      <li>15 万トークンのターン：ルール 1 はインテントがなく満たされるので、そこでたどるのをやめます。判定モデルには問い合わせず、ターンは Kimi に送られます。</li>
+      <li>判定モデルが <code>0</code>（どれでもない）と答えた場合：どのルールも一致せず、グループのルーティング（ここでは <em>In order</em> なので deepseek-v4-pro が先頭）に従います。</li>
+    </ul>
+
+    <h3>アプリでの様子</h3>
+    <p>インテント付きのルールが 2 つ（“a quick question or explanation, with no code to write or change” と “writing or fixing tests”）あるグループに、Claude Code から実際のリクエストを送った例です。内容は「Add unit tests for the LRU cache in cache.go, covering eviction and concurrent reads and writes」。<span class="ui">Routing</span> タブにリアルタイムで表示されます。</p>
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-routing-hit-ja-light.png" width="2080" height="1190" loading="lazy" alt="ルーティングタブ：Claude Code から Agent Link を経て aihubmix/glm-5.3 が回答。トレースには、deepseek-flash が 964 ms で答えたとおりルール 2 が “writing or fixing tests” に一致したと書かれている">
+      <img class="for-dark" src="/img/intent-routing-hit-ja-dark.png" width="2080" height="1190" loading="lazy" alt="ルーティングタブ：Claude Code から Agent Link を経て aihubmix/glm-5.3 が回答。トレースには、deepseek-flash が 964 ms で答えたとおりルール 2 が “writing or fixing tests” に一致したと書かれている">
+      <figcaption>判定モデル（deepseek-flash）は 964 ms で “writing or fixing tests” と答え、ルール 2 がグループのいつもの先頭モデルより前に glm-5.3 を置きました。glm-5.3 は 5.6 秒で回答しています。</figcaption>
+    </figure>
+
+    <h2 id="prompt"><a class="anchor" href="#prompt">判定モデルに送られる内容</a></h2>
+    <p>リクエストの全文は以下のとおりで、ほかには何も送りません。システムメッセージは固定です。ユーザーメッセージには、手順 2 で集めたインテントがルールの順に並びます。</p>
+    <div class="code">
+      <span class="lang">System</span>
+      <pre class="wrapped">You route a user's message to a coding assistant by what it asks for. Given numbered kinds of request and the user's message, answer with the number of the kind the message is, or 0 if it is none of them. Answer with the number only.</pre>
+    </div>
+    <div class="code">
+      <span class="lang">User</span>
+      <pre>Kinds:
+1. a quick question
+2. writing or fixing tests
+
+The user's message:
+&lt;message&gt;
+Write unit tests for the parseTokens function and fix any that fail.
+&lt;/message&gt;
+
+The number of its kind (0 for none):</pre>
+    </div>
+    <ul>
+      <li><b>最新のメッセージだけ。</b>Agent Link が送るのは最後のユーザーメッセージのテキスト部分だけです。それより前のターン、システムプロンプト、ツール定義、ファイルは送りません。</li>
+      <li><b>画像は送りません。</b>画像だけのメッセージには判定する言葉がないので、どのインテントも一致しません。画像でルーティングしたいときは、ルールの <span class="ui">has an image</span> 条件を使ってください。</li>
+      <li><b>エージェントのリマインダーは取り除きます。</b>Claude Code がメッセージに付け加える <code>&lt;system-reminder&gt;…&lt;/system-reminder&gt;</code> ブロックは削除します。エージェントが同じメッセージに入れたそれ以外のテキストは残ります。</li>
+      <li><b>長いメッセージは短縮します。</b>4,000 文字を超える場合、最初の 3,000 文字と最後の 1,000 文字を <code>…</code> でつないで送ります。何を求めているかは、たいてい最初と最後に書かれているからです。</li>
+      <li><b>リクエストの設定。</b>OpenAI 形式の chat completion で、ストリーミングなし、<code>temperature 0</code>、<code>max_tokens 2048</code>、User-Agent は <code>Agent Link-router/1</code> です。判定モデルの推理レベルがわかっていれば、最も低いものを指定します。<code>none</code> があればそれを、なければ最低のレベル（例：<code>low</code>）です。レベルが不明なら何も送らず、ベンダーのデフォルトに任せます。ほかのリクエストと同じく判定モデルのプロバイダ向けに変換するので、Anthropic や Gemini などのモデルも使えます。</li>
+    </ul>
+
+    <h2 id="failures"><a class="anchor" href="#failures">判定できないとき</a></h2>
+    <p>判定モデルは補助役であって、関門ではありません。判定モデルに何が起きても、ターンには必ず回答があります。インテント付きのルールが一致しなくなるだけです。</p>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>起きたこと</th><th>Agent Link の動き</th></tr>
+      <tr><td><code>0</code> と答えた</td><td>どのインテントも一致しません。インテントのないルールとグループのいつもの順で決まります。</td></tr>
+      <tr><td>8 秒以内に答えがない</td><td>失敗として扱います。どのインテントも一致せず、ターンはすぐに進みます。</td></tr>
+      <tr><td>エラー（クォータ、5xx、無効なキー）</td><td>まず 8 秒の範囲内で、そのプロバイダ自身のフェイルオーバーを試します。それでも失敗すれば、どのインテントも一致しません。</td></tr>
+      <tr><td>0 から n の番号ではない答え</td><td>このターンではどのインテントも一致しません。判定モデルは答えてはいるので休止させず、次のターンでまた問い合わせます。</td></tr>
+      <tr><td>エラーまたは 8 秒のタイムアウト</td><td>その判定モデルは 30 秒間使いません。その間のターンは判定モデルを待たず、トレースには問い合わせなかったと記録されます。正しい答えが 1 回返れば解除されます。</td></tr>
+      <tr><td>メッセージに言葉がない</td><td>問い合わせません。どのインテントも一致しません。</td></tr>
+    </table></div>
+    <p>どの場合も、理由とともにターンのトレースに記録されます。つまりインテントルールのせいで、ターンが期待と違うモデルに送られることはあっても、ターンが失敗することはありません。</p>
+
+    <h2 id="turn"><a class="anchor" href="#turn">ターンの残り</a></h2>
+    <p>1 つのターンは、数十のリクエストになることがよくあります。エージェントがツールを呼び、結果を送り返し、また別のツールを呼ぶ、という具合です。Agent Link はそれらを次のように扱います。</p>
+    <ul>
+      <li><b>固定。</b>ターン内のリクエストはすべて、ターンが始まったときのモデルに送られ、判定モデルには再度問い合わせません。ターンの途中でモデルを切り替えると、ベンダーが会話をキャッシュした分（プロンプトキャッシュ）が無駄になりますし、ほかのベンダーが書いた推理を受け付けないベンダーもあります。</li>
+      <li><b>フェイルオーバー先に留まる。</b>ルールのモデルが失敗して別のメンバーが答えた場合、そのメンバーがターンの残りを受け持ちます（<span class="ui">Stays</span> が <em>Auto</em>、<em>Session</em>、<em>Within a turn</em> のとき）。ルールは次のメッセージで改めて判断します。</li>
+      <li><b>容量超え。</b>唯一の例外です。ターン内で会話が現在のモデルのコンテキストの 95% まで大きくなると、Agent Link は判定モデルの以前の答えを使ってルールをもう一度照合します。ルールがコンテキストの<em>より大きい</em>モデルを指せば、そちらに移ります。より小さいモデルに移ることはありません。</li>
+      <li><b>待機。</b>Agent Link がターンの始まりを見ていない場合（ターンの途中で起動・再起動した）や、判断したルールが削除されたり別のモデルを指すようになったりした場合、ルールはそのターンを動かしません。次のメッセージでルールが改めて判断します。</li>
+      <li><b>サブエージェント。</b>サブエージェントのターンは、サブエージェント自身のメッセージから独立して判断します。エージェントはそのままで、サブエージェントだけをルールで別のモデルに送ることもできます。</li>
+    </ul>
+    <p>判断は、会話の最後のリクエストから 24 時間メモリに保持されます。Agent Link を再起動すると消え、次のメッセージで改めて判断します。</p>
+
+    <h2 id="trace"><a class="anchor" href="#trace">トレースの読み方</a></h2>
+    <p><span class="ui">Routing</span> タブには、各グループの最新のリクエストについて、どのモデルが答えたか、そして <span class="ui">How the last request was routed</span> の下にその理由が表示されます。</p>
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-trace-ja-light.png" width="2016" height="970" loading="lazy" alt="リクエスト後の ルーティングタブ：Claude Code から Agent Link を経て DeepSeek の deepseek-v4-pro へ。トレースにはルール 3 が一致したことと判定モデルの答えが書かれている">
+      <img class="for-dark" src="/img/intent-trace-ja-dark.png" width="2016" height="970" loading="lazy" alt="リクエスト後の ルーティングタブ：Claude Code から Agent Link を経て DeepSeek の deepseek-v4-pro へ。トレースにはルール 3 が一致したことと判定モデルの答えが書かれている">
+      <figcaption>テストを求めるメッセージ：判定モデルが 323 ms で “writing or fixing tests” と答え、ルール 3 が deepseek-v4-pro を先頭にしました。</figcaption>
+    </figure>
+    <p>インテントに関してトレースに出る行は次のとおりです。</p>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>トレースの表示</th><th>意味</th></tr>
+      <tr><td>… was asked which of “A”, “B” turn 1 is, and said “B” (in 323 ms).</td><td>判定モデルにこれらの候補で問い合わせ、B が選ばれました。</td></tr>
+      <tr><td>… and said none (…).</td><td>0 と答えました。</td></tr>
+      <tr><td>… (said before, for the same message).</td><td>答えは 10 分間のキャッシュから取ったもので、呼び出しはしていません。</td></tr>
+      <tr><td>… was to tell which … but couldn’t — <em>reason</em> — so no rule with an intent matches it.</td><td>失敗しました。理由はエラー、タイムアウト、返ってきた答え、または失敗後の休止中であることです。</td></tr>
+      <tr><td>Turn N begins and rule R matches — asks for “B” — so M goes first …</td><td>採用されたルールと、先頭になったモデルです。</td></tr>
+      <tr><td>Rule R matches, but M has no account or key that can take this request, so the group’s order stands.</td><td>ルールのモデルには、このリクエストを処理できるアカウントやキーがありません。</td></tr>
+      <tr><td>Rule R (…) sent turn N to M as it began; the turn stays there.</td><td>ターン内のツールのやり取りで、ターン開始時の判断に従っています。</td></tr>
+      <tr><td>This turn began before Agent Link saw it, so the rules wait for the next one.</td><td>上の<em>待機</em>を参照してください。</td></tr>
+    </table></div>
+    <p>判定モデル自身の呼び出しは <span class="ui">Usage</span> にエージェント <em>Agent Link</em> として、トークン数と費用付きで記録されるので、判定にかかる費用を確認できます。</p>
+
+    <h2 id="cost"><a class="anchor" href="#cost">レイテンシ・費用・プライバシー</a></h2>
+    <ul>
+      <li><b>レイテンシ。</b>判定モデルを待つのはターンの最初のリクエストだけで、速いプロバイダなら通常数百ミリ秒（スクリーンショットでは 323 ms）、長くても 8 秒です。ターン内のツールのやり取り、インテントが決め手にならないターン、キャッシュされた答えでは、待ち時間は増えません。</li>
+      <li><b>費用。</b>ターンごとに短い呼び出しが 1 回です。入力はメッセージとインテントを合わせた程度、出力は 1〜2 トークンです。上の例では入力 212 トークン、出力 1 トークンでした。サブスクリプションのモデルを判定モデルにすると、これらの呼び出しはそのサブスクリプションの上限に数えられます。</li>
+      <li><b>プライバシー。</b>メッセージのテキスト（最大約 4,000 文字）は判定モデルのプロバイダに送られます。手元のマシンから出したくなければ、Ollama や LM Studio のローカルモデルを判定モデルにしてください。Agent Link が保持するのはメッセージのハッシュと答えだけで、メモリ上に 10 分間です。メッセージそのものは保存もログ記録もしません。</li>
+    </ul>
+
+    <h2 id="tips"><a class="anchor" href="#tips">よいインテントの書き方</a></h2>
+    <ul>
+      <li><b>モデルではなく、リクエストを書く。</b>「hard tasks for Opus」ではなく「writing or fixing tests」と書きます。判定モデルが見るのは、あなたの言葉とメッセージだけです。</li>
+      <li><b>種類どうしを重ねない。</b>2 つのインテントが重なっている（「a question」と「a question about the code」など）と、小さなモデルはどちらを選ぶか予測できません。まとめるか、違いをはっきりさせてください。</li>
+      <li><b>細かく多くより、少なく大まかに。</b>インテントが 2〜5 個なら 8B モデルでも簡単に判定できます。1 つあたり 200 文字まで書けますが、たいていは数語で足ります。</li>
+      <li><b>順番は今も重要。</b>数えられるのは最初に一致したルールだけなので、必ず勝たせたいルール（長いコンテキスト用のルールなど）はインテントルールより上に置きます。そうすれば、そのルールが満たされるときは判定モデルを飛ばします。</li>
+      <li><b>「どれでもない」も立派な答え。</b>どのインテントにも当てはまらないターンはグループのいつもの順に送られるので、その順をデフォルトの選択にしておきましょう。</li>
+      <li><b>言語は問いません。</b>インテントもメッセージも、判定モデルが理解できる言語なら何語でもかまいません。固定のプロンプトは英語ですが、小さなモデルでも複数言語の混在はよく読めます。</li>
+      <li><b>判定モデルの選び方。</b>推理なしの、小さく速いモデルを選びます。Groq の Llama 3.1 8B、Flash-Lite・nano・mini 系のモデル、Claude Haiku、DeepSeek の推理なしチャットモデル、ローカルモデルなどです。推理モデルは遅くなります。Agent Link は最も低い推理レベルを指定し 2048 トークンの余裕を残しますが、遅いモデルだと 8 秒に間に合わないことがあります。何ターンかトレースを確認し、判定が外れるようなら、モデルを替える前にインテントを書き直してみてください。</li>
+    </ul>
+
+    <h2 id="limits"><a class="anchor" href="#limits">数値一覧</a></h2>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>項目</th><th>値</th></tr>
+      <tr><td>判定モデルのタイムアウト</td><td>8 秒（プロバイダのフェイルオーバーを含む）</td></tr>
+      <tr><td>失敗後の休止</td><td>30 秒、判定モデルごと</td></tr>
+      <tr><td>答えのキャッシュ</td><td>10 分、判定モデル＋インテント＋メッセージごと。メモリ上</td></tr>
+      <tr><td>ターンの判断の保持</td><td>会話の最後のリクエストから 24 時間。メモリ上</td></tr>
+      <tr><td>送るメッセージ</td><td>最大 4,000 文字。超える場合は最初の 3,000＋最後の 1,000</td></tr>
+      <tr><td>判定リクエスト</td><td>temperature 0、max_tokens 2048、モデルの最も低い推理レベル、ストリーミングなし</td></tr>
+      <tr><td>インテントの長さ</td><td>最大 200 文字。空白はまとめ、大文字小文字を区別せずに比較</td></tr>
+      <tr><td>容量超え</td><td>現在のモデルのコンテキストの 95% で発動。より大きいモデルにのみ移る</td></tr>
+    </table></div>
+
+    <h2 id="faq"><a class="anchor" href="#faq">FAQ</a></h2>
+
+    <h3>埋め込みやベクトル検索ですか？</h3>
+    <p>いいえ。埋め込みモデルも、類似度のしきい値も、キーワードリストも、学習するものもありません。判定モデルは普通のチャットモデルで、インテントとメッセージを読んで番号で答えます。精度はそのモデルとあなたの書き方次第で、すべての答えはトレースで確認できます。</p>
+
+    <h3>会話全体を見ますか？</h3>
+    <p>いいえ、いま送ったメッセージだけです。そのため「now do the same for the other file」のような続きの指示は、その言葉だけで判定されます。そのターンのメッセージをもっと明確にするか、続きの指示に合うインテントを追加してください。</p>
+
+    <h3>1 つのメッセージでエージェントが 40 回リクエストしました。判定モデルに 40 回問い合わせたのですか？</h3>
+    <p>いいえ、1 回です。残りの 39 回はツール結果を含んでいたので同じターンに属し、そのターンの判断に従います。トレース（“the turn stays there”）と Usage（<em>Agent Link</em> の呼び出しが 1 回）で確認できます。</p>
+
+    <h3>ターンの途中でモデルが切り替わることはありますか？</h3>
+    <p>2 つの場合だけです。いまのモデルが失敗して別のメンバーが引き継いだときと、会話がモデルのコンテキストを超えそうになり、ルールがより大きいモデルに送ったときです。ターンの途中でインテントを問い合わせ直すことはありません。</p>
+
+    <h3>判定モデルが落ちている、または遅いときは？</h3>
+    <p>ターンはそのまま進みます。最大 8 秒後、どのインテントも一致せず、グループのほかのルールと順番で決まります。その後 30 秒間はその判定モデルに問い合わせないので、ターンごとにタイムアウトを待つことはありません。理由はトレースに出ます。</p>
+
+    <h3>判定モデルがインテントを挙げたのに、ルールのモデルに送られなかったのはなぜ？</h3>
+    <p>トレースを確認してください。よくある原因は次のとおりです。</p>
+    <ul>
+      <li>それより上のルールが先に一致した。</li>
+      <li>ルールのほかの条件（トークン数・画像・推理・エージェント）が満たされなかった。</li>
+      <li>ルールのモデルに、このリクエストを処理できるアカウントやキーがなかった。</li>
+      <li>別のモデルで始まったターン内のツールのやり取りだった。</li>
+      <li>Agent Link がターンの始まりを見ていなかった（“the rules wait”）。</li>
+    </ul>
+
+    <h3>2 つのルールが同じインテントを持っていたら？</h3>
+    <p>そのインテントは判定モデルに 1 回だけ提示されます。選ばれた場合、それらのルールのうち、ほかの条件を満たす最初のものが採用されます。たとえば “writing or fixing tests” を、Codex からならあるモデルへ、Claude Code からなら別のモデルへ送る、といった使い方ができます。</p>
+
+    <h3>ルールを変えると、実行中のターンに影響しますか？</h3>
+    <p>いいえ。保存した内容は次のターンから反映されます。ルールを削除したり別のモデルを指すようにしたりしても、そのターンはそれまでの場所に留まり、トレースには the rules wait と出ます。</p>
+
+    <h3>判定モデルにルーティンググループや、グループ自身のモデルを使えますか？</h3>
+    <p>グループは使えません。<code>provider/model</code> 形式の単一のモデルである必要があり、保存時に Agent Link がチェックします。モデルなら Agent Link にあるものは何でも使えます。グループのメンバー、サブスクリプションのモデル、ローカルモデルも含みます。</p>
+
+    <h3>推理モデルは使えますか？</h3>
+    <p>8 秒以内に答えるなら使えます。Agent Link は最も低い推理レベル（<code>none</code>、なければ最低のレベル）を指定し、2048 トークンの余裕を残すので、思考に押されて答えが出ないことはありません。それでも、小さく速いモデルのほうがよい選択です。安いですし、すべてのターンがそれを待つからです。</p>
+    <h3>実際のモデルでどのくらいうまく動きますか？</h3>
+    <p>インテントルールが 2 つあるグループに、実際のコーディング用メッセージを 20 件（英語と中国語。ちょっとした質問、テスト作業、「Fix the bug in parseTokens and add a test for it」を含む普通のコーディングタスク）送りました。DeepSeek V4 Flash、GLM-5.3 Flash、MiMo v2.6 Flash はいずれも 20 件すべてを正しく判定し、判定時間の中央値はそれぞれ 0.75 秒、1.3 秒、1.9 秒でした。ある再販業者経由の Gemini 3.8 Flash は <code>low</code> の推理でも 11 秒かかり、すべてのターンがタイムアウトして、インテントがないものとしてルーティングされました。トレースには毎回そのとおり記録されています。これが想定すべきパターンです。判定モデルがうまく動かなくても失うのはルーティングだけで、ターンは失いません。</p>
+
+    <h3>同じメッセージを再送すると、また問い合わせますか？</h3>
+    <p>10 分以内なら問い合わせません。同じメッセージ・同じインテント・同じ判定モデルならキャッシュから答え、トレースには “said before” と出ます。インテントか判定モデルを変えると、改めて問い合わせます。</p>
+
+    <h3>どのエージェントで使えますか？</h3>
+    <p>Agent Link 経由でルーティンググループに送るエージェントなら、どれでも使えます。Claude Code、Codex、OpenCode、Gemini CLI などです。ターンはエージェントが使う API に関係なく、リクエストそのもの（テキストがあり、ツール結果がないメッセージ）から検出します。</p>
+
+    <h3>メッセージはどこかに保存されますか？</h3>
+    <p>Agent Link が保持するのは、メッセージのハッシュ（キャッシュ用）と判定モデルの答えだけで、メモリ上のみです。テキストはほかのリクエストと同じく判定モデルのプロバイダに送られ、そのプロバイダの規約に従います。判定モデルの使用記録にはトークン数が残り、テキストは残りません。</p>
+
+    <h3>精度はどのくらいですか？</h3>
+    <p>判定モデルと、インテントどうしがどれだけはっきり違うかによります。明確に異なる種類が少しだけなら、小さなモデルでもよく当てます。重なりがあると、ときどき当て推量になります。答えが外れたり出なかったりしても、どのモデルが答えるかが変わるだけなので、まずは大まかなインテントを 2〜3 個から始め、1 日トレースを見て言い回しを調整してください。</p>
+
+    <p style="margin-top:48px">質問や共有したい設定があれば、<a href="https://discord.gg/vGSnD3ZKQF">Discord</a> でどうぞ。ルーティンググループ全般については<a href="/docs/ja/start#routing">はじめに</a>で説明しています。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート Agent Link</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

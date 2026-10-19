@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker · agentlink docs</title>
+<meta name="description" content="Run agentlink in Docker on a server or a NAS: the ghcr.io/yetone/agentlink image, its ports, volume and environment, the browser UI, signing in to subscriptions, sharing the gateway with gateway keys, and a Compose file.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useagentlink.ai/docs/docker">
+<link rel="alternate" hreflang="zh" href="https://useagentlink.ai/docs/zh/docker">
+<link rel="alternate" hreflang="ja" href="https://useagentlink.ai/docs/ja/docker">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="agentlink in Docker">
+<meta property="og:description" content="Run agentlink&#x27;s gateway on a server or a NAS and manage it from the browser.">
+<meta property="og:image" content="https://useagentlink.ai/img/og.png">
+<meta property="og:url" content="https://useagentlink.ai/docs/docker">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/agentlink-small.svg" alt="">agentlink <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote agentlink</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to agentlink</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/docker" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/docker" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/docker" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agentlink on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agentlink on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Docker</p>
+    <a href="#overview">Overview</a>
+    <a href="#run">Run it</a>
+    <a href="#web">The browser UI</a>
+    <a href="#signin">Sign in to subscriptions</a>
+    <a href="#volume">What is kept</a>
+    <a href="#env">Environment</a>
+    <a href="#share">Gateway keys and other machines</a>
+    <a href="#compose">Docker Compose on a NAS</a>
+    <a href="#ops">Health, terminal, updates</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Servers</p>
+    <h1>agentlink in Docker</h1>
+    <p class="lede">Run agentlink on a server or a NAS that has no desktop: its gateway serves your models to agents on other computers, and you add providers and sign in to subscriptions from a page in your browser.</p>
+
+    <div class="table-wrap"><table>
+      <tr><td><b>Image</b></td><td><code>ghcr.io/yetone/agentlink</code>, for <code>linux/amd64</code> and <code>linux/arm64</code></td></tr>
+      <tr><td><b>Tags</b></td><td><code>latest</code> (the newest release), <code>0.1.1150</code> (one release), <code>0.1</code>, <code>edge</code> (every change on <code>main</code>)</td></tr>
+      <tr><td><b>Ports</b></td><td><code>3425</code> the gateway agents call; <code>3430</code> the browser UI, when the container runs <code>agentlink web</code></td></tr>
+      <tr><td><b>Volume</b></td><td><code>/config</code>: providers, keys, sign-ins, plugins and usage</td></tr>
+      <tr><td><b>User</b></td><td>nonroot (uid 65532)</td></tr>
+    </table></div>
+    <p>The image holds agentlink’s terminal-only build on Debian 12 slim, with bash for a terminal in the container and curl for the installers of the CLIs some subscriptions sign in with (Cursor, Devin, Grok Build). It runs <code>agentlink serve</code> (the gateway alone) unless given another command. The container finds no agents to wire, so agentlink in it is a gateway: the agents that use it run elsewhere.</p>
+
+    <h2 id="run"><a class="anchor" href="#run">Run it</a></h2>
+    <p>Run it with the browser UI, a key for that page you keep across restarts, and both ports on the host’s loopback only:</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-run">Copy</button>
+      <pre id="ex-run">docker run -d --name agentlink --restart unless-stopped \
+  -p 127.0.0.1:3425:3425 -p 127.0.0.1:3430:3430 \
+  -e AGENT_LINK_WEB_KEY=$(openssl rand -hex 16) \
+  -v agentlink-config:/config \
+  ghcr.io/yetone/agentlink:latest web --addr 0.0.0.0:3430 --no-open
+
+docker logs agentlink</pre>
+    </div>
+    <p>The log names the page with its key:</p>
+    <div class="code">
+      <span class="lang">Output</span>
+      <pre>● agentlink web on http://127.0.0.1:3430/?k=0f3c9a1e…
+  on the network http://172.17.0.2:3430/?k=0f3c9a1e…
+  these are the container's own addresses: other machines use the host's, and AGENT_LINK_PUBLIC_URL=http://&lt;host&gt;:&lt;port&gt; puts it here
+! anyone with the link can change agentlink and see its keys, and the network carries it unencrypted
+  the link carries AGENT_LINK_WEB_KEY · gateway http://127.0.0.1:3425 · Ctrl-C to stop</pre>
+    </div>
+    <div class="callout"><b>Agents outside the container need a gateway key.</b> In the container any key works. A request from the host or another machine is answered only with an enabled gateway key, and gets 401 without one: make one as in <a href="#share">Gateway keys</a>. <code>127.0.0.1:</code> in <code>-p</code> keeps a port on the host; leave it out, or name the host’s LAN or VPN address, for other machines to reach it.</div>
+    <p>Without <code>web --addr 0.0.0.0:3430 --no-open</code> the container runs the gateway alone, which you then set up from a terminal in it (<code>docker exec -it agentlink agentlink provider add …</code>). A folder bind-mounted at <code>/config</code> works in place of the named volume, if uid 65532 can write it: <code>sudo chown -R 65532:65532 /volume1/docker/agentlink/config</code>.</p>
+
+    <h2 id="web"><a class="anchor" href="#web">The browser UI</a></h2>
+    <p>Open the link from the log. The key in it is traded for a cookie and taken out of the address; a page opened without it is turned away (401). With <code>AGENT_LINK_WEB_KEY</code> set (16 or more letters, digits or <code>- . _ ~</code>; <code>openssl rand -hex 16</code> makes one) the key stays the same across restarts and the browser stays signed in for 400 days. Without it, every start makes a new key and the cookie lasts the browser session.</p>
+    <p>The page is in <b>gateway mode</b>: <span class="ui">Providers</span>, <span class="ui">Gateway</span>, <span class="ui">Routing</span>, <span class="ui">Usage</span>, <span class="ui">Plugins</span> and <span class="ui">Settings</span>, with no Agents, Sessions or Library, since there are no agents in the container. <span class="ui">Settings</span> → <span class="ui">General</span> → <span class="ui">Gateway mode</span> turns it off.</p>
+    <p>On a NAS or a server you reach over SSH, open the page through a tunnel rather than publishing 3430: <code>ssh -L 3430:127.0.0.1:3430 you@nas</code>, then the log’s link on your own computer.</p>
+    <div class="callout"><b>Anyone with the link can change agentlink and see its keys.</b> Keep 3430 on loopback or a VPN. Across the network, serve it over HTTPS: give agentlink a certificate with <code>AGENT_LINK_TLS_CERT</code> and <code>AGENT_LINK_TLS_KEY</code>, or put it behind a reverse proxy with TLS, such as Caddy.</div>
+
+    <h2 id="signin"><a class="anchor" href="#signin">Sign in to subscriptions</a></h2>
+    <p>Add API keys on <span class="ui">Providers</span> as on the desktop. A subscription’s sign-in (ChatGPT, Claude…) opens the vendor’s page in your browser, and when you are done the vendor sends that browser back to <code>localhost</code>, for ChatGPT <code>http://localhost:1455/auth/callback?code=…</code>. That is your own computer, not the container, so the page doesn’t load. Copy its whole address from the address bar and paste it into the sign-in’s <span class="ui">Callback URL</span> field.</p>
+    <p>The same from a terminal:</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-signin">Copy</button>
+      <pre id="ex-signin">docker exec -it agentlink agentlink accounts add codex</pre>
+    </div>
+    <p>Open the link it prints, sign in, then paste the address the browser ended on. The browser UI can also import sign-ins from a file.</p>
+    <p>A Claude subscription is signed in to and answered through Claude Code, which the image doesn’t have. Have agentlink download Anthropic’s own build first: it says the version, where it comes from and where it goes, asks, and checks the download’s SHA-256 against Anthropic’s manifest. It is kept in <code>/config/cache</code>; run it again for a newer one. <code>agentlink accounts add claude</code> offers it too when Claude Code is missing.</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-claude-code">Copy</button>
+      <pre id="ex-claude-code">docker exec -it agentlink agentlink claude-code install</pre>
+    </div>
+    <p>A Grok (SuperGrok) subscription signs in through xAI’s Grok Build CLI, which the image doesn’t have either. Its sign-in, in the browser UI or with <code>agentlink plugin login grok</code>, installs it first, as xAI’s installer does: the stable version from <code>x.ai/cli</code>, kept in <code>/config/home/.grok</code>. To use a Grok Build binary you put on the volume yourself, set <code>GROK_BIN_DIR</code> to the folder holding it.</p>
+
+    <h2 id="volume"><a class="anchor" href="#volume">What is kept</a></h2>
+    <p>Everything agentlink writes is under <code>/config</code>, so a restart, or a new container on the same volume, keeps your providers, keys, sign-ins and plugins.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Path</th><th>Holds</th></tr>
+      <tr><td><code>/config/agentlink</code></td><td>agentlink’s own files: <code>settings.json</code>, providers, gateway keys, routing groups</td></tr>
+      <tr><td><code>/config/home</code></td><td>the container’s <code>HOME</code>: sign-ins kept where their agent keeps them (<code>~/.codex</code>, <code>~/.claude</code>…)</td></tr>
+      <tr><td><code>/config/cache</code></td><td>the model catalog, Bun, which plugins run on (downloaded the first time one is used), and the Claude Code <code>agentlink claude-code install</code> downloaded</td></tr>
+      <tr><td><code>/config/data</code>, <code>/config/state</code></td><td>the rest of what agentlink keeps</td></tr>
+    </table></div>
+    <p>A volume made by an older image keeps working: agentlink adds the folders it lacks when it starts. Only sign-ins made with that older image, which lived outside the volume, have to be made again.</p>
+
+    <h2 id="env"><a class="anchor" href="#env">Environment</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>Variable</th><th>What it does</th></tr>
+      <tr><td><code>AGENT_LINK_ADDR</code></td><td>where the gateway listens. The image sets <code>0.0.0.0:3425</code>, so the published port reaches it.</td></tr>
+      <tr><td><code>AGENT_LINK_PUBLIC_URL</code></td><td>the address other machines reach the gateway at, such as <code>http://192.168.1.20:3425</code> (the host’s or the NAS’s, on the published port), or a reverse proxy’s base URL. In the container agentlink sees only Docker’s own <code>172.17.x</code> address; with this set, the address it shows and prints is the one to use.</td></tr>
+      <tr><td><code>AGENT_LINK_WEB_KEY</code></td><td>the browser UI’s key, kept across restarts (16+ characters)</td></tr>
+      <tr><td><code>AGENT_LINK_TLS_CERT</code>, <code>AGENT_LINK_TLS_KEY</code></td><td>a PEM certificate (its chain after it) and its key, mounted into the container: other machines then reach the gateway and the browser UI over <code>https://</code> only, and plain HTTP from them gets 400. The files are read again when they change, so a renewal needs no restart. One without the other, or files that don’t load, stop agentlink from starting. Use <code>https://</code> in <code>AGENT_LINK_PUBLIC_URL</code> too.</td></tr>
+      <tr><td><code>AGENT_LINK_ALLOW_IPS</code></td><td>the only addresses other machines may reach the gateway and the browser UI from, as IPs and CIDR ranges: <code>203.0.113.7,10.0.0.0/8,2001:db8::/32</code>. Any other address gets 403, even with a gateway key. Unset lets every address in, each with a key. See <a href="#allow">Allowed addresses</a>.</td></tr>
+      <tr><td><code>HOME</code>, <code>XDG_CONFIG_HOME</code>, <code>XDG_CACHE_HOME</code>, <code>XDG_DATA_HOME</code>, <code>XDG_STATE_HOME</code></td><td>set by the image to the folders under <code>/config</code> above; leave them</td></tr>
+    </table></div>
+
+    <h2 id="share"><a class="anchor" href="#share">Gateway keys and other machines</a></h2>
+    <ol class="steps">
+      <li><b>Make a key for each client</b><span class="ui">Gateway</span> → <span class="ui">Gateway keys</span>, or in a terminal <code>docker exec agentlink agentlink gateway-key add "Laptop"</code>, which prints the new <code>sk-agentlink-key-…</code>. Every request from outside the container, the host’s own included, must carry an enabled gateway key, and one without gets 401. A key can have its own daily, weekly, monthly, every-N-days or every-N-hours limit and its own list of models (<code>agentlink gateway-key limit</code>, <code>agentlink gateway-key models</code>).</li>
+      <li><b>Publish the port</b>Recreate the container with <code>-p 3425:3425</code>, or bound to the NAS’s LAN or VPN address (<code>-p 192.168.1.20:3425:3425</code>), and with <code>-e AGENT_LINK_PUBLIC_URL=http://192.168.1.20:3425</code>.</li>
+    </ol>
+    <p>On each other computer, point the agent at the gateway with one of those keys as its API key: <code>http://192.168.1.20:3425/v1</code> for an OpenAI client, <code>http://192.168.1.20:3425</code> for an Anthropic or Gemini one. Model ids are <code>provider/model</code>, or a routing group’s; <code>GET /v1/models</code> lists them. If that computer runs agentlink itself, add the container as a <a href="/docs/remote">Remote agentlink</a> instead, and agentlink wires its agents for you.</p>
+    <p><span class="ui">Settings</span> → <span class="ui">Share on local network</span> isn’t needed in the container: turning it on also makes a gateway key named <span class="ui">Agent Link</span>, and the gateway asks for a key from outside the container either way.</p>
+    <p><b>Upgrading from an earlier image.</b> An agent outside the container that sends <code>agentlink</code>, or any other key that isn’t an enabled gateway key, now gets 401 (“the API key sent is not an enabled agentlink gateway key”). Make it a key as above and put that in the agent’s settings. Agents that already send a gateway key, and a Remote agentlink set up with one, keep working.</p>
+    <p id="allow"><b>Allowed addresses.</b> On a public host, set <code>-e AGENT_LINK_ALLOW_IPS=203.0.113.7,10.0.0.0/8</code> to the addresses your clients come from. A request from any other address is refused 403 before its key is looked at, so a key that leaks is no use from elsewhere; the refusal names the address it came from, as does the container’s log. agentlink judges the address of the connection itself, never an <code>X-Forwarded-For</code> header, and a mistyped entry lets nothing in rather than everything. Docker’s default bridge network passes a client’s own address into the container, but a request from the host itself arrives from the bridge’s gateway (<code>172.17.0.1</code>), and Docker Desktop and rootless Docker show every client as one address of their own: add that, or check what the 403 says. Behind a reverse proxy or tunnel, every request comes from the proxy’s address, so limit who reaches agentlink at the proxy. On the desktop app the same list is <span class="ui">Settings</span> → <span class="ui">Network and sharing</span> → <span class="ui">Allowed addresses</span>.</p>
+    <div class="callout"><b>Over the internet, prefer a VPN</b> such as Tailscale or WireGuard to opening 3425. A reverse proxy or tunnel in front of the container is the network too: its clients need a gateway key like any other machine’s.</div>
+
+    <h2 id="compose"><a class="anchor" href="#compose">Docker Compose on a NAS</a></h2>
+    <div class="code">
+      <span class="lang">compose.yaml</span>
+      <button class="copy" data-copy="ex-compose">Copy</button>
+      <pre id="ex-compose">services:
+  agentlink:
+    image: ghcr.io/yetone/agentlink:latest
+    restart: unless-stopped
+    ports:
+      <span class="c"># 127.0.0.1: the host alone; every caller outside the container needs a gateway key</span>
+      - "127.0.0.1:3425:3425"
+      - "127.0.0.1:3430:3430"
+    environment:
+      AGENT_LINK_PUBLIC_URL: http://&lt;nas-address&gt;:3425
+      AGENT_LINK_WEB_KEY: &lt;random-key&gt;
+    volumes:
+      - ./config:/config
+    command: [web, --addr, 0.0.0.0:3430, --no-open]</pre>
+    </div>
+    <p>Then: <code>sudo chown -R 65532:65532 ./config</code>, <code>docker compose up -d</code>, open <code>http://127.0.0.1:3430/?k=&lt;random-key&gt;</code> through an SSH tunnel, add your providers and make a gateway key for each machine. For other machines to reach the gateway, change its line to <code>"3425:3425"</code> (or the NAS’s LAN or VPN address) and run <code>docker compose up -d</code> again.</p>
+
+    <h2 id="ops"><a class="anchor" href="#ops">Health, terminal, updates</a></h2>
+    <ul>
+      <li><b>Health.</b> The image has a <code>HEALTHCHECK</code>: <code>agentlink healthcheck</code> exits 0 while the gateway answers, under <code>serve</code> and <code>web</code> alike, so <code>docker ps</code> shows the container as healthy and Compose can wait for it with <code>depends_on: condition: service_healthy</code>.</li>
+      <li><b>Terminal.</b> <code>docker exec -it agentlink bash</code>, or a NAS panel’s terminal, opens a shell with <code>agentlink</code> on its PATH: <code>agentlink providers</code>, <code>agentlink models</code>, <code>agentlink usage</code>, <code>agentlink quota</code> and the rest of the <a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md">CLI</a>.</li>
+      <li><b>Updates.</b> Pull the new image and recreate the container on the same volume: <code>docker pull ghcr.io/yetone/agentlink:latest</code>, then <code>docker rm -f agentlink</code> and the same <code>docker run</code>, or <code>docker compose pull &amp;&amp; docker compose up -d</code>.</li>
+      <li><b>Build it yourself.</b> <code>docker build -t agentlink .</code> in a checkout of <a href="https://github.com/crazymsn/Agent-Link">the repository</a> makes the same image.</li>
+    </ul>
+
+    <p style="margin-top:48px">Questions or a setup worth sharing? Ask on <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>. The <a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#docker">reference</a> has the details.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 agentlink · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote agentlink</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to agentlink</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Remote Agent Link · Agent Link docs</title>
+<meta name="description" content="Use one Agent Link from several computers: share it on the network, add it on each other computer as a Remote Agent Link (app, TUI or CLI), and what comes over: models, routing groups, images, System One, prices and quotas.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/remote">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/remote">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/remote">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Remote Agent Link">
+<meta property="og:description" content="One Agent Link&#x27;s providers, accounts and routing groups, on every computer you use.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/remote">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/remote" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/remote" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/remote" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Remote Agent Link</p>
+    <a href="#overview">Overview</a>
+    <a href="#share">1. Share the main Agent Link</a>
+    <a href="#add">2. Add it on the other computer</a>
+    <a href="#models">What you get</a>
+    <a href="#quotas">Quotas and usage</a>
+    <a href="#trouble">When it doesn’t work</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Sharing</p>
+    <h1>Remote Agent Link</h1>
+    <p class="lede">One Agent Link can serve several computers. Sign in and set up providers and routing groups once, on the computer that keeps them (your desktop, a server, a <a href="/docs/docker">NAS in Docker</a>), and on every other computer add that Agent Link as a provider of its own: a <b>Remote Agent Link</b>.</p>
+
+    <div class="table-wrap"><table>
+      <tr><th></th><th>The shared Agent Link</th><th>Each other computer’s Agent Link</th></tr>
+      <tr><td>Providers, subscriptions, keys</td><td>kept and signed in here</td><td>uses them through the Remote Agent Link</td></tr>
+      <tr><td>Routing groups</td><td>made here</td><td>picked as <code>office/group/…</code></td></tr>
+      <tr><td>Agents</td><td>its own</td><td>still wired by this computer’s Agent Link</td></tr>
+      <tr><td>Usage and quotas</td><td>counted and read here</td><td>shown here, named with the remote</td></tr>
+    </table></div>
+    <p>The computer you sit at still runs Agent Link: it wires that computer’s agents, picks their models and keeps their sessions. Only the models come from the other one.</p>
+
+    <h2 id="share"><a class="anchor" href="#share">1. Share the main Agent Link</a></h2>
+    <ol class="steps">
+      <li><b>Turn on sharing</b>On the computer that keeps your providers: <span class="ui">Settings</span> → <span class="ui">Share on local network</span> → <span class="ui">On</span>. Agent Link then listens on the local network and makes a gateway key named <span class="ui">Agent Link</span>. The <span class="ui">Address</span> row below the switch shows where other computers reach it, such as <code>http://192.168.1.20:3425</code>.</li>
+      <li><b>Make a key for each computer</b><span class="ui">Gateway</span> → <span class="ui">Gateway keys</span>, or <code>Agent Link gateway-key add "Laptop"</code>, which prints its <code>sk-Agent Link-key-…</code>. Each key can have its own daily, weekly or monthly limit and its own models, and its calls are counted under its name.</li>
+    </ol>
+    <p>While sharing is off, a desktop Agent Link listens on its own computer only, and other computers can’t reach it. A Agent Link in Docker is reached through its published port instead, and asks every caller outside its container for a gateway key, shared or not; see <a href="/docs/docker#share">Docker</a>.</p>
+
+    <h2 id="add"><a class="anchor" href="#add">2. Add it on the other computer</a></h2>
+    <p>You need the address and a key from step 1. Any of these does it:</p>
+    <ul>
+      <li><b>The app:</b> on the <span class="ui">Providers</span> tab press <span class="ui">＋ Add provider</span>, pick <span class="ui">Remote Agent Link</span> under <span class="ui">Another computer’s Agent Link</span> (the last heading), then give its address and the key.</li>
+      <li><b>The TUI</b> (<code>agent-link tui</code>): on the Providers page press <code>a</code>, pick Remote Agent Link, then type its address and key. On its row, <code>w</code> changes the address and <code>m</code> fetches its list again.</li>
+      <li><b>The CLI:</b></li>
+    </ul>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-add">Copy</button>
+      <pre id="ex-add">Agent Link provider add remote-Agent Link sk-Agent Link-key-… url=http://192.168.1.20:3425 id=office
+agent-link models            <span class="c"># office/… are the shared Agent Link's</span>
+Agent Link provider refresh office   <span class="c"># fetch its list again</span></pre>
+    </div>
+    <p><code>id=</code> names the provider here, and so begins its models’ ids (<code>office/…</code>). The address can be typed as <code>192.168.1.20:3425</code> (plain <code>http://</code> is assumed), with <code>/v1</code> after it, or as the root: Agent Link puts every API on it either way. Add one Remote Agent Link for each computer you share from, with a different id.</p>
+
+    <h2 id="models"><a class="anchor" href="#models">What you get</a></h2>
+    <ul>
+      <li><b>Its models</b>, as its own agents are shown them: <code>office/relay-a/claude-sonnet-5</code>, labelled <code>Claude Sonnet 5 · Relay A · office</code>. The ids stay ids; only the labels carry the names. Pick them for an agent here like any other model.</li>
+      <li><b>Its routing groups</b>, as <code>office/group/…</code>. The group decides on the shared Agent Link, with its accounts.</li>
+      <li><b>Every API.</b> A request goes on in the API the agent spoke (Anthropic Messages and token counting, Responses, Chat Completions). A model that the shared Agent Link’s provider serves on another API only is turned into that API once, never on both computers. Responses go over HTTP, SSE included, not WebSocket.</li>
+      <li><b>Images and video.</b> Its image and video models are found by themselves and served through its image generation and edit, and video, APIs.</li>
+      <li><b>System One.</b> Its decision models (Jev, Clef, and models with names of your own) are set up at its <code>/v1/systemone</code> and appear as decision models, not chat models. Refresh the provider’s list to find new ones. A bare <code>office</code> asks the first decision model listed.</li>
+      <li><b>Embeddings, rerank and speech to text</b> go to its matching APIs. They stay in agents’ lists as they are on the remote; being listed doesn’t make them able to hold a conversation.</li>
+      <li><b>Prices.</b> Each model costs here what the shared Agent Link counts it at (a price set there by hand, else its provider’s list price), so the two computers count the same. A price you set here comes first.</li>
+    </ul>
+
+    <h2 id="quotas"><a class="anchor" href="#quotas">Quotas and usage</a></h2>
+    <p>The Usage page, the menu bar and <code>agent-link quota</code> show the shared Agent Link’s subscription cards, named with it (<code>Codex · office</code>, id <code>office/codex</code>), as that Agent Link last read them: only the computer with the sign-ins asks the vendors. A card’s refresh here has it read that card once more, at most once every 30 seconds. A Codex reset or a WorkBuddy check-in is pressed on that computer, from its own app, TUI or CLI. A key that Agent Link holds to a budget, some models or some accounts is told none of its cards: only that key’s own card shows here, with its limit.</p>
+    <p>The shared Agent Link counts this computer’s requests under the name of the gateway key it sends, with the account that answered.</p>
+
+    <h2 id="trouble"><a class="anchor" href="#trouble">When it doesn’t work</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>You see</th><th>What to do</th></tr>
+      <tr><td>“Agent Link isn’t shared on the local network”, or “remote Agent Link isn’t shared”</td><td>turn on <span class="ui">Share on local network</span> on that computer</td></tr>
+      <tr><td>“remote Agent Link didn’t take this key” (401)</td><td>use one of its enabled gateway keys: <span class="ui">Gateway</span> → <span class="ui">Gateway keys</span> there</td></tr>
+      <tr><td>403 for a model</td><td>that key may use only some models: <code>Agent Link gateway-key models &lt;id&gt;</code> on that computer shows or changes them. A bare <code>office</code> asks System One’s first decision model, whatever the key allows; use the full <code>office/provider/model</code> id</td></tr>
+      <tr><td>“couldn’t reach the remote Agent Link”</td><td>check the address, that Agent Link is running there with sharing on, and that its firewall lets the port in</td></tr>
+      <tr><td>no System One models, or “doesn’t share its quotas”</td><td>update agent-link on that computer, then refresh the list here</td></tr>
+    </table></div>
+    <div class="callout"><b>Away from home</b>, reach the shared Agent Link over a VPN such as Tailscale or WireGuard, with its address there. Don’t open its port to the internet.</div>
+
+    <p style="margin-top:48px">Questions or a setup worth sharing? Ask on <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>. The <a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md">reference</a> has the details.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

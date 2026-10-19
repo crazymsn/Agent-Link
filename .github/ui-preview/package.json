@@ -1,0 +1,9 @@
+{
+  "name": "agentlink-ui-preview",
+  "private": true,
+  "type": "module",
+  "description": "Records a pull request's UI changes in the real app; see .github/workflows/ui-preview.yml",
+  "dependencies": {
+    "playwright": "1.61.1"
+  }
+}

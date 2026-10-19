@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Agent Link · Agent Link 文档</title>
+<meta name="description" content="导入链接：给用户一个链接，你的模型就出现在他们用的每个 Agent 里。链接格式、参数、链接生成器和 Add to Agent Link 按钮。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/import">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/import">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/import">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Add to Agent Link">
+<meta property="og:description" content="一个链接，把你的模型送进用户的每个 Agent。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/zh/import">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 Agent Link</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/import" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/import" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/import" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Add to Agent Link</p>
+    <a href="#overview">概览</a>
+    <a href="#quick-start">快速开始</a>
+    <a href="#link">链接格式</a>
+    <a href="#parameters">参数</a>
+    <a href="#builder">链接生成器</a>
+    <a href="#button">按钮</a>
+    <a href="#generate">在后端生成</a>
+    <a href="#security">安全</a>
+    <a href="#platforms">平台支持</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 接入</p>
+    <h1>Add to Agent Link</h1>
+    <p class="lede">给用户一个链接，你的模型就会出现在他们用的每个 Agent 里：Claude Code、Codex、OpenCode、Gemini CLI、Pi、Crush。不用改配置文件，不用设环境变量，也不用手动复制 base URL。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/import-zh-light.png" width="1280" height="1120" alt="Agent Link 询问是否添加 Acme Relay，列出链接里的地址、密钥和模型">
+      <img class="for-dark" src="/img/import-zh-dark.png" width="1280" height="1120" alt="Agent Link 询问是否添加 Acme Relay，列出链接里的地址、密钥和模型">
+      <figcaption>用户看到的界面。在点「添加」之前，什么都不会保存。</figcaption>
+    </figure>
+
+    <h2 id="quick-start"><a class="anchor" href="#quick-start">快速开始</a></h2>
+    <ol class="steps">
+      <li><b>生成链接</b>用 URL 参数描述你的服务：名称、你支持的每种 API 的 base URL，还可以带上用户的密钥和要提供的模型。</li>
+      <li><b>放到按钮后面</b>放在控制台里、刚生成的密钥旁边：<em>Add to Agent Link</em>。</li>
+      <li><b>用户确认</b>Agent Link 打开后，会清楚列出提示词和密钥将发往哪里，用户同意后才添加这个供应商。之后每个 Agent 都能直接用。</li>
+    </ol>
+
+    <div class="code" style="margin-top:20px">
+      <span class="lang">链接</span>
+      <button class="copy" data-copy="ex1">复制</button>
+      <pre id="ex1">https://useAgent Link.ai/import#name=Acme%20Relay&amp;chat=https://api.acme.example/v1&amp;anthropic=https://api.acme.example&amp;key=sk-…&amp;models=gpt-5.5,claude-sonnet-5</pre>
+    </div>
+
+    <h2 id="link"><a class="anchor" href="#link">链接格式</a></h2>
+    <p>Agent Link 会向系统注册 <code>Agent Link://</code> 协议。导入链接就是这个协议，加上 <code>import</code> 和一串查询参数：</p>
+    <div class="url"><span class="n">Agent Link://import</span><span class="p">?</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <p>在网页上，请改用 <code>useAgent Link.ai/import</code>，把同样的参数放在 <code>#</code> 后面：</p>
+    <div class="url"><span class="n">https://useAgent Link.ai/import</span><span class="p">#</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <div class="cards" style="margin-top:20px">
+      <div><h3>为什么用 https 链接</h3><p>普通链接能用的地方它都能用：GitHub README、聊天软件和邮件客户端常常会去掉或拦截自定义协议。它会打开 Agent Link；还没装 Agent Link 时，会引导下载。</p></div>
+      <div><h3>为什么放在 <code>#</code> 后面</h3><p>浏览器从不把 # 后面的部分发给服务器。密钥从你的页面直接到用户电脑上，不经过 useAgent Link.ai，连日志里也不会出现。</p></div>
+    </div>
+    <p>每个值都要做 URL 编码，<code>URLSearchParams</code> 或 <code>urlencode</code> 的结果即可。空格写成 <code>%20</code> 或 <code>+</code> 都行。</p>
+
+    <h2 id="parameters"><a class="anchor" href="#parameters">参数</a></h2>
+    <p>链接要么指定 Agent Link 的某个<a href="#presets">预设</a>（预设已经知道该厂商的地址），要么从头描述一个供应商：一个名称，加至少一个 base URL。</p>
+    <div class="table-wrap"><table>
+      <tr><th>参数</th><th>含义</th></tr>
+      <tr><td><code>name</code><span class="req">或 preset</span></td><td>供应商在 Agent Link 里的名称，最多 80 个字符。</td></tr>
+      <tr><td><code>chat</code></td><td>OpenAI Chat Completions 的 base URL，以 <code>/v1</code> 结尾（Agent Link 会自动拼上 <code>/chat/completions</code>）。</td></tr>
+      <tr><td><code>responses</code></td><td>OpenAI Responses 的 base URL，以 <code>/v1</code> 结尾。Codex 只支持这个 API；你不支持时，Agent Link 会替它转换。</td></tr>
+      <tr><td><code>anthropic</code></td><td>Anthropic Messages 的 base URL：根地址，不带 <code>/v1</code>。</td></tr>
+      <tr><td><code>gemini</code></td><td>Google Gemini API 的 base URL，以 <code>/v1beta</code> 结尾，和应用内编辑器、TUI 里填的是同一个。</td></tr>
+      <tr><td><code>key</code></td><td>用户的 API 密钥。不填的话，用户在对话框里自己粘贴。</td></tr>
+      <tr><td><code>models</code></td><td>提供给 Agent 的模型 id，用逗号分隔。不填时，Agent Link 会列出你的 <code>/v1/models</code> 返回的模型。</td></tr>
+      <tr><td><code>id</code></td><td>Agent 在 <code>id/model</code> 里用的 id。默认取名称的小写加连字符形式（<code>Acme Relay</code> → <code>acme-relay</code>）。</td></tr>
+      <tr><td><code>catalog</code></td><td>一个 <a href="https://models.dev">models.dev</a> 供应商 id，用它的元数据，比如转发 OpenAI 模型的服务可以填 <code>openai</code>。它提供：显示名、上下文长度（会写进支持该设置的 agent）、推理档位和是否支持图片；供应商自己的 <code>/models</code> 读不到时的模型列表；以及每 token 价格，用量页据此估算美元费用。可以用逗号填多个 id：它们的模型合在一起，同一个模型以排在前面的为准。</td></tr>
+      <tr><td><code>website</code></td><td>你的网站（https），显示在供应商页面上。</td></tr>
+      <tr><td><code>keys</code></td><td>用户创建密钥的页面（https）。链接里没有密钥时，对话框会链接到这里。</td></tr>
+      <tr><td><code>icon</code></td><td>你自己的图标（https）：PNG、JPEG、GIF、WebP、ICO 或 SVG，最大 1&nbsp;MB。用户确认导入后，Agent Link 只下载一次，存在供应商旁边。不填时，Agent Link 显示 <code>catalog</code> 对应厂商的 logo，或一个默认图标。</td></tr>
+      <tr><td><code>preset</code><span class="req">或 name</span></td><td>预设 id；使用它的地址、目录和页面，可以用 <code>name</code> 改名。</td></tr>
+      <tr><td><code>region</code></td><td>预设有多个区域时，指定用哪个。</td></tr>
+    </table></div>
+    <p>不用预设时，<code>chat</code>、<code>responses</code>、<code>anthropic</code>、<code>gemini</code> 至少要填一个；你支持几种 API 就填几个，每个 Agent 会用它原生支持的那一种。Base URL 必须是 <b>https</b>，只有指向 <code>localhost</code>、回环地址、内网地址和 <code>*.local</code> 时可以用 http，因为本地模型服务通常不配 TLS。地址里不能带查询参数、# 片段或账号密码。</p>
+
+    <h3 id="presets">预设</h3>
+    <p>Agent Link 已经内置的厂商。<code>Agent Link presets</code> 会打印当前的列表。</p>
+    <div class="chips">
+      <span class="chip"><code>anthropic</code></span><span class="chip"><code>openai</code></span><span class="chip"><code>google</code></span><span class="chip"><code>deepseek</code></span><span class="chip"><code>xai</code></span><span class="chip"><code>moonshot</code><span>Kimi</span></span><span class="chip"><code>moonshot-cn</code></span><span class="chip"><code>kimi-code</code></span><span class="chip"><code>kimi-code-cn</code></span><span class="chip"><code>zhipu</code><span>GLM · api · coding</span></span><span class="chip"><code>zai</code><span>api · coding</span></span><span class="chip"><code>minimax</code></span><span class="chip"><code>minimax-cn</code></span><span class="chip"><code>stepfun</code><span>plan · api</span></span><span class="chip"><code>stepfun-cn</code><span>plan · api</span></span><span class="chip"><code>xiaomi</code><span>MiMo</span></span><span class="chip"><code>baidu-qianfan</code><span>千帆 · personal · team · api</span></span><span class="chip"><code>tencent-cloud</code><span>plan · cn · intl · enterprise · enterprise-intl</span></span><span class="chip"><code>huaweicloud</code><span>plan · api</span></span><span class="chip"><code>volcengine</code><span>火山方舟 · coding · agent · api</span></span><span class="chip"><code>qwen</code></span><span class="chip"><code>qwen-cn</code></span><span class="chip"><code>qwen-token-plan</code></span><span class="chip"><code>bailian-token-plan</code></span><span class="chip"><code>mistral</code></span><span class="chip"><code>groq</code></span><span class="chip"><code>bedrock</code></span><span class="chip"><code>ollama-cloud</code></span><span class="chip"><code>openrouter</code></span><span class="chip"><code>opencode-go</code></span><span class="chip"><code>clinepass</code></span><span class="chip"><code>opencode-zen</code></span><span class="chip"><code>kilo</code></span><span class="chip"><code>commandcode</code></span><span class="chip"><code>together</code></span><span class="chip"><code>fireworks</code></span><span class="chip"><code>siliconflow</code><span>cn · intl</span></span><span class="chip"><code>nvidia</code></span><span class="chip"><code>modelscope</code><span>魔搭</span></span><span class="chip"><code>aihubmix</code></span><span class="chip"><code>pipellm</code></span><span class="chip"><code>302ai</code></span><span class="chip"><code>cherryin</code></span><span class="chip"><code>yylx</code><span>auto · global · cn</span></span><span class="chip"><code>ollama</code></span><span class="chip"><code>lmstudio</code></span>
+    </div>
+    <p>有预设的厂商只需带上密钥：<code>Agent Link://import?preset=deepseek&amp;key=sk-…</code>。想加入列表？<a href="https://github.com/crazymsn/Agent-Link/issues">提个 issue</a>。</p>
+
+    <h2 id="builder"><a class="anchor" href="#builder">链接生成器</a></h2>
+    <p>填上你的服务信息，链接、按钮代码和 Markdown 会随输入实时生成。所有内容都只在这个页面里，不会发送出去。</p>
+    <div class="builder">
+      <form id="b" autocomplete="off" onsubmit="return false">
+        <div class="full"><div class="seg" role="tablist"><button type="button" data-mode="custom" class="on">自己的服务</button><button type="button" data-mode="preset">预设</button></div></div>
+        <label class="m-preset hide">预设<select name="preset"></select></label>
+        <label class="m-preset hide" id="region-l">区域<select name="region"></select></label>
+        <label class="m-custom">名称<input name="name" placeholder="Acme Relay" value="Acme Relay"></label>
+        <label class="m-custom">Id <i>可选</i><input name="id" placeholder="acme-relay"></label>
+        <label class="m-custom">OpenAI Chat base URL<input name="chat" class="mono" placeholder="https://api.acme.example/v1" value="https://api.acme.example/v1"></label>
+        <label class="m-custom">Anthropic base URL<input name="anthropic" class="mono" placeholder="https://api.acme.example" value="https://api.acme.example"></label>
+        <label class="m-custom">OpenAI Responses base URL <i>可选</i><input name="responses" class="mono" placeholder="https://api.acme.example/v1"></label>
+        <label class="m-custom">Gemini base URL <i>可选</i><input name="gemini" class="mono" placeholder="https://api.acme.example/v1beta"></label>
+        <label class="m-custom">models.dev 目录 <i>可选</i><input name="catalog" placeholder="openai"></label>
+        <label>API 密钥 <i>可选</i><input name="key" class="mono" placeholder="sk-…" spellcheck="false"></label>
+        <label>模型 <i>逗号分隔</i><input name="models" class="mono" placeholder="gpt-5.5, claude-sonnet-5" value="gpt-5.5, claude-sonnet-5"></label>
+        <label class="m-custom">网站 <i>可选</i><input name="website" placeholder="https://acme.example"></label>
+        <label class="m-custom">密钥页面 <i>可选</i><input name="keys" placeholder="https://acme.example/keys"></label>
+        <label class="m-custom">图标 <i>可选，https</i><input name="icon" placeholder="https://acme.example/logo.svg"></label>
+      </form>
+      <div class="out">
+        <div class="row"><span>网页链接</span><code id="o-web"></code><button class="copy" data-copy="o-web">复制</button></div>
+        <div class="row"><span>应用链接</span><code id="o-app"></code><button class="copy" data-copy="o-app">复制</button></div>
+        <div class="row"><span>HTML</span><code id="o-html"></code><button class="copy" data-copy="o-html">复制</button></div>
+        <div class="row"><span>Markdown</span><code id="o-md"></code><button class="copy" data-copy="o-md">复制</button></div>
+        <div class="msg hide" id="o-msg"></div>
+        <div class="try"><a class="btn small" id="o-try" href="#" target="_blank" rel="noopener"><img class="bird-inv" src="/img/Agent Link-small.svg" alt="">试一下</a><small>会打开 Agent Link；你确认之前不会添加任何东西。</small></div>
+      </div>
+    </div>
+
+    <h2 id="button"><a class="anchor" href="#button">按钮</a></h2>
+    <p>两个现成的徽章，一个用于浅色页面，一个用于深色页面。把它链接到你的导入链接即可；也可以自己画按钮，<em>Add to Agent Link</em> 字样和这只鸟都可以随意使用。</p>
+    <div class="badges">
+      <div class="on-light"><img src="/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></div>
+      <div class="on-dark"><img src="/img/add-to-Agent Link-light.svg" alt="Add to Agent Link" width="176" height="40"></div>
+    </div>
+    <div class="code">
+      <span class="lang">HTML</span>
+      <button class="copy" data-copy="ex-html">复制</button>
+      <pre id="ex-html">&lt;a href="https://useAgent Link.ai/import#preset=deepseek&amp;key=sk-…"&gt;
+  &lt;img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"&gt;
+&lt;/a&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Markdown</span>
+      <button class="copy" data-copy="ex-md">复制</button>
+      <pre id="ex-md">[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](https://useAgent Link.ai/import#preset=deepseek)</pre>
+    </div>
+    <p>深色页面请用 <code>add-to-Agent Link-light.svg</code>。README 这类公开页面绝不能带密钥：去掉 <code>key</code>，让用户粘贴自己的。</p>
+
+    <h2 id="generate"><a class="anchor" href="#generate">在后端生成</a></h2>
+    <p>按钮最适合放在展示新密钥的那个页面。在拿到密钥的地方生成链接：</p>
+    <div class="code">
+      <span class="lang">JavaScript</span>
+      <button class="copy" data-copy="ex-js">复制</button>
+      <pre id="ex-js"><span class="k">const</span> params = <span class="k">new</span> URLSearchParams({
+  name: <span class="s">"Acme Relay"</span>,
+  chat: <span class="s">"https://api.acme.example/v1"</span>,
+  anthropic: <span class="s">"https://api.acme.example"</span>,
+  key: apiKey,
+  models: [<span class="s">"gpt-5.5"</span>, <span class="s">"claude-sonnet-5"</span>].join(<span class="s">","</span>),
+  icon: <span class="s">"https://acme.example/logo.svg"</span>,
+});
+<span class="k">const</span> href = <span class="s">"https://useAgent Link.ai/import#"</span> + params;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Python</span>
+      <button class="copy" data-copy="ex-py">复制</button>
+      <pre id="ex-py"><span class="k">from</span> urllib.parse <span class="k">import</span> urlencode
+
+href = <span class="s">"https://useAgent Link.ai/import#"</span> + urlencode({
+    <span class="s">"name"</span>: <span class="s">"Acme Relay"</span>,
+    <span class="s">"chat"</span>: <span class="s">"https://api.acme.example/v1"</span>,
+    <span class="s">"anthropic"</span>: <span class="s">"https://api.acme.example"</span>,
+    <span class="s">"key"</span>: api_key,
+    <span class="s">"models"</span>: <span class="s">"gpt-5.5,claude-sonnet-5"</span>,
+    <span class="s">"icon"</span>: <span class="s">"https://acme.example/logo.svg"</span>,
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">终端</span>
+      <button class="copy" data-copy="ex-sh">复制</button>
+      <pre id="ex-sh">agent-link import <span class="s">'Agent Link://import?preset=deepseek&amp;key=sk-…'</span>   <span class="c"># 会先询问；加 -y 跳过</span></pre>
+    </div>
+
+    <h2 id="security"><a class="anchor" href="#security">安全</a></h2>
+    <p>导入链接只是一个建议，决定权在用户手里。</p>
+    <ul>
+      <li><b>总是要确认。</b>Agent Link 会显示名称、提示词和密钥将发往的每个地址，以及模型列表；用户点「添加」之前什么都不保存。用户还可以先改名或换掉密钥。</li>
+      <li><b>不会悄悄覆盖。</b>id 已被占用时，对话框会说明，按钮也会变成「替换」。</li>
+      <li><b>只接受 https。</b>除了本机和局域网，一律拒绝 http；<code>file:</code>、URL 里带账号密码以及其他协议直接拒绝。</li>
+      <li><b>只读一次。</b>在应用里，链接内容只交给窗口一次；刷新后对话框不会再出现。</li>
+      <li><b>图标是下载的，不是嵌入的。</b><code>icon=</code> 地址由 Agent Link 下载，只在用户确认导入之后，只走 https，只存进它自己的图标目录，最大 1&nbsp;MB，并校验类型。Agent Link 经 useAgent Link.ai 的图标代理去取，所以你的服务器只看到 Cloudflare 的地址，看不到用户的 IP；请求从 Cloudflare 发出，碰不到用户本机和内网。回环或内网的域名在发出请求前就被拒绝。页面和对话框从不直接加载远程图片。</li>
+      <li><b>密钥不经过服务器。</b>网页链接把参数放在 # 片段里。密钥最终只存在 <code>~/.config/Agent Link/providers.json</code>，只有用户本人可读。</li>
+    </ul>
+    <div class="note"><b>链接里的密钥就是机密。</b>只在该用户本人能看到的页面上把密钥放进链接，最好是专门给 Agent Link 生成、可以随时吊销的密钥。绝不要把共享密钥放进公开链接。</div>
+
+    <h2 id="platforms"><a class="anchor" href="#platforms">平台支持</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>系统</th><th><code>Agent Link://</code> 如何注册</th></tr>
+      <tr><td>macOS</td><td>由应用自己注册，Agent Link.app 放进「应用程序」即可。</td></tr>
+      <tr><td>Windows</td><td>Agent Link 首次运行时为当前用户注册。</td></tr>
+      <tr><td>Linux</td><td>通过桌面文件（<code>x-scheme-handler/Agent Link</code>）注册，安装器写一次，首次运行时再写一次。</td></tr>
+      <tr><td>终端</td><td><code>agent-link import &lt;链接&gt;</code> 显示同样的摘要，添加前会询问。</td></tr>
+    </table></div>
+    <p>导入链接需要 Agent Link 0.1.8 或更新版本。Agent Link 已在运行时，链接会交给那个实例，并把它的窗口调到前台。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 Agent Link</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+
+
+  // Link builder. It mirrors the checks Agent Link makes, so a link that
+  // builds here imports there.
+  const PRESETS = [
+    ["anthropic", "Anthropic"], ["openai", "OpenAI"], ["google", "Google Gemini"], ["deepseek", "DeepSeek"], ["xai", "xAI"],
+    ["moonshot", "Kimi"], ["moonshot-cn", "Kimi（中国）"], ["kimi-code", "Kimi Code"], ["kimi-code-cn", "Kimi Code（中国）"], ["zhipu", "智谱 GLM"],
+    ["zai", "Z.ai"], ["minimax", "MiniMax"], ["minimax-cn", "MiniMax（中国）"], ["stepfun", "阶跃星辰"], ["stepfun-cn", "阶跃星辰（中国）"],
+    ["xiaomi", "小米 MiMo"], ["baidu-qianfan", "百度千帆"], ["tencent-cloud", "腾讯云"],
+    ["huaweicloud", "华为云 MaaS"], ["volcengine", "火山方舟"], ["qwen", "通义千问"], ["qwen-cn", "通义千问（中国）"], ["qwen-token-plan", "通义千问 Token Plan"], ["bailian-token-plan", "阿里云百炼 Token Plan"],
+    ["mistral", "Mistral"], ["groq", "Groq"], ["bedrock", "Amazon Bedrock"], ["ollama-cloud", "Ollama Cloud"], ["nous", "Nous Portal"], ["openrouter", "OpenRouter"],
+    ["opencode-go", "OpenCode Go"], ["clinepass", "ClinePass"], ["opencode-zen", "OpenCode Zen"], ["kilo", "Kilo Gateway"], ["commandcode", "Command Code"],
+    ["together", "Together AI"], ["fireworks", "Fireworks"], ["siliconflow", "硅基流动"], ["nvidia", "NVIDIA NIM"], ["modelscope", "魔搭 ModelScope"],
+    ["aihubmix", "AiHubMix"], ["pipellm", "PipeLLM"], ["302ai", "302.AI"], ["cherryin", "CherryIN"], ["yylx", "鱼鱼连线"],
+    ["ollama", "Ollama"], ["lmstudio", "LM Studio"],
+  ];
+  const REGIONS = {
+    "zhipu": [["", "按量付费"], ["coding", "Coding Plan"]],
+    "zai": [["", "按量付费"], ["coding", "Coding Plan"]],
+    "stepfun": [["", "Step Plan"], ["api", "按量付费"]],
+    "stepfun-cn": [["", "Step Plan"], ["api", "按量付费"]],
+    "xiaomi": [["", "套餐 · 中国"], ["plan-sgp", "套餐 · 新加坡"], ["plan-ams", "套餐 · 欧洲"], ["api", "按量付费"]],
+    "baidu-qianfan": [["", "Token Plan 个人版"], ["team", "Token Plan 企业版"], ["api", "按量付费"]],
+    "tencent-cloud": [["", "套餐 · 中国"], ["cn", "按量 · 中国"], ["intl", "按量 · 国际"], ["enterprise", "企业版套餐 · 中国"], ["enterprise-intl", "企业版套餐 · 国际"]],
+    "huaweicloud": [["", "Token Plan"], ["api", "按量付费"]],
+    "volcengine": [["", "Coding Plan"], ["agent", "Agent Plan"], ["api", "按量付费"]],
+    "bedrock": [["", "us-east-1"], ["us-east-2", "us-east-2"], ["us-west-2", "us-west-2"], ["eu-central-1", "eu-central-1"], ["eu-west-1", "eu-west-1"], ["eu-west-3", "eu-west-3"], ["ap-northeast-1", "ap-northeast-1"], ["ap-southeast-1", "ap-southeast-1"], ["ap-southeast-2", "ap-southeast-2"], ["ap-south-1", "ap-south-1"]],
+    "siliconflow": [["", "中国"], ["intl", "国际"]],
+    "yylx": [["", "自动"], ["global", "海外"], ["cn", "中国大陆"]],
+  };
+  const f = document.getElementById("b");
+  const el = (n) => f.elements[n];
+  el("preset").innerHTML = PRESETS.map(([id, n]) => `<option value="${id}">${n} · ${id}</option>`).join("");
+  el("preset").value = "deepseek";
+  let mode = "custom";
+
+  const local = (h) => h === "localhost" || h.endsWith(".local") || /^127\.|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\.|^\[?::1\]?$/.test(h);
+  const base = (v) => {
+    try {
+      const u = new URL(v);
+      if (u.username || u.password || u.search || u.hash) return false;
+      return u.protocol === "https:" || (u.protocol === "http:" && local(u.hostname));
+    } catch { return false; }
+  };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+  const build = () => {
+    document.querySelectorAll(".m-custom").forEach((e) => e.classList.toggle("hide", mode !== "custom"));
+    document.querySelectorAll(".m-preset").forEach((e) => e.classList.toggle("hide", mode !== "preset"));
+    const regions = REGIONS[el("preset").value];
+    document.getElementById("region-l").classList.toggle("hide", mode !== "preset" || !regions);
+    if (regions && el("region").dataset.for !== el("preset").value) {
+      el("region").innerHTML = regions.map(([id, n]) => `<option value="${id}">${n}</option>`).join("");
+      el("region").dataset.for = el("preset").value;
+    }
+
+    const q = new URLSearchParams();
+    const errs = [];
+    const put = (k) => { const v = el(k).value.trim(); if (v) q.set(k, v); return v; };
+    if (mode === "preset") {
+      q.set("preset", el("preset").value);
+      if (regions) put("region");
+    } else {
+      if (!put("name")) errs.push("名称必填。");
+      put("id");
+      let any = false;
+      for (const k of ["chat", "responses", "anthropic", "gemini"]) {
+        const v = put(k);
+        el(k).classList.toggle("bad", !!v && !base(v));
+        if (v) { any = true; if (!base(v)) errs.push(`${k}= 必须是 https 的 base URL，且不带查询参数。`); }
+      }
+      if (!any) errs.push("至少填一个 base URL。");
+      put("catalog");
+      for (const k of ["website", "keys"]) {
+        const v = put(k);
+        const ok = !v || /^https:\/\/[^/@\s]+/.test(v);
+        el(k).classList.toggle("bad", !ok);
+        if (!ok) errs.push(`${k}= 必须是 https 页面，否则 Agent Link 会忽略它。`);
+      }
+      {
+        const v = put("icon");
+        if (v && !/^https:\/\/[^/@\s?#]+\/[^\s#]*$/.test(v)) {
+          el("icon").classList.add("bad");
+          errs.push("icon= 必须是 https 的图片地址，否则 Agent Link 会忽略它。");
+        }
+      }
+    }
+    put("key");
+    const models = el("models").value.split(",").map((s) => s.trim()).filter(Boolean).join(",");
+    if (models) q.set("models", models);
+
+    // Readable, and what Agent Link parses: only what must be escaped is.
+    const enc = (v) => encodeURIComponent(v).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%2C/gi, ",");
+    const s = [...q].map(([k, v]) => k + "=" + enc(v)).join("&");
+    const web = "https://useAgent Link.ai/import#" + s;
+    const app = "Agent Link://import?" + s;
+    document.getElementById("o-web").textContent = web;
+    document.getElementById("o-app").textContent = app;
+    document.getElementById("o-html").textContent = `<a href="${esc(web)}"><img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></a>`;
+    document.getElementById("o-md").textContent = `[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](${web})`;
+    document.getElementById("o-try").href = "/import#" + s;
+    const msg = document.getElementById("o-msg");
+    msg.textContent = errs.join(" ");
+    msg.classList.toggle("hide", !errs.length);
+  };
+
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b));
+    if (mode === "preset" && el("models").value === "gpt-5.5, claude-sonnet-5") el("models").value = "";
+    build();
+  }));
+  f.addEventListener("input", build);
+  f.addEventListener("change", build);
+  build();
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Agent Link</title>
+<meta name="description" content="Open this link in Agent Link to add a model provider to every agent you use.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Add to Agent Link">
+<meta property="og:description" content="Open this link in Agent Link to add a model provider to every agent you use.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<style>
+body { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.stage { flex: 1; display: grid; place-items: center; padding: 48px 16px 64px; }
+.card { width: 100%; max-width: 440px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); padding: 34px 30px 26px; text-align: center; }
+.mark { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 22px; }
+.mark .tile { width: 52px; height: 52px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; background: var(--bg); font-weight: 650; font-size: 20px; color: var(--ink); overflow: hidden; }
+.mark .tile img { width: 30px; height: 30px; }
+.mark .plus { color: var(--ink3); font-size: 18px; }
+h1 { font-size: 23px; letter-spacing: -.02em; line-height: 1.25; margin: 0 0 8px; font-weight: 660; overflow-wrap: anywhere; }
+.sub { color: var(--ink2); font-size: 15px; margin: 0 0 22px; }
+dl { text-align: left; margin: 0 0 24px; border-top: 1px solid var(--line); }
+dl > div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+dt { color: var(--ink3); }
+dd { margin: 0; color: var(--ink); overflow-wrap: anywhere; }
+dd code { font-size: 13px; }
+dd .m { display: inline-block; font-size: 12.5px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin: 2px 4px 2px 0; color: var(--ink2); }
+.actions { display: grid; gap: 10px; }
+.actions .btn { width: 100%; height: 44px; }
+.fine { color: var(--ink3); font-size: 12.5px; margin: 18px 0 0; line-height: 1.55; }
+.fine a { color: var(--ink2); }
+.foot { text-align: center; font-size: 13px; color: var(--ink3); padding: 0 16px 28px; }
+.foot a { text-decoration: none; color: var(--ink2); }
+.foot a:hover { color: var(--ink); }
+@media (max-width: 480px) { .card { padding: 28px 20px 22px; border-radius: 16px; } }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="card" id="card">
+    <div class="mark"><div class="tile" id="tile">?</div><span class="plus">→</span><div class="tile"><img class="bird" src="/img/Agent Link-small.svg" alt="Agent Link"></div></div>
+    <h1 id="title">Add to Agent Link</h1>
+    <p class="sub" id="sub">Opening Agent Link…</p>
+    <dl id="facts"></dl>
+    <div class="actions" id="actions">
+      <a class="btn" id="open" href="#"><img class="bird-inv" src="/img/Agent Link-small.svg" alt="">Open in Agent Link</a>
+      <a class="btn ghost" id="dl" href="/#get">Don’t have Agent Link? Download it</a>
+    </div>
+    <p class="fine" id="fine">Agent Link shows you everything before it adds anything. Needs Agent Link 0.1.8 or later.</p>
+  </div>
+</div>
+<div class="foot"><a href="/">useAgent Link.ai</a> · <a href="/docs/import">Add Agent Link links to your site</a></div>
+
+<script>
+(() => {
+  // The link's parameters are in the fragment, which never reaches a
+  // server; this page only turns them into Agent Link://import?… and shows
+  // what they describe. The key is never displayed.
+  const raw = location.hash.slice(1);
+  const q = new URLSearchParams(raw);
+  const $ = (id) => document.getElementById(id);
+  const text = (tag, s, cls) => { const e = document.createElement(tag); e.textContent = s; if (cls) e.className = cls; return e; };
+
+  // Download for this system.
+  const ua = navigator.userAgent;
+  const os = /Windows/.test(ua) ? "windows" : /Linux|X11|CrOS/.test(ua) && !/Android/.test(ua) ? "linux" : /Mac/.test(ua) ? "mac" : "";
+  if (os === "windows") $("dl").href = "/download/windows";
+  else if (os === "linux") $("dl").href = "/#get";
+  else if (os === "mac") $("dl").href = "/download/mac-arm64";
+
+  // Presets by their proper names, with the icons the home page has.
+  const PRESETS = {
+    anthropic: ["Anthropic", "claude-color.svg"], openai: ["OpenAI", "openai.svg"], google: ["Google Gemini", "gemini-color.svg"],
+    deepseek: ["DeepSeek", "deepseek-color.svg"], xai: ["xAI", "xai.svg"], moonshot: ["Kimi", "kimi.svg"], "moonshot-cn": ["Kimi (China)", "kimi.svg"],
+    zhipu: ["Zhipu GLM", "zhipu-color.svg"], zai: ["Z.ai", "zhipu-color.svg"], minimax: ["MiniMax", "minimax-color.svg"],
+    "minimax-cn": ["MiniMax (China)", "minimax-color.svg"], qwen: ["Qwen", "qwen-color.svg"], "qwen-cn": ["Qwen (China)", "qwen-color.svg"],
+    "baidu-qianfan": ["Baidu Qianfan", "baiducloud-color.svg"],
+    "qianfan-token-plan": ["Baidu Qianfan", "baiducloud-color.svg"],
+    "tencent-cloud": ["Tencent Cloud", "tencentcloud-color.svg"],
+    "tencent-token-plan": ["Tencent Cloud", "tencentcloud-color.svg"], "tencent-tokenhub": ["Tencent Cloud", "tencentcloud-color.svg"], "tencent-tokenhub-cn": ["Tencent Cloud", "tencentcloud-color.svg"],
+    huaweicloud: ["Huawei Cloud MaaS", "huaweicloud-color.svg"], volcengine: ["Volcengine Ark", "volcengine-color.svg"],
+    mistral: ["Mistral", "mistral-color.svg"], groq: ["Groq", "groq.svg"], nous: ["Nous Portal", "nousresearch.svg"], openrouter: ["OpenRouter", "openrouter.svg"],
+    "opencode-go": ["OpenCode Go", "opencode.svg"], "opencode-zen": ["OpenCode Zen", "opencode.svg"], together: ["Together AI"],
+    fireworks: ["Fireworks"], siliconflow: ["SiliconFlow"], nvidia: ["NVIDIA NIM", "nvidia-color.svg"], modelscope: ["ModelScope", "modelscope-color.svg"], aihubmix: ["AiHubMix"], "302ai": ["302.AI"], yylx: ["鱼鱼连线"],
+    "ollama-cloud": ["Ollama Cloud", "ollama.svg"], ollama: ["Ollama", "ollama.svg"], lmstudio: ["LM Studio"],
+  };
+  const preset = (q.get("preset") || "").toLowerCase();
+  const known = PRESETS[preset];
+  const name = q.get("name") || (known ? known[0] : "");
+  if (!raw || (!name && !preset)) {
+    $("title").textContent = "Add to Agent Link";
+    $("sub").textContent = "This page opens agent-link import links, and this one carries nothing to import.";
+    $("tile").textContent = "?";
+    $("open").href = "/docs/import";
+    $("open").lastChild.textContent = "How import links work";
+    $("fine").textContent = "";
+    return;
+  }
+
+  const label = name || preset;
+  $("title").textContent = "Add " + label + " to Agent Link";
+  $("tile").textContent = label.trim().charAt(0).toUpperCase() || "?";
+  if (known && known[1] && !q.get("name")) {
+    const img = document.createElement("img");
+    img.src = "/icons/" + known[1]; img.alt = "";
+    $("tile").replaceChildren(img);
+  }
+  document.title = "Add " + label + " to Agent Link";
+
+  const hosts = [];
+  for (const k of ["chat", "responses", "anthropic", "gemini"]) {
+    try { const h = new URL(q.get(k)).host; if (h && !hosts.includes(h)) hosts.push(h); } catch {}
+  }
+  const row = (k, v) => { const d = document.createElement("div"); d.append(text("dt", k)); const dd = document.createElement("dd"); typeof v === "string" ? (dd.textContent = v) : dd.append(...v); d.append(dd); $("facts").append(d); };
+  if (preset) row("Preset", [text("code", preset)].concat(q.get("region") ? [text("span", " · " + q.get("region"))] : []));
+  if (hosts.length) row("Sends to", hosts.map((h, i) => text("code", (i ? ", " : "") + h)));
+  row("API key", q.get("key") ? "Included" : "Not included; you’ll paste one");
+  const models = (q.get("models") || "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (models.length) row("Models", models.slice(0, 12).map((m) => text("span", m, "m")).concat(models.length > 12 ? [text("span", "+" + (models.length - 12))] : []));
+
+  const link = "Agent Link://import?" + raw;
+  $("open").href = link;
+  $("sub").textContent = "Agent Link will ask before adding it.";
+
+  // Agent Link runs on computers; on a phone, say where to open this.
+  if (/iPhone|iPad|iPod|Android/.test(ua)) {
+    $("sub").textContent = "Open this link on the computer where you use Agent Link.";
+    $("actions").remove();
+    $("fine").innerHTML = "";
+    $("fine").append("Agent Link is a desktop app for macOS, Windows and Linux. ", Object.assign(document.createElement("a"), { href: "/", textContent: "Learn more" }));
+    return;
+  }
+
+  // One attempt on arrival; the button is there when the browser wants a
+  // click first, or when Agent Link isn't installed yet.
+  let left = false;
+  addEventListener("blur", () => (left = true));
+  document.addEventListener("visibilitychange", () => document.hidden && (left = true));
+  setTimeout(() => { location.href = link; }, 350);
+  setTimeout(() => {
+    if (!left) $("sub").textContent = "Nothing happened? Open it below, or install Agent Link first.";
+  }, 2600);
+})();
+</script>
+</body>
+</html>

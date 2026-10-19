@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Agent Link · Agent Link ドキュメント</title>
+<meta name="description" content="インポートリンク：ユーザーにリンクを 1 つ渡すだけで、あなたのモデルが彼らの使うすべてのエージェントに入ります。リンク形式、パラメータ、リンクビルダー、Add to Agent Link ボタン。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/import">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/import">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/import">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Add to Agent Link">
+<meta property="og:description" content="リンク 1 つで、あなたのモデルをユーザーのすべてのエージェントへ。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/ja/import">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート Agent Link</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/import" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/import" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/import" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Add to Agent Link</p>
+    <a href="#overview">概要</a>
+    <a href="#quick-start">クイックスタート</a>
+    <a href="#link">リンク形式</a>
+    <a href="#parameters">パラメータ</a>
+    <a href="#builder">リンクビルダー</a>
+    <a href="#button">ボタン</a>
+    <a href="#generate">バックエンドで生成</a>
+    <a href="#security">セキュリティ</a>
+    <a href="#platforms">対応プラットフォーム</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · 連携</p>
+    <h1>Add to Agent Link</h1>
+    <p class="lede">ユーザーにリンクを 1 つ渡すだけで、あなたのモデルが彼らの使うすべてのエージェントに現れます：Claude Code、Codex、OpenCode、Gemini CLI、Pi、Crush。設定ファイルも環境変数も、ベース URL のコピー＆ペーストも要りません。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/import-ja-light.png" width="1280" height="1120" alt="リンクに含まれるホスト、キー、モデルを示し、Acme Relay を追加するか確認する Agent Link">
+      <img class="for-dark" src="/img/import-ja-dark.png" width="1280" height="1120" alt="リンクに含まれるホスト、キー、モデルを示し、Acme Relay を追加するか確認する Agent Link">
+      <figcaption>ユーザーに表示される画面。「追加」を押すまで何も保存されません。</figcaption>
+    </figure>
+
+    <h2 id="quick-start"><a class="anchor" href="#quick-start">クイックスタート</a></h2>
+    <ol class="steps">
+      <li><b>リンクを作る</b>エンドポイントを URL パラメータで記述します：名前、対応する API ごとのベース URL、必要ならユーザーのキーと提供するモデル。</li>
+      <li><b>ボタンに載せる</b>ダッシュボードの、発行したばかりのキーの隣に：<em>Add to Agent Link</em>。</li>
+      <li><b>ユーザーが確認する</b>Agent Link が開き、プロンプトとキーの送信先を正確に示し、ユーザーが同意するとプロバイダを追加します。すべてのエージェントがすぐに使えます。</li>
+    </ol>
+
+    <div class="code" style="margin-top:20px">
+      <span class="lang">リンク</span>
+      <button class="copy" data-copy="ex1">コピー</button>
+      <pre id="ex1">https://useAgent Link.ai/import#name=Acme%20Relay&amp;chat=https://api.acme.example/v1&amp;anthropic=https://api.acme.example&amp;key=sk-…&amp;models=gpt-5.5,claude-sonnet-5</pre>
+    </div>
+
+    <h2 id="link"><a class="anchor" href="#link">リンク形式</a></h2>
+    <p>Agent Link は <code>Agent Link://</code> スキームをシステムに登録します。インポートリンクは、このスキームと <code>import</code>、そしてクエリ文字列でできています：</p>
+    <div class="url"><span class="n">Agent Link://import</span><span class="p">?</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <p>Web では、代わりに <code>useAgent Link.ai/import</code> にリンクし、同じパラメータを <code>#</code> の後ろに置きます：</p>
+    <div class="url"><span class="n">https://useAgent Link.ai/import</span><span class="p">#</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <div class="cards" style="margin-top:20px">
+      <div><h3>https リンクを使う理由</h3><p>通常のリンクが使える場所ならどこでも機能します。GitHub の README、チャットアプリ、メールクライアントはカスタムスキームを削除したりブロックしたりします。リンクは Agent Link を開き、まだインストールされていなければダウンロードを案内します。</p></div>
+      <div><h3><code>#</code> の後ろに置く理由</h3><p>ブラウザはフラグメントをサーバーに送りません。キーはあなたのページからユーザーのマシンへ直接渡り、useAgent Link.ai を経由せず、ログにも残りません。</p></div>
+    </div>
+    <p>値はすべて、<code>URLSearchParams</code> や <code>urlencode</code> が出力する形で URL エンコードします。スペースは <code>%20</code> と <code>+</code> のどちらでも構いません。</p>
+
+    <h2 id="parameters"><a class="anchor" href="#parameters">パラメータ</a></h2>
+    <p>リンクは、ベンダーのエンドポイントをすでに知っている Agent Link の<a href="#presets">プリセット</a>を指定するか、名前と少なくとも 1 つのベース URL でプロバイダを一から記述します。</p>
+    <div class="table-wrap"><table>
+      <tr><th>パラメータ</th><th>意味</th></tr>
+      <tr><td><code>name</code><span class="req">または preset</span></td><td>Agent Link でのプロバイダの名前。最大 80 文字。</td></tr>
+      <tr><td><code>chat</code></td><td>OpenAI Chat Completions のベース URL。<code>/v1</code> で終わります（Agent Link が <code>/chat/completions</code> を付け足します）。</td></tr>
+      <tr><td><code>responses</code></td><td>OpenAI Responses のベース URL。<code>/v1</code> で終わります。Codex はこの API しか話せません。あなたが対応していない場合は Agent Link が変換します。</td></tr>
+      <tr><td><code>anthropic</code></td><td>Anthropic Messages のベース URL：<code>/v1</code> を含まないルート。</td></tr>
+      <tr><td><code>gemini</code></td><td>Google Gemini API のベース URL。<code>/v1beta</code> で終わり、アプリのエディターや TUI に入力するものと同じです。</td></tr>
+      <tr><td><code>key</code></td><td>ユーザーの API キー。省略すると、ユーザーがダイアログに貼り付けます。</td></tr>
+      <tr><td><code>models</code></td><td>エージェントに提供するモデル id（カンマ区切り）。省略すると、Agent Link はあなたの <code>/v1/models</code> が返すモデルを一覧にします。</td></tr>
+      <tr><td><code>id</code></td><td>エージェントが <code>id/model</code> で使う id。デフォルトは名前を小文字にしてハイフンでつないだもの（<code>Acme Relay</code> → <code>acme-relay</code>）。</td></tr>
+      <tr><td><code>catalog</code></td><td>メタデータを適用する <a href="https://models.dev">models.dev</a> のプロバイダ id。たとえば OpenAI モデルを中継するサービスなら <code>openai</code>。提供されるのは、表示名、コンテキスト長（対応するエージェントに書き込まれます）、推論レベル、画像入力の可否、プロバイダ自身の <code>/models</code> が読めないときのモデル一覧、そしてトークンあたりの価格です。価格は使用量ページで USD の概算コストになります。カンマ区切りで複数の id を指定でき、それぞれのモデルがまとめられます。同じモデルが複数にある場合は先に書いたものが使われます。</td></tr>
+      <tr><td><code>website</code></td><td>あなたのサイト（https）。プロバイダのページに表示されます。</td></tr>
+      <tr><td><code>keys</code></td><td>ユーザーがキーを作成するページ（https）。リンクにキーがないとき、ダイアログからこのページへリンクします。</td></tr>
+      <tr><td><code>icon</code></td><td>独自の画像（https）：PNG、JPEG、GIF、WebP、ICO、SVG のいずれかで、最大 1&nbsp;MB。ユーザーがインポートを確認した後に Agent Link が一度だけダウンロードし、プロバイダと一緒に保存します。省略すると、Agent Link は <code>catalog</code> のベンダーのロゴか、シンプルなマークを表示します。</td></tr>
+      <tr><td><code>preset</code><span class="req">または name</span></td><td>プリセット id。そのエンドポイント、カタログ、ページが使われます。<code>name</code> で名前を変えられます。</td></tr>
+      <tr><td><code>region</code></td><td>リージョンのあるプリセットで、どのリージョンを使うか。</td></tr>
+    </table></div>
+    <p>プリセットを使わない場合、<code>chat</code>、<code>responses</code>、<code>anthropic</code>、<code>gemini</code> のうち少なくとも 1 つが必要です。対応する API はすべて指定してください。各エージェントはネイティブに話せるものを使います。ベース URL は <b>https</b> でなければなりません。ただし <code>localhost</code>、ループバック、プライベートアドレス、<code>*.local</code> 宛ては、モデルサーバーが通常 TLS なしで動くため、http も使えます。クエリ、フラグメント、認証情報は含められません。</p>
+
+    <h3 id="presets">プリセット</h3>
+    <p>Agent Link が組み込みで知っているベンダーです。<code>Agent Link presets</code> で最新の一覧を表示できます。</p>
+    <div class="chips">
+      <span class="chip"><code>anthropic</code></span><span class="chip"><code>openai</code></span><span class="chip"><code>google</code></span><span class="chip"><code>deepseek</code></span><span class="chip"><code>xai</code></span><span class="chip"><code>moonshot</code><span>Kimi</span></span><span class="chip"><code>moonshot-cn</code></span><span class="chip"><code>kimi-code</code></span><span class="chip"><code>kimi-code-cn</code></span><span class="chip"><code>zhipu</code><span>GLM · api · coding</span></span><span class="chip"><code>zai</code><span>api · coding</span></span><span class="chip"><code>minimax</code></span><span class="chip"><code>minimax-cn</code></span><span class="chip"><code>stepfun</code><span>plan · api</span></span><span class="chip"><code>stepfun-cn</code><span>plan · api</span></span><span class="chip"><code>xiaomi</code><span>MiMo</span></span><span class="chip"><code>baidu-qianfan</code><span>千帆 · personal · team · api</span></span><span class="chip"><code>tencent-cloud</code><span>plan · cn · intl · enterprise · enterprise-intl</span></span><span class="chip"><code>huaweicloud</code><span>plan · api</span></span><span class="chip"><code>volcengine</code><span>火山方舟 · coding · agent · api</span></span><span class="chip"><code>qwen</code></span><span class="chip"><code>qwen-cn</code></span><span class="chip"><code>qwen-token-plan</code></span><span class="chip"><code>bailian-token-plan</code></span><span class="chip"><code>mistral</code></span><span class="chip"><code>groq</code></span><span class="chip"><code>bedrock</code></span><span class="chip"><code>ollama-cloud</code></span><span class="chip"><code>openrouter</code></span><span class="chip"><code>opencode-go</code></span><span class="chip"><code>clinepass</code></span><span class="chip"><code>opencode-zen</code></span><span class="chip"><code>kilo</code></span><span class="chip"><code>commandcode</code></span><span class="chip"><code>together</code></span><span class="chip"><code>fireworks</code></span><span class="chip"><code>siliconflow</code><span>cn · intl</span></span><span class="chip"><code>nvidia</code></span><span class="chip"><code>modelscope</code><span>魔搭</span></span><span class="chip"><code>aihubmix</code></span><span class="chip"><code>pipellm</code></span><span class="chip"><code>302ai</code></span><span class="chip"><code>cherryin</code></span><span class="chip"><code>yylx</code><span>auto · global · cn</span></span><span class="chip"><code>ollama</code></span><span class="chip"><code>lmstudio</code></span>
+    </div>
+    <p>プリセットのあるベンダーなら、キーを付けるだけです：<code>Agent Link://import?preset=deepseek&amp;key=sk-…</code>。一覧に追加したい場合は <a href="https://github.com/crazymsn/Agent-Link/issues">issue を作成</a>してください。</p>
+
+    <h2 id="builder"><a class="anchor" href="#builder">リンクビルダー</a></h2>
+    <p>エンドポイントを入力すると、リンク、ボタン、Markdown が入力に合わせて生成されます。内容はすべてこのページの中にとどまります。</p>
+    <div class="builder">
+      <form id="b" autocomplete="off" onsubmit="return false">
+        <div class="full"><div class="seg" role="tablist"><button type="button" data-mode="custom" class="on">自分のエンドポイント</button><button type="button" data-mode="preset">プリセット</button></div></div>
+        <label class="m-preset hide">プリセット<select name="preset"></select></label>
+        <label class="m-preset hide" id="region-l">リージョン<select name="region"></select></label>
+        <label class="m-custom">名前<input name="name" placeholder="Acme Relay" value="Acme Relay"></label>
+        <label class="m-custom">Id <i>任意</i><input name="id" placeholder="acme-relay"></label>
+        <label class="m-custom">OpenAI Chat ベース URL<input name="chat" class="mono" placeholder="https://api.acme.example/v1" value="https://api.acme.example/v1"></label>
+        <label class="m-custom">Anthropic ベース URL<input name="anthropic" class="mono" placeholder="https://api.acme.example" value="https://api.acme.example"></label>
+        <label class="m-custom">OpenAI Responses ベース URL <i>任意</i><input name="responses" class="mono" placeholder="https://api.acme.example/v1"></label>
+        <label class="m-custom">Gemini ベース URL <i>任意</i><input name="gemini" class="mono" placeholder="https://api.acme.example/v1beta"></label>
+        <label class="m-custom">models.dev カタログ <i>任意</i><input name="catalog" placeholder="openai"></label>
+        <label>API キー <i>任意</i><input name="key" class="mono" placeholder="sk-…" spellcheck="false"></label>
+        <label>モデル <i>カンマ区切り</i><input name="models" class="mono" placeholder="gpt-5.5, claude-sonnet-5" value="gpt-5.5, claude-sonnet-5"></label>
+        <label class="m-custom">Web サイト <i>任意</i><input name="website" placeholder="https://acme.example"></label>
+        <label class="m-custom">キーのページ <i>任意</i><input name="keys" placeholder="https://acme.example/keys"></label>
+        <label class="m-custom">アイコン <i>任意、https</i><input name="icon" placeholder="https://acme.example/logo.svg"></label>
+      </form>
+      <div class="out">
+        <div class="row"><span>Web リンク</span><code id="o-web"></code><button class="copy" data-copy="o-web">コピー</button></div>
+        <div class="row"><span>アプリリンク</span><code id="o-app"></code><button class="copy" data-copy="o-app">コピー</button></div>
+        <div class="row"><span>HTML</span><code id="o-html"></code><button class="copy" data-copy="o-html">コピー</button></div>
+        <div class="row"><span>Markdown</span><code id="o-md"></code><button class="copy" data-copy="o-md">コピー</button></div>
+        <div class="msg hide" id="o-msg"></div>
+        <div class="try"><a class="btn small" id="o-try" href="#" target="_blank" rel="noopener"><img class="bird-inv" src="/img/Agent Link-small.svg" alt="">試してみる</a><small>Agent Link が開きます。確認するまで何も追加されません。</small></div>
+      </div>
+    </div>
+
+    <h2 id="button"><a class="anchor" href="#button">ボタン</a></h2>
+    <p>ライトページ用とダークページ用、2 つの既製バッジがあります。インポートリンクにリンクするか、自分でボタンを作ってください。<em>Add to Agent Link</em> の文言と鳥のマークは自由に使えます。</p>
+    <div class="badges">
+      <div class="on-light"><img src="/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></div>
+      <div class="on-dark"><img src="/img/add-to-Agent Link-light.svg" alt="Add to Agent Link" width="176" height="40"></div>
+    </div>
+    <div class="code">
+      <span class="lang">HTML</span>
+      <button class="copy" data-copy="ex-html">コピー</button>
+      <pre id="ex-html">&lt;a href="https://useAgent Link.ai/import#preset=deepseek&amp;key=sk-…"&gt;
+  &lt;img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"&gt;
+&lt;/a&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Markdown</span>
+      <button class="copy" data-copy="ex-md">コピー</button>
+      <pre id="ex-md">[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](https://useAgent Link.ai/import#preset=deepseek)</pre>
+    </div>
+    <p>ダークページには <code>add-to-Agent Link-light.svg</code> を使ってください。README のような公開ページには決してキーを含めないでください。<code>key</code> を省けば、ユーザーが自分のキーを貼り付けます。</p>
+
+    <h2 id="generate"><a class="anchor" href="#generate">バックエンドで生成</a></h2>
+    <p>ボタンを置くのに最適なのは、発行したばかりのキーを表示するページです。キーがある場所でリンクを生成します：</p>
+    <div class="code">
+      <span class="lang">JavaScript</span>
+      <button class="copy" data-copy="ex-js">コピー</button>
+      <pre id="ex-js"><span class="k">const</span> params = <span class="k">new</span> URLSearchParams({
+  name: <span class="s">"Acme Relay"</span>,
+  chat: <span class="s">"https://api.acme.example/v1"</span>,
+  anthropic: <span class="s">"https://api.acme.example"</span>,
+  key: apiKey,
+  models: [<span class="s">"gpt-5.5"</span>, <span class="s">"claude-sonnet-5"</span>].join(<span class="s">","</span>),
+  icon: <span class="s">"https://acme.example/logo.svg"</span>,
+});
+<span class="k">const</span> href = <span class="s">"https://useAgent Link.ai/import#"</span> + params;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Python</span>
+      <button class="copy" data-copy="ex-py">コピー</button>
+      <pre id="ex-py"><span class="k">from</span> urllib.parse <span class="k">import</span> urlencode
+
+href = <span class="s">"https://useAgent Link.ai/import#"</span> + urlencode({
+    <span class="s">"name"</span>: <span class="s">"Acme Relay"</span>,
+    <span class="s">"chat"</span>: <span class="s">"https://api.acme.example/v1"</span>,
+    <span class="s">"anthropic"</span>: <span class="s">"https://api.acme.example"</span>,
+    <span class="s">"key"</span>: api_key,
+    <span class="s">"models"</span>: <span class="s">"gpt-5.5,claude-sonnet-5"</span>,
+    <span class="s">"icon"</span>: <span class="s">"https://acme.example/logo.svg"</span>,
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">ターミナル</span>
+      <button class="copy" data-copy="ex-sh">コピー</button>
+      <pre id="ex-sh">agent-link import <span class="s">'Agent Link://import?preset=deepseek&amp;key=sk-…'</span>   <span class="c"># 先に確認します。-y で省略</span></pre>
+    </div>
+
+    <h2 id="security"><a class="anchor" href="#security">セキュリティ</a></h2>
+    <p>インポートリンクは提案にすぎません。決めるのはユーザーです。</p>
+    <ul>
+      <li><b>必ず確認される。</b>Agent Link は名前、プロンプトとキーの送信先となるすべてのホスト、モデルを表示し、ユーザーが「追加」を押すまで何も保存しません。ユーザーは先に名前を変えたり、キーを差し替えたりできます。</li>
+      <li><b>黙って上書きしない。</b>id がすでに使われている場合、ダイアログがそう伝え、ボタンは<em>置き換え</em>になります。</li>
+      <li><b>https のみ。</b>このマシンとローカルネットワーク宛て以外の http は拒否されます。<code>file:</code>、URL 内の認証情報、その他のスキームは即座に拒否されます。</li>
+      <li><b>読み込みは一度だけ。</b>アプリ内では、リンクの内容がウィンドウに一度だけ渡されます。再読み込みしてもダイアログは再表示されません。</li>
+      <li><b>アイコンは埋め込まず、取得する。</b><code>icon=</code> の URL は Agent Link がダウンロードします。ユーザーがインポートを確認した後だけ、https 経由だけ、自身のアイコンフォルダへだけ — 最大 1&nbsp;MB で、形式もチェックされます。取得は useAgent Link.ai のアイコンプロキシを経由するので、あなたのサーバーに見えるのはユーザーの IP ではなく Cloudflare のアドレスです。リクエストは Cloudflare から出るため、ユーザー自身のマシンやローカルネットワークには届きません。ループバックやローカルネットワークの名前は、リクエストの前に拒否されます。ページとダイアログがリモートの画像を直接読み込むことはありません。</li>
+      <li><b>キーはサーバーを通らない。</b>Web リンクはパラメータをフラグメントに置きます。キーは最終的に <code>~/.config/Agent Link/providers.json</code> にのみ保存され、ユーザー本人しか読めません。</li>
+    </ul>
+    <div class="note"><b>リンク内のキーは機密情報です。</b>キーをリンクに入れるのは、そのユーザー本人しか見られないページだけにし、できれば Agent Link 用に発行した、取り消し可能なキーを使ってください。共有キーを公開リンクに入れてはいけません。</div>
+
+    <h2 id="platforms"><a class="anchor" href="#platforms">対応プラットフォーム</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>システム</th><th><code>Agent Link://</code> の登録方法</th></tr>
+      <tr><td>macOS</td><td>アプリ自身が登録します。Agent Link.app を「アプリケーション」に置くだけです。</td></tr>
+      <tr><td>Windows</td><td>Agent Link の初回起動時に、現在のユーザー向けに登録します。</td></tr>
+      <tr><td>Linux</td><td>デスクトップエントリ（<code>x-scheme-handler/Agent Link</code>）で登録します。インストーラが書き込み、初回起動時にも再度書き込みます。</td></tr>
+      <tr><td>ターミナル</td><td><code>agent-link import &lt;リンク&gt;</code> が同じ概要を表示し、追加前に確認します。</td></tr>
+    </table></div>
+    <p>インポートリンクには Agent Link 0.1.8 以降が必要です。Agent Link がすでに起動している場合、リンクはそのインスタンスに渡され、ウィンドウが前面に表示されます。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート Agent Link</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+
+
+  // Link builder. It mirrors the checks Agent Link makes, so a link that
+  // builds here imports there.
+  const PRESETS = [
+    ["anthropic", "Anthropic"], ["openai", "OpenAI"], ["google", "Google Gemini"], ["deepseek", "DeepSeek"], ["xai", "xAI"],
+    ["moonshot", "Kimi"], ["moonshot-cn", "Kimi（中国）"], ["kimi-code", "Kimi Code"], ["kimi-code-cn", "Kimi Code（中国）"], ["zhipu", "Zhipu GLM"],
+    ["zai", "Z.ai"], ["minimax", "MiniMax"], ["minimax-cn", "MiniMax（中国）"], ["stepfun", "StepFun"], ["stepfun-cn", "StepFun（中国）"],
+    ["xiaomi", "Xiaomi MiMo"], ["baidu-qianfan", "Baidu Qianfan"], ["tencent-cloud", "Tencent Cloud"],
+    ["huaweicloud", "Huawei Cloud MaaS"], ["volcengine", "Volcengine Ark"], ["qwen", "Qwen"], ["qwen-cn", "Qwen（中国）"], ["qwen-token-plan", "Qwen Token Plan"], ["bailian-token-plan", "Alibaba Cloud Bailian Token Plan"],
+    ["mistral", "Mistral"], ["groq", "Groq"], ["bedrock", "Amazon Bedrock"], ["ollama-cloud", "Ollama Cloud"], ["nous", "Nous Portal"], ["openrouter", "OpenRouter"],
+    ["opencode-go", "OpenCode Go"], ["clinepass", "ClinePass"], ["opencode-zen", "OpenCode Zen"], ["kilo", "Kilo Gateway"], ["commandcode", "Command Code"],
+    ["together", "Together AI"], ["fireworks", "Fireworks"], ["siliconflow", "SiliconFlow"], ["nvidia", "NVIDIA NIM"], ["modelscope", "ModelScope"],
+    ["aihubmix", "AiHubMix"], ["pipellm", "PipeLLM"], ["302ai", "302.AI"], ["cherryin", "CherryIN"], ["yylx", "鱼鱼连线"],
+    ["ollama", "Ollama"], ["lmstudio", "LM Studio"],
+  ];
+  const REGIONS = {
+    "zhipu": [["", "従量課金"], ["coding", "Coding Plan"]],
+    "zai": [["", "従量課金"], ["coding", "Coding Plan"]],
+    "stepfun": [["", "Step Plan"], ["api", "従量課金"]],
+    "stepfun-cn": [["", "Step Plan"], ["api", "従量課金"]],
+    "xiaomi": [["", "プラン · 中国"], ["plan-sgp", "プラン · シンガポール"], ["plan-ams", "プラン · ヨーロッパ"], ["api", "従量課金"]],
+    "baidu-qianfan": [["", "Token Plan 個人向け"], ["team", "Token Plan 法人向け"], ["api", "従量課金"]],
+    "tencent-cloud": [["", "プラン · 中国"], ["cn", "従量課金 · 中国"], ["intl", "従量課金 · グローバル"], ["enterprise", "Enterprise プラン · 中国"], ["enterprise-intl", "Enterprise プラン · グローバル"]],
+    "huaweicloud": [["", "Token Plan"], ["api", "従量課金"]],
+    "volcengine": [["", "Coding Plan"], ["agent", "Agent Plan"], ["api", "従量課金"]],
+    "bedrock": [["", "us-east-1"], ["us-east-2", "us-east-2"], ["us-west-2", "us-west-2"], ["eu-central-1", "eu-central-1"], ["eu-west-1", "eu-west-1"], ["eu-west-3", "eu-west-3"], ["ap-northeast-1", "ap-northeast-1"], ["ap-southeast-1", "ap-southeast-1"], ["ap-southeast-2", "ap-southeast-2"], ["ap-south-1", "ap-south-1"]],
+    "siliconflow": [["", "中国"], ["intl", "グローバル"]],
+    "yylx": [["", "自動"], ["global", "グローバル"], ["cn", "中国本土"]],
+  };
+  const f = document.getElementById("b");
+  const el = (n) => f.elements[n];
+  el("preset").innerHTML = PRESETS.map(([id, n]) => `<option value="${id}">${n} · ${id}</option>`).join("");
+  el("preset").value = "deepseek";
+  let mode = "custom";
+
+  const local = (h) => h === "localhost" || h.endsWith(".local") || /^127\.|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\.|^\[?::1\]?$/.test(h);
+  const base = (v) => {
+    try {
+      const u = new URL(v);
+      if (u.username || u.password || u.search || u.hash) return false;
+      return u.protocol === "https:" || (u.protocol === "http:" && local(u.hostname));
+    } catch { return false; }
+  };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+  const build = () => {
+    document.querySelectorAll(".m-custom").forEach((e) => e.classList.toggle("hide", mode !== "custom"));
+    document.querySelectorAll(".m-preset").forEach((e) => e.classList.toggle("hide", mode !== "preset"));
+    const regions = REGIONS[el("preset").value];
+    document.getElementById("region-l").classList.toggle("hide", mode !== "preset" || !regions);
+    if (regions && el("region").dataset.for !== el("preset").value) {
+      el("region").innerHTML = regions.map(([id, n]) => `<option value="${id}">${n}</option>`).join("");
+      el("region").dataset.for = el("preset").value;
+    }
+
+    const q = new URLSearchParams();
+    const errs = [];
+    const put = (k) => { const v = el(k).value.trim(); if (v) q.set(k, v); return v; };
+    if (mode === "preset") {
+      q.set("preset", el("preset").value);
+      if (regions) put("region");
+    } else {
+      if (!put("name")) errs.push("名前は必須です。");
+      put("id");
+      let any = false;
+      for (const k of ["chat", "responses", "anthropic", "gemini"]) {
+        const v = put(k);
+        el(k).classList.toggle("bad", !!v && !base(v));
+        if (v) { any = true; if (!base(v)) errs.push(`${k}= はクエリを含まない https のベース URL にしてください。`); }
+      }
+      if (!any) errs.push("ベース URL を少なくとも 1 つ指定してください。");
+      put("catalog");
+      for (const k of ["website", "keys"]) {
+        const v = put(k);
+        const ok = !v || /^https:\/\/[^/@\s]+/.test(v);
+        el(k).classList.toggle("bad", !ok);
+        if (!ok) errs.push(`${k}= は https のページにしてください。そうでないと Agent Link は無視します。`);
+      }
+      {
+        const v = put("icon");
+        if (v && !/^https:\/\/[^/@\s?#]+\/[^\s#]*$/.test(v)) {
+          el("icon").classList.add("bad");
+          errs.push("icon= は https の画像 URL にしてください。そうでないと Agent Link は無視します。");
+        }
+      }
+    }
+    put("key");
+    const models = el("models").value.split(",").map((s) => s.trim()).filter(Boolean).join(",");
+    if (models) q.set("models", models);
+
+    // Readable, and what Agent Link parses: only what must be escaped is.
+    const enc = (v) => encodeURIComponent(v).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%2C/gi, ",");
+    const s = [...q].map(([k, v]) => k + "=" + enc(v)).join("&");
+    const web = "https://useAgent Link.ai/import#" + s;
+    const app = "Agent Link://import?" + s;
+    document.getElementById("o-web").textContent = web;
+    document.getElementById("o-app").textContent = app;
+    document.getElementById("o-html").textContent = `<a href="${esc(web)}"><img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></a>`;
+    document.getElementById("o-md").textContent = `[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](${web})`;
+    document.getElementById("o-try").href = "/import#" + s;
+    const msg = document.getElementById("o-msg");
+    msg.textContent = errs.join(" ");
+    msg.classList.toggle("hide", !errs.length);
+  };
+
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b));
+    if (mode === "preset" && el("models").value === "gpt-5.5, claude-sonnet-5") el("models").value = "";
+    build();
+  }));
+  f.addEventListener("input", build);
+  f.addEventListener("change", build);
+  build();
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

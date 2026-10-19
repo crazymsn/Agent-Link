@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>リモート Agent Link · Agent Link ドキュメント</title>
+<meta name="description" content="1 つの Agent Link を複数のコンピューターで使う：ネットワークで共有し、ほかのコンピューターでリモート Agent Link として追加する（アプリ、TUI、CLI）方法と、使えるもの：モデル、ルーティンググループ、画像、System One、価格、クォータ。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/remote">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/remote">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/remote">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="リモート Agent Link">
+<meta property="og:description" content="1 つの Agent Link のプロバイダ、アカウント、ルーティンググループを、使うすべてのコンピューターで。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/ja/remote">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート Agent Link</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/remote" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/remote" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/remote" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="Discord の Agent Link" title="Discord に参加"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="GitHub の Agent Link" title="GitHub のソースコード"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>リモート Agent Link</p>
+    <a href="#overview">概要</a>
+    <a href="#share">1. メインの Agent Link を共有する</a>
+    <a href="#add">2. ほかのコンピューターで追加する</a>
+    <a href="#models">使えるもの</a>
+    <a href="#quotas">クォータと使用量</a>
+    <a href="#trouble">うまくいかないとき</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · 共有</p>
+    <h1>リモート Agent Link</h1>
+    <p class="lede">1 つの Agent Link で複数のコンピューターをまかなえます。プロバイダを保存するコンピューター（デスクトップ、サーバー、<a href="/docs/ja/docker">Docker で動かす NAS</a>）でサインインとプロバイダ・ルーティンググループの設定を一度だけ行い、ほかの各コンピューターではその Agent Link を 1 つのプロバイダとして追加します。それが<b>リモート Agent Link</b>（Remote Agent Link）です。</p>
+
+    <div class="table-wrap"><table>
+      <tr><th></th><th>共有する Agent Link</th><th>ほかのコンピューターの Agent Link</th></tr>
+      <tr><td>プロバイダ、サブスクリプション、キー</td><td>ここに保存・サインイン</td><td>リモート Agent Link 経由で使う</td></tr>
+      <tr><td>ルーティンググループ</td><td>ここで作る</td><td><code>office/group/…</code> として選ぶ</td></tr>
+      <tr><td>エージェント</td><td>自分のもの</td><td>引き続きこのコンピューターの Agent Link が設定</td></tr>
+      <tr><td>使用量とクォータ</td><td>ここで集計・取得</td><td>ここに表示（リモートの名前付き）</td></tr>
+    </table></div>
+    <p>手元のコンピューターでも Agent Link は動き続けます。そのコンピューターのエージェントを設定し、モデルを選び、セッションを保存します。モデルだけがもう一方から来ます。</p>
+
+    <h2 id="share"><a class="anchor" href="#share">1. メインの Agent Link を共有する</a></h2>
+    <ol class="steps">
+      <li><b>共有をオンにする</b>プロバイダを保存しているコンピューターで <span class="ui">設定</span> → <span class="ui">ローカルネットワークで共有</span> → <span class="ui">オン</span>。Agent Link はローカルネットワークで待ち受け、<span class="ui">Agent Link</span> という名前のゲートウェイキーを作ります。スイッチの下の <span class="ui">アドレス</span> の行に、ほかのコンピューターから届くアドレス（例：<code>http://192.168.1.20:3425</code>）が表示されます。</li>
+      <li><b>コンピューターごとにキーを作る</b><span class="ui">ゲートウェイ</span> → <span class="ui">ゲートウェイキー</span>、または <code>Agent Link gateway-key add "Laptop"</code>。<code>sk-Agent Link-key-…</code> が表示されます。キーごとに日・週・月の上限と使えるモデルを決められ、呼び出しはその名前で集計されます。</li>
+    </ol>
+    <p>共有がオフの間、デスクトップの Agent Link は自分のコンピューターでしか待ち受けず、ほかのコンピューターからは届きません。Docker の Agent Link は公開したポートから届き、共有のオン・オフにかかわらず、コンテナの外からの呼び出しすべてにゲートウェイキーを求めます。<a href="/docs/ja/docker#share">Docker</a> を参照してください。</p>
+
+    <h2 id="add"><a class="anchor" href="#add">2. ほかのコンピューターで追加する</a></h2>
+    <p>手順 1 のアドレスとキーが必要です。次のどれでも追加できます。</p>
+    <ul>
+      <li><b>アプリ：</b><span class="ui">プロバイダ</span> タブで <span class="ui">＋ プロバイダを追加</span> を押し、最後の見出し <span class="ui">別のコンピューターの Agent Link</span> の下にある <span class="ui">Remote Agent Link</span> を選んで、アドレスとキーを入力します。</li>
+      <li><b>TUI</b>（<code>agent-link tui</code>）：Providers ページで <code>a</code> を押し、Remote Agent Link を選んでアドレスとキーを入力します。その行で <code>w</code> はアドレスの変更、<code>m</code> は一覧の再取得です。</li>
+      <li><b>CLI：</b></li>
+    </ul>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-add">コピー</button>
+      <pre id="ex-add">Agent Link provider add remote-Agent Link sk-Agent Link-key-… url=http://192.168.1.20:3425 id=office
+agent-link models            <span class="c"># office/… が共有する Agent Link のモデル</span>
+Agent Link provider refresh office   <span class="c"># 一覧を再取得</span></pre>
+    </div>
+    <p><code>id=</code> はこのコンピューターでのプロバイダ名で、モデル ID の先頭にもなります（<code>office/…</code>）。アドレスは <code>192.168.1.20:3425</code>（<code>http://</code> とみなされます）、末尾に <code>/v1</code> を付けた形、ルートのどれでも構いません。Agent Link はどの場合もすべての API をそこにつなぎます。共有元のコンピューターごとに、別の id でリモート Agent Link を 1 つ追加します。</p>
+
+    <h2 id="models"><a class="anchor" href="#models">使えるもの</a></h2>
+    <ul>
+      <li><b>そのモデル</b>。向こうのエージェントに見えるとおりです：<code>office/relay-a/claude-sonnet-5</code>、ラベルは <code>Claude Sonnet 5 · Relay A · office</code>。ID は ID のままで、名前はラベルにだけ付きます。ほかのモデルと同じようにエージェントに選べます。</li>
+      <li><b>そのルーティンググループ</b>。<code>office/group/…</code> として現れます。振り分けは共有する Agent Link 上で、そのアカウントを使って決まります。</li>
+      <li><b>すべての API。</b>リクエストはエージェントが使った API のまま転送されます（Anthropic Messages とトークン計数、Responses、Chat Completions）。共有側のプロバイダが別の API でしか提供しないモデルは、変換が 1 回だけ行われ、両方のコンピューターで変換されることはありません。Responses は WebSocket ではなく HTTP（SSE を含む）で送られます。</li>
+      <li><b>画像と動画。</b>画像・動画モデルは自動で見つかり、向こうの画像生成・編集・動画 API を通して使えます。</li>
+      <li><b>System One。</b>決定モデル（Jev、Clef、自分で名前を付けたモデル）は向こうの <code>/v1/systemone</code> につながり、チャットモデルではなく決定モデルとして現れます。新しいものはプロバイダの一覧を更新すると見つかります。<code>office</code> だけを指定すると一覧の最初の決定モデルに問い合わせます。</li>
+      <li><b>Embeddings、rerank、音声の文字起こし</b>は向こうの対応する API に送られます。エージェントの一覧ではリモートでの扱いのままです。一覧にあっても会話に使えるわけではありません。</li>
+      <li><b>価格。</b>各モデルは共有する Agent Link の計算どおり（向こうで手動設定した価格、なければプロバイダの定価）になるので、2 台の集計は一致します。このコンピューターで設定した価格が優先されます。</li>
+    </ul>
+
+    <h2 id="quotas"><a class="anchor" href="#quotas">クォータと使用量</a></h2>
+    <p>使用量ページ、メニューバー、<code>agent-link quota</code> には、共有する Agent Link のサブスクリプションカードがその名前付きで（<code>Codex · office</code>、id <code>office/codex</code>）、向こうが最後に読んだ内容で表示されます。ベンダーに問い合わせるのはサインインを持つコンピューターだけです。このコンピューターでカードを更新すると、向こうがもう一度読みます（最大で 30 秒に 1 回）。Codex のリセットや WorkBuddy のチェックインは、向こうのコンピューターのアプリ、TUI、CLI で行います。向こうが予算・モデル・アカウントで制限したキーにはカードは一切渡されず、ここにはそのキー自身のカードと上限だけが表示されます。</p>
+    <p>共有する Agent Link は、このコンピューターのリクエストを、送ってきたゲートウェイキーの名前と応答したアカウントで記録します。</p>
+
+    <h2 id="trouble"><a class="anchor" href="#trouble">うまくいかないとき</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>表示</th><th>対処</th></tr>
+      <tr><td>「Agent Link isn’t shared on the local network」または「remote Agent Link isn’t shared」</td><td>そのコンピューターで <span class="ui">ローカルネットワークで共有</span> をオンにする</td></tr>
+      <tr><td>「remote Agent Link didn’t take this key」（401）</td><td>向こうの有効なゲートウェイキーを使う：向こうの <span class="ui">ゲートウェイ</span> → <span class="ui">ゲートウェイキー</span></td></tr>
+      <tr><td>モデルで 403</td><td>そのキーは一部のモデルしか使えない可能性があります。向こうで <code>Agent Link gateway-key models &lt;id&gt;</code> を実行すると確認・変更できます。<code>office</code> だけだとキーの許可に関係なく System One の最初の決定モデルに問い合わせます。完全な <code>office/provider/model</code> ID を使ってください</td></tr>
+      <tr><td>「couldn’t reach the remote Agent Link」</td><td>アドレス、向こうで Agent Link が共有オンで動いているか、ファイアウォールがポートを通すかを確認する</td></tr>
+      <tr><td>System One のモデルがない、または「doesn’t share its quotas」</td><td>向こうの Agent Link を更新し、こちらで一覧を更新する</td></tr>
+    </table></div>
+    <div class="callout"><b>外出先からは</b>、Tailscale や WireGuard などの VPN 越しに、VPN 上のアドレスで共有する Agent Link に届くようにしてください。ポートをインターネットに開けないでください。</div>
+
+    <p style="margin-top:48px">質問や共有したいセットアップがあれば <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> へどうぞ。詳細は<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md">リファレンス</a>（英語）にあります。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート Agent Link</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">Agent Link に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

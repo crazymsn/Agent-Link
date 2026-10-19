@@ -1,0 +1,201 @@
+package gateway
+
+import (
+	"encoding/base64"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"sync"
+	"testing"
+
+	"github.com/crazymsn/Agent-Link/internal/catalog"
+	"github.com/crazymsn/Agent-Link/internal/provider"
+)
+
+// uaVendor is a key+URL vendor on every API agentlink forwards to one: it
+// keeps the User-Agent each path was asked with, and answers each as its
+// API does.
+type uaVendor struct {
+	mu  sync.Mutex
+	got map[string]string
+}
+
+func (v *uaVendor) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	io.Copy(io.Discard, r.Body)
+	v.mu.Lock()
+	v.got[r.URL.Path] = r.Header.Get("User-Agent")
+	v.mu.Unlock()
+	w.Header().Set("Content-Type", "application/json")
+	switch p := r.URL.Path; {
+	case strings.HasSuffix(p, "/count_tokens"):
+		io.WriteString(w, `{"input_tokens":5}`)
+	case p == "/v1/messages":
+		io.WriteString(w, `{"id":"m","type":"message","role":"assistant","model":"m1","content":[{"type":"text","text":"hi"}],"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
+	case p == "/v1/chat/completions":
+		io.WriteString(w, `{"id":"c","object":"chat.completion","model":"m1","choices":[{"index":0,"message":{"role":"assistant","content":"hi"},"finish_reason":"stop"}],"usage":{"prompt_tokens":1,"completion_tokens":1,"total_tokens":2}}`)
+	case p == "/v1/responses":
+		io.WriteString(w, `{"id":"r1","object":"response","status":"completed","model":"m1","output":[{"type":"message","id":"msg1","role":"assistant","status":"completed","content":[{"type":"output_text","text":"hi","annotations":[]}]}],"usage":{"input_tokens":1,"output_tokens":1,"total_tokens":2}}`)
+	case strings.HasSuffix(p, ":streamGenerateContent"):
+		w.Header().Set("Content-Type", "text/event-stream")
+		io.WriteString(w, "data: "+`{"candidates":[{"content":{"role":"model","parts":[{"text":"hi"}]},"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":1,"candidatesTokenCount":1,"totalTokenCount":2}}`+"\n\n")
+	case p == "/v1/embeddings":
+		io.WriteString(w, `{"object":"list","data":[{"object":"embedding","index":0,"embedding":[0.1,-0.2]}],"model":"embed-1","usage":{"prompt_tokens":1,"total_tokens":1}}`)
+	case p == "/v1/images/generations":
+		io.WriteString(w, `{"created":1,"data":[{"b64_json":"`+base64.StdEncoding.EncodeToString(pngBytes)+`"}]}`)
+	default:
+		w.WriteHeader(404)
+	}
+}
+
+func (v *uaVendor) sent(path string) (string, bool) {
+	v.mu.Lock()
+	defer v.mu.Unlock()
+	ua, ok := v.got[path]
+	delete(v.got, path)
+	return ua, ok
+}
+
+// uaRoutes are the routes a request reaches a key+URL provider by: what an
+// agent posts agentlink, and the path the vendor is asked at.
+var uaRoutes = []struct{ name, path, body, upstream string }{
+	{"anthropic", "/v1/messages", `{"model":"ua/m1","max_tokens":8,"messages":[{"role":"user","content":"hi"}]}`, "/v1/messages"},
+	{"count_tokens", "/v1/messages/count_tokens", `{"model":"ua/m1","messages":[{"role":"user","content":"hi"}]}`, "/v1/messages/count_tokens"},
+	{"chat", "/v1/chat/completions", `{"model":"ua/m1","messages":[{"role":"user","content":"hi"}]}`, "/v1/chat/completions"},
+	{"responses", "/v1/responses", `{"model":"ua/m1","input":"hi"}`, "/v1/responses"},
+	{"gemini", "/v1beta/models/ug/m1:generateContent", `{"contents":[{"role":"user","parts":[{"text":"hi"}]}]}`, "/v1beta/models/m1:streamGenerateContent"},
+	{"embeddings", "/v1/embeddings", `{"model":"ua/embed-1","input":"hi"}`, "/v1/embeddings"},
+	{"images", "/v1/images/generations", `{"model":"ua/gpt-image-1","prompt":"a agentlink"}`, "/v1/images/generations"},
+}
+
+// uaSetup saves a key+URL provider "ua" on every API, at a uaVendor, with
+// pass for its PassUserAgent and headers for the user's own, and "ug" the
+// same on Gemini's API alone.
+func uaSetup(t *testing.T, pass bool, headers map[string]string) *uaVendor {
+	t.Helper()
+	fresh(t)
+	v := &uaVendor{got: map[string]string{}}
+	up := httptest.NewServer(v)
+	t.Cleanup(up.Close)
+	p := provider.Provider{ID: "ua", Name: "UA", Key: "k", Chat: up.URL + "/v1", Responses: up.URL + "/v1", Anthropic: up.URL, Gemini: up.URL + "/v1beta",
+		Models: []string{"m1", "embed-1", "gpt-image-1"}, PassUserAgent: pass, Headers: headers}
+	if err := provider.Save(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.SaveLive("ua", up.URL+"/v1", []catalog.Model{{ID: "m1"}, {ID: "embed-1"}, {ID: "gpt-image-1"}}); err != nil {
+		t.Fatal(err)
+	}
+	// Gemini's own wire, which a provider on Chat too isn't asked on
+	g := provider.Provider{ID: "ug", Name: "UG", Key: "k", Gemini: up.URL + "/v1beta", Models: []string{"m1"}, PassUserAgent: pass, Headers: headers}
+	if err := provider.Save(g); err != nil {
+		t.Fatal(err)
+	}
+	return v
+}
+
+// askAs posts body to path as an agent whose User-Agent is ua ("" sends
+// none).
+func askAs(t *testing.T, s *Server, path, body, ua string) {
+	t.Helper()
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", path, strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Del("User-Agent")
+	if ua != "" {
+		req.Header.Set("User-Agent", ua)
+	}
+	s.Handler().ServeHTTP(rec, req)
+	if rec.Code != 200 {
+		t.Fatalf("%s: status %d: %s", path, rec.Code, rec.Body)
+	}
+}
+
+// A key+URL provider set to pass the agent's User-Agent on (#1851) is
+// asked with the one the agent sent, on every route that reaches it: a
+// coding plan that serves only agents it names knows them by it. Off, the
+// default, it is asked as agentlink; so it is when the agent sent none, and
+// on agentlink's own requests (its classifier's, the image tool's), which no
+// agent sent. A User-Agent the user set in the provider's headers stands
+// over both.
+func TestUserAgentPassedOn(t *testing.T) {
+	const pi = "pi-coding-agent/0.9.1 (darwin; arm64)"
+	agentlink := "agentlink/" + Version
+	for _, tt := range []struct {
+		name    string
+		pass    bool
+		headers map[string]string
+		ua      string // what the agent sent
+		want    string
+	}{
+		{"off", false, nil, pi, agentlink},
+		{"on", true, nil, pi, pi},
+		{"on, the agent sent none", true, nil, "", agentlink},
+		{"on, agentlink's classifier", true, nil, RouterAgent, agentlink},
+		{"on, agentlink's image tool", true, nil, "claude-code/2.1.0 " + DrawAgent, agentlink},
+		{"on, the user's own header", true, map[string]string{"User-Agent": "mine/1"}, pi, "mine/1"},
+		{"off, the user's own header", false, map[string]string{"User-Agent": "mine/1"}, pi, "mine/1"},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			v := uaSetup(t, tt.pass, tt.headers)
+			s := New()
+			for _, r := range uaRoutes {
+				askAs(t, s, r.path, r.body, tt.ua)
+				got, ok := v.sent(r.upstream)
+				if !ok {
+					t.Fatalf("%s: the vendor wasn't asked at %s", r.name, r.upstream)
+				}
+				if got != tt.want {
+					t.Errorf("%s: the vendor was asked as %q, want %q", r.name, got, tt.want)
+				}
+			}
+		})
+	}
+}
+
+// Claude Code's and Codex's own headers still go on to a key+URL provider
+// as before (#179, #1758), whether it passes the agent's User-Agent or
+// not: the passing on is the same User-Agent.
+func TestUserAgentClaudeCodeAsBefore(t *testing.T) {
+	const cc = "claude-cli/2.1.0 (external, cli)"
+	for _, pass := range []bool{false, true} {
+		v := uaSetup(t, pass, nil)
+		askAs(t, New(), "/v1/messages", uaRoutes[0].body, cc)
+		if got, _ := v.sent("/v1/messages"); got != cc {
+			t.Errorf("pass %v: Claude Code's request went as %q", pass, got)
+		}
+	}
+}
+
+// Which providers pass it on: a key+URL one set to, and not a signed-in
+// account (ZCode's Coding Plan signs without a User-Agent of its own, and
+// goes as agentlink), a plugin's, a vendor's own client's gateway (OpenCode,
+// Cline, Kilo) or another agentlink, each of which goes as the client it
+// signs as.
+func TestUserAgentFor(t *testing.T) {
+	const pi = "pi/1"
+	agentlink := "agentlink/" + Version
+	for _, tt := range []struct {
+		name string
+		p    provider.Provider
+		want string
+	}{
+		{"key", provider.Provider{Chat: "https://api.example.com/v1", PassUserAgent: true}, pi},
+		{"key, off", provider.Provider{Chat: "https://api.example.com/v1"}, agentlink},
+		{"account", provider.Provider{Chat: "https://api.z.ai/api/coding/paas/v4", PassUserAgent: true, Account: &provider.Account{Agent: "zcode"}}, agentlink},
+		{"opencode", provider.Provider{Chat: "https://opencode.ai/zen/v1", PassUserAgent: true}, agentlink},
+		{"cline", provider.Provider{Preset: "clinepass", Chat: "https://api.cline.bot/api/v1", PassUserAgent: true}, agentlink},
+		{"kilo", provider.Provider{Preset: "kilo", Chat: "https://api.kilo.ai/api/gateway", PassUserAgent: true}, agentlink},
+		{"remote agentlink", provider.Provider{Preset: provider.RemoteAgentLinkPreset, Chat: "http://10.0.0.2:3425/v1", PassUserAgent: true}, agentlink},
+	} {
+		if got := userAgentFor(tt.p, pi); got != tt.want {
+			t.Errorf("%s: %q, want %q", tt.name, got, tt.want)
+		}
+	}
+	// an account's own request headers are its signing's: stampUA leaves
+	// them as they are
+	h := http.Header{}
+	stampUA(t.Context(), provider.Provider{PassUserAgent: true, Account: &provider.Account{Agent: "zcode"}}, h)
+	if h.Get("User-Agent") != "" {
+		t.Errorf("an account's request was stamped %q", h.Get("User-Agent"))
+	}
+}

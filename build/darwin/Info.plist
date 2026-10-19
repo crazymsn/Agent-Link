@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key><string>Agent Link</string>
+	<key>CFBundleDisplayName</key><string>Agent Link</string>
+	<key>CFBundleIdentifier</key><string>com.yetone.agentlink</string>
+	<key>CFBundleExecutable</key><string>agent-link</string>
+	<key>CFBundleIconFile</key><string>agent-link</string>
+	<key>CFBundleIconName</key><string>AppIcon</string>
+	<key>CFBundlePackageType</key><string>APPL</string>
+	<key>CFBundleShortVersionString</key><string>@VERSION@</string>
+	<key>CFBundleVersion</key><string>@VERSION@</string>
+	<key>LSMinimumSystemVersion</key><string>12.0</string>
+	<key>LSUIElement</key><true/>
+	<key>NSHighResolutionCapable</key><true/>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key><string>com.yetone.agentlink.import</string>
+			<key>CFBundleURLSchemes</key><array><string>agentlink</string><string>agent-link</string></array>
+		</dict>
+	</array>
+	<key>NSHumanReadableCopyright</key><string>DeepCloud · MIT</string>
+</dict>
+</plist>

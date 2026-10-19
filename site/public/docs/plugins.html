@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Writing plugins · Agent Link docs</title>
+<meta name="description" content="How to write a Agent Link plugin: the OpenCode plugin hooks Agent Link calls, the pi packages it runs, how it turns them into a provider with accounts, models, requests and usage, and how to test, publish and list one.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/plugins">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/plugins">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/plugins">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Writing plugins">
+<meta property="og:description" content="Turn any service into a Agent Link provider with an OpenCode plugin or a pi package.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/plugins">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/plugins" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/plugins" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/plugins" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Plugins</p>
+    <a href="#overview">Overview</a>
+    <a href="#quick">A plugin in five minutes</a>
+    <a href="#run">How Agent Link runs plugins</a>
+    <a href="#package">The package</a>
+    <a href="#provider">Provider and models</a>
+    <a href="#signin">Signing in</a>
+    <a href="#requests">Requests</a>
+    <a href="#signin-state">Sign-in state</a>
+    <a href="#usage">Usage</a>
+    <a href="#input">What a plugin is given</a>
+    <a href="#ids">Provider ids</a>
+    <a href="#test">Testing</a>
+    <a href="#publish">Publishing and listing</a>
+    <a href="#gateway-request">Async gateway request hooks</a>
+    <a href="#middleware">Gateway middleware</a>
+    <a href="#tools">Tools for every agent</a>
+    <a href="#agents">Agent plugins</a>
+    <a href="#pages">Pages in the window</a>
+    <a href="#pi">pi packages</a>
+    <a href="#protocol">The host protocol</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Plugins</p>
+    <h1>Writing a plugin</h1>
+    <p class="lede">A plugin signs in to a service and makes its requests. Agent Link turns it into a provider that every agent can use, with several accounts, failover, usage and the rest. Agent Link runs <a href="https://opencode.ai/docs/plugins/">OpenCode’s provider plugins</a>, so a plugin written for OpenCode works here unchanged, and it runs <a href="https://github.com/earendil-works/pi">pi</a>’s packages that register a provider too (see <a href="#pi">pi packages</a>). This page covers what a plugin author needs: the hooks Agent Link calls, what it does with their answers, and how to test, publish and list a plugin.</p>
+
+    <div class="callout"><b>In one paragraph.</b> A plugin is an npm package, a git repository or a folder. Its module exports an async function in OpenCode’s v1 plugin shape. Agent Link loads every plugin into one <a href="https://bun.sh">Bun</a> process, the <em>plugin host</em>. The function returns hooks:
+      <ul>
+        <li><code>config</code> declares the provider and its default models.</li>
+        <li><code>auth</code> gives the sign-in methods, plus a <code>loader</code> whose <code>fetch</code> makes each request.</li>
+        <li><code>provider.models</code> lists the models one account has.</li>
+        <li><code>auth.usage</code> says how much of the plan is used. It is Agent Link’s own hook, and OpenCode ignores it.</li>
+        <li><code>auth.refresh</code> renews an account’s token before it runs out, once at a time. It is Agent Link’s own hook too.</li>
+      </ul>
+      An agent can send in any API. The gateway translates the request into the API the model speaks (chat completions, Responses, Anthropic Messages or Gemini), hands it to the plugin’s <code>fetch</code>, and streams the answer back.</div>
+
+    <h2 id="quick"><a class="anchor" href="#quick">A plugin in five minutes</a></h2>
+    <p>This example signs in to Acme, a made-up coding plan. Acme takes an API key, has an OpenAI-compatible endpoint, and reports each account’s models and usage. A real plugin differs mainly in how it signs in and signs its requests. This whole example was run against Agent Link v0.1.676 and a local stand-in for Acme’s API.</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="q-pkg">Copy</button>
+      <pre id="q-pkg">{
+  "name": "opencode-acme-auth",
+  "version": "0.1.0",
+  "description": "OpenCode provider plugin: Acme Coding Plan",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": ["index.mjs", "README.md"],
+  "keywords": ["opencode", "opencode-plugin", "acme"],
+  "license": "MIT",
+  "Agent Link": { "maxConcurrency": 4 }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <button class="copy" data-copy="q-index">Copy</button>
+      <pre id="q-index">const PROVIDER = <span class="s">"acme"</span>
+const BASE = <span class="s">"https://api.acme.example/v1"</span>
+
+export const AcmeAuthPlugin = async ({ client }) =&gt; ({
+  <span class="c">// the provider and the models it has before anyone signs in</span>
+  config: async (cfg) =&gt; {
+    cfg.provider ??= {}
+    cfg.provider[PROVIDER] ??= {
+      name: <span class="s">"Acme"</span>,
+      npm: <span class="s">"@ai-sdk/openai-compatible"</span>, <span class="c">// chat completions</span>
+      api: BASE,
+      models: {
+        <span class="s">"acme-coder"</span>: { name: <span class="s">"Acme Coder"</span>, limit: { context: 200000, output: 32000 }, tool_call: true },
+      },
+    }
+  },
+
+  auth: {
+    provider: PROVIDER,
+    methods: [{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }],
+    <span class="c">// what every request of this account is sent with</span>
+    async loader(getAuth) {
+      const auth = await getAuth()
+      if (auth?.type !== <span class="s">"api"</span>) return {}
+      return {
+        baseURL: BASE,
+        async fetch(input, init) {
+          const headers = new Headers(init?.headers)
+          headers.set(<span class="s">"authorization"</span>, `Bearer ${auth.key}`)
+          headers.set(<span class="s">"x-acme-client"</span>, <span class="s">"opencode-acme-auth/0.1.0"</span>)
+          return fetch(input, { ...init, headers })
+        },
+      }
+    },
+    <span class="c">// Agent Link's own hook: how much of the plan is used</span>
+    async usage(getAuth) {
+      const auth = await getAuth()
+      const res = await fetch(`${BASE}/usage`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return { error: `Acme answered ${res.status}`, windows: [] }
+      const u = await res.json()
+      return {
+        plan: u.plan,
+        windows: [{ name: <span class="s">"5 hours"</span>, used: u.percent, resetsAt: u.resets_at, span: 5 * 3600 }],
+      }
+    },
+  },
+
+  <span class="c">// the models this account has, asked of Acme</span>
+  provider: {
+    id: PROVIDER,
+    async models(provider, { auth } = {}) {
+      if (auth?.type !== <span class="s">"api"</span>) return provider.models
+      const res = await fetch(`${BASE}/models`, { headers: { authorization: `Bearer ${auth.key}` } })
+      if (!res.ok) return provider.models <span class="c">// Agent Link keeps the list it had</span>
+      const { data } = await res.json()
+      const base = provider.models[<span class="s">"acme-coder"</span>]
+      return Object.fromEntries(data.map((m) =&gt; [m.id, { ...base, id: m.id, name: m.name ?? m.id }]))
+    },
+  },
+})</pre>
+    </div>
+    <p>Add the folder to Agent Link, sign in, and try it:</p>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="q-cli">Copy</button>
+      <pre id="q-cli">Agent Link plugin add ./opencode-acme-auth   <span class="c"># a folder is loaded where it is; nothing is installed</span>
+Agent Link plugin login acme                 <span class="c"># asks for the key</span>
+Agent Link plugin                            <span class="c"># acme (Acme, 2 models)  signed in</span>
+Agent Link provider test acme                <span class="c"># ✓ chat  7 ms · acme-coder</span>
+agent-link quota                             <span class="c"># acme · Pro · 5h 37% ↻59m</span></pre>
+    </div>
+    <p>Agents now reach its models as <code>acme/acme-coder</code>, the same way as any other provider’s. In the app, open <span class="ui">Plugins</span>, click <span class="ui">Add a plugin</span> and give it the folder. Then sign in from the provider’s row.</p>
+    <div class="callout"><b>Try it in a sandbox.</b> A plugin you are writing should never touch your real Agent Link. Run Agent Link with a <code>HOME</code> of its own, as <a href="#test">Testing</a> shows.</div>
+
+    <h2 id="run"><a class="anchor" href="#run">How Agent Link runs plugins</a></h2>
+    <ul>
+      <li><b>Bun.</b> Agent Link downloads Bun the first time a plugin is added, and runs every plugin on it. Bun runs TypeScript as is, so an entry can be <code>index.ts</code>.</li>
+      <li><b>One host process.</b> Every plugin that is on loads into one Bun process, started the first time one is needed. Agent Link and the host talk over stdin and stdout, one JSON message a line. Anything a plugin prints, <code>console.log</code> and <code>process.stdout</code> included, is sent to stderr. Agent Link logs it as <code>plugin: …</code>.</li>
+      <li><b>Installing.</b>
+        <ul>
+          <li>An npm package is installed with <code>bun add</code>, with its install scripts left unrun, as OpenCode installs plugins. A dependency that needs a <code>postinstall</code> build won’t work.</li>
+          <li>A git repository is fetched by Bun: <code>github:owner/repo[#ref]</code>, <code>git+https://…</code> or <code>owner/repo</code>.</li>
+          <li>A path to a folder or file is loaded where it is.</li>
+        </ul></li>
+      <li><b>Restarts.</b> Adding, removing, updating or turning a plugin on or off restarts the host. A reply still streaming through the old host finishes first. Each <code>Agent Link</code> command in a terminal starts a host of its own, so it always loads a folder plugin as it is now. In the app, turn the plugin off and on to load your edits.</li>
+      <li><b>Proxy.</b> Every fetch a plugin makes for a provider or an account goes through the proxy the user set for that provider or account. Otherwise it goes through Agent Link’s own proxy, unless the setting is <em>direct</em>. Loopback addresses never go through a proxy. A fetch that passes its own <code>proxy</code> option is left alone.</li>
+      <li><b>Updates.</b>
+        <ul>
+          <li>The community’s packages (<code>@Agent Link-community/*</code>) update by themselves a little after Agent Link starts, then every hour.</li>
+          <li>Any other package with a newer version shows a dot on <span class="ui">Plugins</span>, and in the sidebar <span class="ui">Installed</span> reads “1 update”. Plugins then opens on Installed, which names the plugins with a newer version at the top beside <span class="ui">Update all</span>; the user updates them with a click or <code>Agent Link plugin update</code>.</li>
+          <li>A spec pinned to a version (<code>name@1.2.3</code>) stays on it until the user updates it: <span class="ui">Update to …</span>, <span class="ui">Update all</span> and <code>Agent Link plugin update</code> install the newest version and unpin it.</li>
+          <li>A git repository has no version to compare. It shows an update when its branch or tag (the default branch without <code>#ref</code>) is at another commit than the one Bun installed: GitHub is asked through its API, any other host with <code>git ls-remote</code>, at most every ten minutes, and the hourly check asks again. A spec pinned to a commit never has one. The row shows the commit installed.</li>
+        </ul></li>
+    </ul>
+    <p>What Agent Link keeps, in its config folder (<code>~/.config/Agent Link</code>, or <code>$XDG_CONFIG_HOME/Agent Link</code>):</p>
+    <div class="table-wrap"><table>
+      <tr><th>File</th><th>What it holds</th></tr>
+      <tr><td><code>plugins.json</code></td><td>The plugins added: <code>{"plugins": [{"spec", "off"?, "options"?}], "config"?}</code>. <code>options</code> is the plugin’s second argument, as OpenCode’s <code>["name", {…}]</code> gives it. <code>config</code> is the OpenCode config the plugins are handed.</td></tr>
+      <tr><td><code>plugins/</code></td><td>The installed npm and git packages, a Bun project of their own.</td></tr>
+      <tr><td><code>plugin-auth.json</code></td><td>The sign-ins (mode 600), in the same shape as OpenCode’s <code>auth.json</code>, so a sign-in can be moved between the two.</td></tr>
+      <tr><td><code>plugin-providers.json</code></td><td>The providers and models the plugins listed last, so Agent Link can start without asking them.</td></tr>
+    </table></div>
+
+    <h2 id="package"><a class="anchor" href="#package">The package</a></h2>
+    <h3>Where Agent Link loads it from</h3>
+    <p>Agent Link looks for the server side of a plugin in the same places OpenCode does, and loads the first file that exports a plugin:</p>
+    <ol>
+      <li><code>exports["./server"]</code>, then <code>main</code>, then <code>exports["."]</code> (or <code>exports</code> when it is a string), in <code>package.json</code>.</li>
+      <li>Otherwise <code>index.ts</code>, <code>index.tsx</code>, <code>index.js</code>, <code>index.mjs</code> or <code>index.cjs</code>.</li>
+    </ol>
+    <p>A path to a single file loads that file.</p>
+    <h3>What the module exports</h3>
+    <ul>
+      <li><code>export default { id, server }</code> (OpenCode v1): <code>server</code> is the plugin.</li>
+      <li>Otherwise, <b>every function the module exports</b> is called as a plugin, as is every exported <code>{ server }</code> object.</li>
+    </ul>
+    <p>So don’t export helper functions from the entry file. Put what your tests need on an object instead, as the community plugins do with <code>export const _internal = { … }</code>.</p>
+    <h3>The function</h3>
+    <div class="code">
+      <span class="lang">Shape</span>
+      <pre>async (input, options) =&gt; hooks
+<span class="c">// input:   { client, project, directory, worktree, serverUrl, $, experimental_workspace }</span>
+<span class="c">// options: the entry's "options" in plugins.json, else undefined</span>
+<span class="c">// hooks:   { config?, auth?, provider?, "chat.headers"? }</span></pre>
+    </div>
+    <p>A plugin may return more than one provider by exporting more than one function. Each one’s hooks are separate. When two plugins have an <code>auth</code> hook for the same provider, the one loaded last wins, as in OpenCode.</p>
+    <h3>Agent Link’s fields in package.json</h3>
+    <p>OpenCode ignores the <code>Agent Link</code> object, so these are safe to add to an OpenCode plugin.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Field</th><th>Meaning</th></tr>
+      <tr><td><code>Agent Link.icon</code></td><td>The plugin’s picture, on its card in Discover (read from npm, or from the repository for one on GitHub) and its row in Installed, and the picture of each of its providers that doesn’t give its own: an <code>https://</code> URL or a <code>data:image/…</code> URI, at most 1 MB. SVG, PNG and the like.</td></tr>
+      <tr><td><code>Agent Link.maxConcurrency</code></td><td>How many requests each account takes at once, a whole number from 1 to 1000. A limit the user sets on the provider wins over it.</td></tr>
+    </table></div>
+    <p>The same fields can be set on the <code>auth</code> hook (<code>auth.icon</code>, <code>auth.maxConcurrency</code>), where they win over <code>package.json</code>. A plugin that signs in to several providers can give each its own <code>auth.icon</code> and keep <code>Agent Link.icon</code> for the plugin itself.</p>
+
+    <h2 id="provider"><a class="anchor" href="#provider">Provider and models</a></h2>
+    <h3>Declaring the provider</h3>
+    <p>The provider’s id is <code>auth.provider</code>. If <a href="https://models.dev">models.dev</a> lists that id, Agent Link starts from its entry, as OpenCode does. Otherwise, declare the provider in a <code>config</code> hook. Use <code>??=</code>, so a provider the user configured in <code>plugins.json</code> isn’t written over:</p>
+    <div class="code">
+      <span class="lang">config hook</span>
+      <pre>config: async (cfg) =&gt; {
+  cfg.provider ??= {}
+  cfg.provider[<span class="s">"acme"</span>] ??= {
+    name: <span class="s">"Acme"</span>,
+    npm: <span class="s">"@ai-sdk/anthropic"</span>,          <span class="c">// the API its models speak (table below)</span>
+    api: <span class="s">"https://api.acme.example/v1"</span>, <span class="c">// where requests go, unless the loader says otherwise</span>
+    models: {
+      <span class="s">"acme-large"</span>: {
+        name: <span class="s">"Acme Large"</span>,
+        id: <span class="s">"acme-large-2026-09"</span>,          <span class="c">// the id the API takes, when it isn't the key</span>
+        limit: { context: 400000, output: 64000 },
+        reasoning: true,
+        tool_call: true,
+        modalities: { input: [<span class="s">"text"</span>, <span class="s">"image"</span>] },
+        cost: { input: 3, output: 15, cache_read: 0.3 }, <span class="c">// US$ per million tokens; leave out for a plan</span>
+        variants: { low: {}, medium: {}, high: {} },        <span class="c">// reasoning levels</span>
+      },
+    },
+  }
+}</pre>
+    </div>
+    <p>A model can also say <code>provider: { npm, api }</code> to use another API or address than the provider’s, <code>headers</code>, <code>options</code>, and <code>disabled: true</code> to hide it.</p>
+
+        <h3 id="searches">An upstream that searches the web</h3>
+    <p>When your plugin sits in front of Anthropic’s or OpenAI’s own API, which runs the hosted web search tool itself, set <code>searches: true</code> on the provider in the <code>config</code> hook. A client’s web search (Claude Code’s WebSearch, Codex’s <code>web_search</code>) then reaches your <code>fetch</code> as it was sent, on the provider’s Anthropic or Responses models, rather than going through Agent Link’s own search. Its Chat models are unaffected. Agent Link doesn’t search with it for other models by itself, but it can be named as the searcher in Settings.</p>
+
+        <h3 id="decide">A decision API (System One)</h3>
+    <p>A plugin can serve TypeSafe’s System One API for its provider, so its models can be a <a href="/docs/intent">routing group’s classifier</a>. Set <code>decide: true</code> on the provider in the <code>config</code> hook, and <code>decides: true</code> on each model that answers questions rather than a conversation, in the <code>config</code> hook or on the <code>models</code> hook’s list. Agent Link then posts each question as <code>POST {baseURL}/systemone</code> through your loader’s <code>fetch</code>, with the account’s sign-in, as it sends any other request. The body is <code>{"model", "questions", "state"}</code>; answer <code>{"model", "answers": {"&lt;question&gt;": {"choice", "score", "confidence"}}}</code>.</p>
+    <p>A marked model, and one named <code>jev-*</code>, is offered as a classifier and kept from agents: a chat request to it is refused. Without <code>decide: true</code> on the provider, <code>decides</code> is ignored and every model stays one to chat with.</p>
+
+    <h3 id="apis">The API a model speaks</h3>
+    <p>The AI SDK package named by <code>npm</code>, on the model or on the provider, decides the API. That decides the shape of the request your <code>fetch</code> receives. Whatever the agent sent, Agent Link’s gateway has already translated it:</p>
+    <div class="table-wrap"><table>
+      <tr><th>npm</th><th>API</th><th>Path after the base</th></tr>
+      <tr><td><code>@ai-sdk/anthropic</code>, <code>@ai-sdk/google-vertex/anthropic</code></td><td>Anthropic Messages</td><td><code>/messages</code></td></tr>
+      <tr><td><code>@ai-sdk/openai</code>, <code>@ai-sdk/azure</code></td><td>OpenAI Responses</td><td><code>/responses</code></td></tr>
+      <tr><td><code>@ai-sdk/google</code></td><td>Gemini</td><td><code>/models/&lt;id&gt;:streamGenerateContent?alt=sse</code></td></tr>
+      <tr><td><code>@ai-sdk/github-copilot</code></td><td>Responses for GPT-5 and later (not gpt-5-mini), chat completions for the rest</td><td><code>/responses</code> or <code>/chat/completions</code></td></tr>
+      <tr><td>anything else (<code>@ai-sdk/openai-compatible</code>, <code>xai</code>, <code>groq</code>, <code>deepseek</code>, …)</td><td>Chat completions</td><td><code>/chat/completions</code></td></tr>
+    </table></div>
+    <p>The base is chosen in this order:</p>
+    <ol>
+      <li>the loader’s <code>baseURL</code>;</li>
+      <li>the model’s <code>provider.api</code>;</li>
+      <li>the provider’s <code>api</code>;</li>
+      <li>the AI SDK package’s own default (<code>https://api.anthropic.com/v1</code>, <code>https://api.openai.com/v1</code>, …).</li>
+    </ol>
+    <p>The body’s <code>model</code> is the model’s API id: its <code>id</code>, else its key.</p>
+
+    <h3>Each account’s models</h3>
+    <p>When the models depend on the account, add a <code>provider</code> hook:</p>
+    <div class="code">
+      <span class="lang">provider hook</span>
+      <pre>provider: {
+  id: <span class="s">"acme"</span>,
+  async models(provider, { auth }) {
+    <span class="c">// provider.models: what models.dev and the config hook give, keyed by id</span>
+    <span class="c">// auth: this account's sign-in, as plugin-auth.json keeps it</span>
+    return { <span class="s">"acme-large"</span>: { ...provider.models[<span class="s">"acme-large"</span>], name: <span class="s">"Acme Large"</span> } }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li>Agent Link calls it once for each account, in that account’s scope and through its proxy. Each account serves only the models listed for it, so an account on a smaller plan isn’t sent a model it doesn’t have.</li>
+      <li>A model is OpenCode’s <code>Model</code>:
+        <ul>
+          <li><code>id</code>, <code>name</code>;</li>
+          <li><code>api: {id, url, npm}</code>;</li>
+          <li><code>limit: {context, input?, output}</code>;</li>
+          <li><code>capabilities: {reasoning, toolcall, attachment, input: {text, image, …}}</code>;</li>
+          <li><code>cost: {input, output, cache: {read, write}}</code>;</li>
+          <li><code>variants</code>, <code>release_date</code>, <code>status</code>.</li>
+        </ul>
+        Spreading a model from <code>provider.models</code> and changing a few fields is the easy way. A model whose <code>status</code> is <code>"deprecated"</code> isn’t shown.</li>
+      <li>Agent Link also reads these fields on a model, which OpenCode ignores:
+        <ul>
+          <li><code>free: true</code>: the plan serves it at no cost to its allowance.</li>
+          <li><code>rate</code>: the credits a request costs, as a multiple, given as a number (<code>0.5</code>) or as the vendor writes it (<code>"x0.5"</code>).</li>
+          <li><code>rateWas</code>: the rate before a discount that is running now.</li>
+        </ul>
+        Model pickers show them.</li>
+      <li><code>serviceTiers</code>, on a model the <code>models</code> hook gives: the service tiers its vendor serves it at, as ids, such as <code>["priority", "ultrafast"]</code>. Codex is offered them in its model list (<code>priority</code> as Fast), and a Chat or Responses request that asks for one of them reaches your <code>fetch</code> with its <code>service_tier</code>. A tier the model doesn’t list isn’t sent where Agent Link translates the request.</li>
+      <li>The keys of <code>variants</code> become the model’s reasoning levels when it reasons.</li>
+    </ul>
+    <h3>When the vendor can’t be reached</h3>
+    <p>Agent Link keeps the list it already had, as it does for a built-in subscription whose list couldn’t be fetched, when the hook does any of these:</p>
+    <ul>
+      <li>returns <code>provider.models</code> unchanged after a fetch that failed;</li>
+      <li>throws;</li>
+      <li>returns a list of its own with <code>list[Symbol.for("Agent Link.fellBack")] = true</code>.</li>
+    </ul>
+    <p>If what failed was the sign-in, throw an error with <code>signIn: "expired"</code> on it. The account is then marked as needing a new sign-in (see <a href="#signin-state">Sign-in state</a>).</p>
+
+    <h2 id="signin"><a class="anchor" href="#signin">Signing in</a></h2>
+    <p>The <code>auth</code> hook is <code>{ provider, methods, loader, usage?, refresh?, refreshLead?, icon?, maxConcurrency? }</code>. Each method is a way to sign in that the user can pick. In the app the methods are buttons; in a terminal, <code>Agent Link plugin login &lt;id&gt; [&lt;method&gt;]</code> asks which one.</p>
+    <h3>An API key</h3>
+    <div class="code">
+      <span class="lang">api method</span>
+      <pre>{ type: <span class="s">"api"</span>, label: <span class="s">"Acme API key"</span>, placeholder: <span class="s">"acme-…"</span> }</pre>
+    </div>
+    <ul>
+      <li><code>label</code> titles the key’s field. A label that only says “API key” is shown as “Acme API key”.</li>
+      <li><code>placeholder</code> is Agent Link’s own field, a hint inside the field.</li>
+      <li>Without an <code>authorize</code> function, the key is saved as is: <code>{type: "api", key, metadata?}</code>. Answers to <code>prompts</code> go in <code>metadata</code>.</li>
+      <li>With <code>authorize(inputs)</code>, the plugin checks or exchanges the key itself. It returns <code>{type: "success", key, metadata?}</code> or <code>{type: "failed", error?}</code>.</li>
+    </ul>
+    <h3>A browser or device sign-in</h3>
+    <div class="code">
+      <span class="lang">oauth method</span>
+      <pre>{
+  type: <span class="s">"oauth"</span>,
+  label: <span class="s">"Sign in with Acme"</span>,
+  async authorize(inputs) {
+    const d = await startDeviceCode()
+    return {
+      url: d.verification_uri,                    <span class="c">// Agent Link opens it</span>
+      instructions: `Enter the code ${d.user_code}`, <span class="c">// and shows this</span>
+      method: <span class="s">"auto"</span>,                              <span class="c">// "auto": callback() resolves on its own</span>
+      async callback() {                           <span class="c">// "code": callback(code), the code the user pastes</span>
+        const t = await pollForToken(d)
+        if (!t) return { type: <span class="s">"failed"</span>, error: <span class="s">"The code expired"</span> }
+        return { type: <span class="s">"success"</span>, refresh: t.refresh_token, access: t.access_token,
+                 expires: Date.now() + t.expires_in * 1000, accountId: t.email }
+      },
+    }
+  },
+}</pre>
+    </div>
+    <ul>
+      <li>A success with <code>refresh</code> is saved as <code>{type: "oauth", refresh, access, expires, …}</code>, with every other field you return kept beside them (<code>accountId</code>, <code>enterpriseUrl</code>, your own).</li>
+      <li>A success with <code>key</code> is saved as an API key.</li>
+      <li><code>provider: "other-id"</code> on the result saves the sign-in to another provider the plugin signs in to.</li>
+      <li><code>error</code> on a failure is Agent Link’s own field: the user sees why (up to 500 characters). Without it, they see only that the sign-in failed.</li>
+      <li><code>inputs</code> is passed only to a method with <code>prompts</code>. A method without prompts gets <code>undefined</code>, as OpenCode’s TUI calls it. An empty object is how OpenCode’s CLI calls, and some plugins then ask on the terminal.</li>
+    </ul>
+    <h3>Questions before signing in</h3>
+    <p>A method’s <code>prompts</code> are asked in order before <code>authorize</code>, each only when its condition holds:</p>
+    <div class="code">
+      <span class="lang">prompts</span>
+      <pre>prompts: [
+  { type: <span class="s">"select"</span>, key: <span class="s">"region"</span>, message: <span class="s">"Region"</span>,
+    options: [{ label: <span class="s">"Global"</span>, value: <span class="s">"global"</span> }, { label: <span class="s">"China"</span>, value: <span class="s">"cn"</span>, hint: <span class="s">"acme.cn"</span> }] },
+  { type: <span class="s">"text"</span>, key: <span class="s">"team"</span>, message: <span class="s">"Team id"</span>, placeholder: <span class="s">"t-…"</span>,
+    when: { key: <span class="s">"region"</span>, op: <span class="s">"eq"</span>, value: <span class="s">"global"</span> },        <span class="c">// or condition: (inputs) =&gt; boolean</span>
+    validate: (v) =&gt; (/^t-/.test(v) ? undefined : <span class="s">"Starts with t-"</span>) },
+]</pre>
+    </div>
+    <p>A <code>type: "password"</code> question is a <code>text</code> one typed unseen: a masked field in the app, and no echo in <code>Agent Link plugin login</code> on a terminal. Use it for a token or a personal access token. It is Agent Link’s own type: OpenCode’s are <code>text</code> and <code>select</code>.</p>
+    <h3>Accounts</h3>
+    <ul>
+      <li><b>Where they are kept.</b> A provider can be signed in to more than once. The first account is kept under the provider’s id, as OpenCode keeps it. Others are kept under <code>id#xxxxxx</code>.</li>
+      <li><b>How the user tells them apart.</b> Agent Link names an account by <code>accountId</code>, else <code>metadata.email</code>, else <code>email</code>. Save one of them, an email where you have one.</li>
+      <li><b>Signing in again.</b> A new sign-in replaces an existing account when both have the same <code>accountId</code>. Where both also have a <code>uid</code> (the vendor’s own id, for vendors whose names can repeat), it must match too. Without an id, the same secret matches. Otherwise the sign-in becomes a new account.</li>
+      <li><b>Scope.</b> Every call Agent Link makes for an account runs in that account’s scope:
+        <ul>
+          <li><code>getAuth()</code> returns that account.</li>
+          <li><code>client.auth.set({ path: { id: "acme" }, body })</code> saves to that account.</li>
+        </ul>
+        So keep per-account state by the auth you were given, not in a module variable keyed by the provider.</li>
+      <li><b>Refreshing.</b> Give <code>auth.refresh</code> and Agent Link renews the token for you (see <a href="#renew">Renewing a sign-in</a>). Otherwise, when a token runs out, refresh it in <code>fetch</code> and save the whole object with <code>client.auth.set</code>. What you give replaces what was kept; nothing is merged.</li>
+    </ul>
+    <h3 id="renew">Renewing a sign-in</h3>
+    <p>From Agent Link 0.1.684, a plugin can leave renewing its tokens to Agent Link with <code>auth.refresh</code>, Agent Link’s own hook (OpenCode ignores it):</p>
+    <div class="code">
+      <span class="lang">auth hook</span>
+      <pre>auth: {
+  provider: <span class="s">"acme"</span>,
+  methods: [ … ],
+  <span class="c">// optional: how long before expires to renew (ms), 5 minutes by default</span>
+  refreshLead: 5 * 60 * 1000,
+  async refresh(auth, provider) {  <span class="c">// auth is the account's saved sign-in</span>
+    const t = await exchange(auth.refresh)
+    if (t.error === <span class="s">"invalid_grant"</span>)
+      throw Object.assign(new Error(<span class="s">"Acme refused the sign-in"</span>), { signIn: <span class="s">"expired"</span> })
+    return { access: t.access_token, refresh: t.refresh_token ?? auth.refresh,
+             expires: Date.now() + t.expires_in * 1000 }
+  },
+  loader: async (getAuth) =&gt; ({ … }),  <span class="c">// getAuth() already gives the renewed token</span>
+}</pre>
+    </div>
+    <ul>
+      <li><b>When it runs.</b> For an OAuth account whose <code>expires</code> is less than <code>refreshLead</code> away, before the account’s loader, <code>provider.models</code>, <code>auth.usage</code> or a request. An account with <code>expires</code> 0 or none is never renewed.</li>
+      <li><b>Once at a time.</b> Requests that find the token due wait for one renewal, so a vendor that spends a refresh token once never sees it twice. They wait up to 15 seconds; a renewal that takes longer is still saved when it ends.</li>
+      <li><b>What is saved.</b> The fields you return are kept over the account’s old ones (merged, unlike <code>client.auth.set</code>), and the account’s mark is cleared. Return nothing when there is nothing to renew.</li>
+      <li><b>When it fails.</b> The account is left as it was and the request goes on with the old token, for the vendor’s answer to tell. An error with <code>signIn: "expired"</code> marks the account (see <a href="#signin-state">Sign-in state</a>), and Agent Link doesn’t try again until it is signed in again. Any other error is tried again after 30 seconds.</li>
+      <li><b>OpenCode and older Agent Link.</b> They ignore the hook. Keep the check in your <code>fetch</code> too if the plugin runs there: under Agent Link it finds the token fresh and does nothing.</li>
+    </ul>
+
+    <h2 id="requests"><a class="anchor" href="#requests">Requests</a></h2>
+    <p><code>loader(getAuth, provider)</code> runs once per account and is run again after its sign-in changes. It returns what OpenCode would give the AI SDK:</p>
+    <div class="table-wrap"><table>
+      <tr><th>Field</th><th>What Agent Link does with it</th></tr>
+      <tr><td><code>baseURL</code></td><td>Where requests go, ahead of the model’s and provider’s <code>api</code>.</td></tr>
+      <tr><td><code>apiKey</code></td><td>Sent as the AI SDK package sends it: <code>x-api-key</code> for Anthropic, <code>x-goog-api-key</code> for Google, <code>Authorization: Bearer</code> otherwise. For an API-key sign-in, it defaults to the saved key.</td></tr>
+      <tr><td><code>headers</code></td><td>Added to every request.</td></tr>
+      <tr><td><code>fetch</code></td><td>Makes the request. Without it, Agent Link’s host uses the standard <code>fetch</code>.</td></tr>
+    </table></div>
+    <p>The request your <code>fetch(input, init)</code> receives:</p>
+    <ul>
+      <li><code>input</code> is the full URL: the base plus the path for the model’s API.</li>
+      <li><code>init.method</code> is usually <code>POST</code>.</li>
+      <li><code>init.headers</code> are set in this order, each overriding the one before:
+        <ol>
+          <li>the key header from <code>apiKey</code>;</li>
+          <li>the loader’s <code>headers</code>;</li>
+          <li>the gateway’s request headers;</li>
+          <li>what <code>chat.headers</code> hooks add.</li>
+        </ol></li>
+      <li><code>init.body</code> is the JSON string in that API’s shape (bytes when it isn’t UTF-8 text). <code>model</code> in it is the API id, and <code>stream</code> is whatever the agent asked for.</li>
+      <li><code>init.signal</code> aborts when the agent gives up on the request.</li>
+    </ul>
+    <p>Return a <code>Response</code>. Its status, headers and body go back as they come, streamed chunk by chunk. If you rewrite a streaming body, drop <code>content-length</code> and <code>content-encoding</code> from the headers.</p>
+    <h3>Failures and failover</h3>
+    <ul>
+      <li>A non-2xx response is the vendor’s answer. The gateway handles it as it would any provider’s: a rate limit or a server error moves the request to the next account or model, and a 401 marks the account (see <a href="#signin-state">Sign-in state</a>).</li>
+      <li>A thrown error fails the request, and failover moves on.</li>
+      <li>Answer in the API’s own error shape where you can, so the agent shows the vendor’s message.</li>
+    </ul>
+    <h3>chat.headers</h3>
+    <p>OpenCode’s <code>chat.headers</code> hook runs for every request. Its <code>input.sessionID</code> is Agent Link’s conversation id, which stays the same across a conversation’s turns. Use it for a vendor’s session or cache header:</p>
+    <div class="code">
+      <span class="lang">chat.headers</span>
+      <pre><span class="s">"chat.headers"</span>: async (input, output) =&gt; {
+  if (input.model.providerID === <span class="s">"acme"</span>) output.headers[<span class="s">"x-acme-session"</span>] = input.sessionID
+}</pre>
+    </div>
+
+    <h2 id="signin-state"><a class="anchor" href="#signin-state">Sign-in state</a></h2>
+    <p>Agent Link marks an account whose sign-in the vendor refused. It shows the mark to the user and stops sending to the account until it works again. By default a 401 marks the account and a success clears the mark. A plugin can say more precisely what an answer means with the <code>X-Agent Link-Sign-In</code> response header, which Agent Link removes before the answer goes on:</p>
+    <div class="table-wrap"><table>
+      <tr><th>Value</th><th>Meaning</th></tr>
+      <tr><td><code>expired</code></td><td>The sign-in was refused, whatever the status (a vendor that answers 403 or 502 for it).</td></tr>
+      <tr><td><code>kept</code></td><td>Leave the account as it is (a 401 that is about something else).</td></tr>
+      <tr><td><code>renewed</code></td><td>The sign-in renewed: clear the mark, whatever the request then met.</td></tr>
+    </table></div>
+    <p>From <code>fetch</code> or <code>provider.models</code>, throw an error with <code>signIn: "expired"</code> on it for the same effect:</p>
+    <div class="code">
+      <span class="lang">index.mjs</span>
+      <pre>throw Object.assign(new Error(<span class="s">"Acme refused the sign-in; sign in again"</span>), { signIn: <span class="s">"expired"</span> })</pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">Usage</a></h2>
+    <p><code>auth.usage(getAuth, provider)</code> is Agent Link’s own hook. It says how much of an account’s allowance is used. It runs in the account’s scope, so a token it refreshes is saved to that account. Agent Link shows its answer on the account in <span class="ui">Providers</span>, in <code>agent-link quota</code> and at <code>GET /v1/Agent Link/quotas</code> on the gateway. Every field is optional:</p>
+    <div class="code">
+      <span class="lang">usage result</span>
+      <pre>{
+  plan: <span class="s">"Pro"</span>,
+  user: <span class="s">"ada@example.com"</span>,     <span class="c">// the account as the vendor names it</span>
+  until: <span class="s">"2026-11-01T00:00:00Z"</span>, <span class="c">// the plan's end</span>
+  renew: <span class="s">"auto"</span>,                <span class="c">// or "off"</span>
+  balance: <span class="s">"$12.40"</span>,
+  error: <span class="s">""</span>,                    <span class="c">// shown in place of the windows</span>
+  windows: [{
+    name: <span class="s">"5 hours"</span>,
+    used: 37,                   <span class="c">// percent; past 100 when overspent</span>
+    resetsAt: <span class="s">"2026-10-03T18:00:00Z"</span>, <span class="c">// or resetSecs: 3600</span>
+    span: 18000,                <span class="c">// seconds the window runs</span>
+    display: <span class="s">"370 / 1000 credits"</span>,
+    amount: 370, limit: 1000, unit: <span class="s">"credits"</span>, <span class="c">// its own count, when it counts amounts</span>
+    model: <span class="s">"opus"</span>,              <span class="c">// counts only models whose ids hold this word</span>
+    models: [], notModels: [],  <span class="c">// or exactly these ids, or all but these</span>
+    aside: false,               <span class="c">// true: using it up doesn't stop the account</span>
+    runsOutAt: <span class="s">"2026-10-05T00:00:00Z"</span>, runsOut: 120, <span class="c">// when the soonest credits left are lost, and how many</span>
+  }],
+  resets: { count: 2, until: <span class="s">"…"</span>, byWindow: false, fiveHour: 1, weekly: 1 }, <span class="c">// resets the account may spend</span>
+  signIn: <span class="s">"kept"</span>,               <span class="c">// as X-Agent Link-Sign-In</span>
+}</pre>
+    </div>
+    <p>Times are ISO strings or epoch numbers, in seconds or in milliseconds. Without <code>signIn</code>, an <code>error</code> that says to sign in again marks the account, and a clean read clears the mark.</p>
+
+    <h2 id="input"><a class="anchor" href="#input">What a plugin is given</a></h2>
+    <p>Agent Link hands a plugin what OpenCode’s <code>PluginInput</code> has, as far as it has meaning without an OpenCode server:</p>
+    <div class="table-wrap"><table>
+      <tr><th>Field</th><th>In Agent Link</th></tr>
+      <tr><td><code>client.auth.set</code> / <code>.remove</code></td><td>Saves or forgets the sign-in of the account in scope.</td></tr>
+      <tr><td><code>client.app.log</code></td><td>Writes to Agent Link’s log as <code>plugin [level]: [service] message</code>.</td></tr>
+      <tr><td><code>client.tui.showToast</code></td><td>Written to Agent Link’s log.</td></tr>
+      <tr><td><code>client.config.get</code></td><td>The config after every plugin’s <code>config</code> hook.</td></tr>
+      <tr><td>any other <code>client.*</code></td><td>Answers <code>{ data: undefined }</code>.</td></tr>
+      <tr><td><code>directory</code>, <code>worktree</code></td><td>Agent Link’s config folder, a place to keep files.</td></tr>
+      <tr><td><code>project</code></td><td><code>{ id: "Agent Link", worktree }</code>.</td></tr>
+      <tr><td><code>$</code></td><td>Bun’s shell.</td></tr>
+      <tr><td><code>serverUrl</code></td><td>A placeholder; no OpenCode server is behind it.</td></tr>
+    </table></div>
+    <p>The hooks Agent Link calls are <code>config</code>, <code>auth</code> (its methods, <code>loader</code> and <code>usage</code>), <code>provider.models</code> and <code>chat.headers</code>. A plugin’s other hooks (<code>tool</code>, <code>event</code>, <code>chat.params</code>, …) are not called. The agent runs its own tools.</p>
+
+    <h2 id="ids"><a class="anchor" href="#ids">Provider ids</a></h2>
+    <ul>
+      <li>Agents name a plugin’s model as <code>&lt;id&gt;/&lt;model&gt;</code>, where the id is the plugin’s <code>auth.provider</code>.</li>
+      <li>When the id is taken in Agent Link, by a built-in subscription, a preset (<code>google</code>, <code>openai</code>, <code>anthropic</code>, …) or <code>Agent Link</code> itself, the plugin’s provider is named <code>&lt;id&gt;-plugin</code>. Pick an id that is only yours.</li>
+      <li>The community’s plugins for Agent Link’s deprecated built-in subscriptions are the exception. They use the built-in’s id (<code>cursor</code>, <code>zed</code>, …) and take it over once the user moves onto the plugin, so agents keep working unchanged.</li>
+      <li>When two installed plugins sign in to the same id, such as a published plugin and your own copy of it, one of them serves it: the one picked for it, otherwise the one added last. Both stay in <span class="ui">Plugins → Installed</span>, and each row says which one serves the provider. <span class="ui">Use for …</span> on the other row, or <code>Agent Link plugin use &lt;name&gt; &lt;id&gt;</code>, makes the pick.</li>
+    </ul>
+
+    <h2 id="test"><a class="anchor" href="#test">Testing</a></h2>
+    <p>Run Agent Link in a sandbox, so your own Agent Link, its agents and sign-ins are never touched:</p>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="t-cli">Copy</button>
+      <pre id="t-cli">sb=$(mktemp -d)
+m() { env HOME=$sb XDG_CONFIG_HOME=$sb/.config XDG_CACHE_HOME=$sb/.cache AGENT_LINK_ADDR=127.0.0.1:3499 agent-link <span class="s">"$@"</span>; }
+m plugin add ./opencode-acme-auth &lt;/dev/null
+m plugin --json                     <span class="c"># what the plugin lists: methods, accounts, models, load errors</span>
+m plugin login acme                 <span class="c"># each method, each prompt</span>
+m provider test acme                <span class="c"># one tiny request per API</span>
+m provider test acme acme-coder     <span class="c"># or to the models named</span>
+m quota                             <span class="c"># the usage hook</span>
+m plugin logout acme</pre>
+    </div>
+    <ul>
+      <li>A plugin that fails to load says why in <code>Agent Link plugin</code>.</li>
+      <li>Hook errors and everything a plugin prints are in the output, as <code>plugin: …</code> lines.</li>
+      <li>For unit tests, run <code>bun test</code> against the functions you put on <code>_internal</code>.</li>
+      <li>The <a href="https://github.com/Agent Link-community/plugins">community repository</a> has a few scripts:
+        <ul>
+          <li><code>bun scripts/check.mjs</code> loads each package as Agent Link does and checks its hooks.</li>
+          <li><code>scripts/try.sh &lt;name&gt;</code> runs it in a sandbox like the one above.</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="publish"><a class="anchor" href="#publish">Publishing and listing</a></h2>
+    <ul>
+      <li><b>npm.</b> Publish the package as usual. Users add it by name (<code>Agent Link plugin add opencode-acme-auth</code>), by a version (<code>…@0.2.0</code>), from git, or from a folder.</li>
+      <li><b>Search.</b> The search on <span class="ui">Plugins</span> asks npm for <code>&lt;query&gt; opencode</code>. It shows a package whose name or keywords hold <code>opencode</code> and one of <code>auth</code>, <code>plugin</code> or <code>provider</code>. Keywords like <code>["opencode", "opencode-plugin", "&lt;vendor&gt;"]</code> do it. It also asks for <code>keywords:pi-package &lt;query&gt;</code> and shows a pi package whose name or keywords mention <code>auth</code> or <code>provider</code>.</li>
+      <li><b>README.</b> A plugin’s page in Agent Link shows its npm README. Say what it signs in to, how, where the sign-in is kept, and which models it has.</li>
+      <li><b>The list.</b> <span class="ui">Plugins</span> suggests the plugins in <a href="https://github.com/Agent Link-community/plugins/blob/main/registry.json"><code>registry.json</code></a> of the community repository. Agent Link fetches it at most every six hours and builds in a copy for when it can’t. To be listed, open a pull request adding an entry:
+        <div class="code">
+          <span class="lang">registry.json</span>
+          <pre>{ <span class="s">"package"</span>: <span class="s">"opencode-acme-auth"</span>, <span class="s">"name"</span>: <span class="s">"Acme"</span>, <span class="s">"icon"</span>: <span class="s">"https://acme.example/icon.svg"</span>,
+  <span class="s">"providers"</span>: [<span class="s">"acme"</span>],
+  <span class="s">"summary"</span>: { <span class="s">"en"</span>: <span class="s">"Your Acme Coding Plan."</span>, <span class="s">"zh"</span>: <span class="s">"使用你的 Acme Coding Plan。"</span> } }</pre>
+        </div>
+        A middleware’s entry has <code>"kind": "middleware"</code> and no <code>providers</code>; it is listed under <span class="ui">Gateway middleware</span>. The other kinds are listed the same way: <code>"kind": "tools"</code> under <span class="ui">Tools for agents</span>, <code>"kind": "page"</code> under <span class="ui">Pages</span> and <code>"kind": "agent"</code> under <span class="ui">Agents</span>. <code>AGENT_LINK_PLUGIN_MARKET=&lt;url&gt;</code> points Agent Link at another list, which is useful to check yours, and <code>off</code> keeps to the built-in copy.</li>
+      <li><b>A GitHub topic.</b> A repository tagged <code>Agent Link-plugin</code> on GitHub is shown under <span class="ui">Plugins → Discover → Unofficial, on GitHub</span>, the most starred first, marked as reviewed by no one. Keep <code>package.json</code> at the repository’s root. Published to npm with <code>repository</code> naming the repository, it is installed from npm; otherwise from the repository as it stands, so the file it loads must be committed: one whose <code>dist</code> is built only to publish is left out. Forks, archived repositories and Agent Link-community’s own are left out too. Agent Link asks GitHub at most every ten minutes, so a repository shows within minutes of being tagged. Its card shows the icon <code>"Agent Link": { "icon": "…" }</code> in its <code>package.json</code> gives, else a puzzle piece.</li>
+      <li><b>The community packages.</b> To contribute one to <a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a>:
+        <ul>
+          <li>Put it under <code>packages/&lt;name&gt;</code>, named <code>@Agent Link-community/opencode-&lt;name&gt;-auth</code> (a provider) , <code>@Agent Link-community/middleware-&lt;name&gt;</code> (middleware or a routing strategy), <code>@Agent Link-community/tools-&lt;name&gt;</code> (tools), <code>@Agent Link-community/page-&lt;name&gt;</code> (a page) or <code>@Agent Link-community/agent-&lt;name&gt;</code> (an agent), with no runtime dependencies unless one is really needed.</li>
+          <li>Pushing a version bump to <code>main</code> publishes it.</li>
+          <li>These packages update by themselves in every Agent Link.</li>
+        </ul></li>
+    </ul>
+
+    <h2 id="gateway-request"><a class="anchor" href="#gateway-request">Async gateway request hooks</a></h2>
+    <p>A plugin can await I/O before an agent request is routed, for example to recall project context. Declare <code>"Agent Link": { "hooks": "./hooks.js" }</code> in package.json, or add a <code>*.hooks.js</code> / <code>.mjs</code> / <code>.ts</code> / <code>.mts</code> file (Bun runs TypeScript without a build step). Export a named async <code>onRequest(body, ctx)</code>. A gateway-only package needs no OpenCode main/exports.</p>
+    <p>Optional async <code>onResponse(reply, ctx)</code> receives a best-effort completion notification after output finishes. It cannot change the reply and never holds the live stream. Client tool declarations and tool loops stay with the client.</p>
+<p>It runs in Bun once per agent request, before the JS gateway middleware, for every provider, Codex's own ChatGPT sign-in included. body is the agent API object. ctx contains <code>protocol</code>, <code>model</code>, <code>stream</code>, <code>path</code>, <code>agent</code>, <code>session</code>, <code>cwd</code>, <code>query</code>, <code>options</code> and <code>signal</code>. The query is the latest user text, excluding tool results and images. Missing identity fields are empty; authorization headers are never included.</p>
+<p>Return an object to replace the request, or undefined to keep it. A hook that changes the model, streaming, the client's tools or its tool choice is rolled back, as a failure, and gets no <code>onResponse</code> for that request. Each hook receives a clone; mutations from failed or undefined hooks are discarded. Successful changes follow enabled plugin order. Each hook defaults to one second; <code>gatewayTimeoutMs</code> accepts integers from 100 to 10000 milliseconds. The chain sums budgets, clamped to 2–10 seconds; startup plus RPC is bounded to 11 seconds. Settings → Plugins offers JSON options and call, latency, failure and outcome diagnostics. <code>ctx.report(code, bytes)</code> accepts ready/empty/unbound/unauthorized/unavailable/invalid/skipped and byte counts only. Statistics reset on reload and retain no private text. Use <code>ctx.signal</code> with fetch. Errors, invalid returns, timeouts and a host busy starting keep the request. Bun plugins have host privileges; install trusted code.</p>
+<p>Install with <code>Agent Link plugin add ./my-plugin</code>; save options with <code>Agent Link plugin options my-plugin '&lbrace;"serverUrl":"http://127.0.0.1:8000"&rbrace;'</code>. On/off and options changes reload the host; source-only edits need a configuration reload. Internal title/classifier requests skip the hook.</p>
+
+    <h2 id="middleware"><a class="anchor" href="#middleware">Gateway middleware</a></h2>
+    <p>A plugin can also be <em>gateway middleware</em>: code that Agent Link’s gateway runs on every request an agent sends it, before the request is routed, and on the reply on its way back. It can give a model another name, add to the system prompt, turn a request away, change or hide what the model says, or keep its own count of what goes through. It works with every provider, a plugin’s or not.</p>
+    <div class="code">
+      <span class="lang">alias.middleware.js</span>
+      <button class="copy" data-copy="mw-ex">Copy</button>
+      <pre id="mw-ex"><span class="c">// alias.middleware.js</span>
+<span class="k">export const</span> events = [<span class="s">"message_start"</span>]
+
+<span class="k">export function</span> onRequest(body, ctx) {
+  ctx.state.asked = body.model
+  <span class="k">if</span> (body.model === <span class="s">"fast"</span>) body.model = <span class="s">"deepseek/deepseek-chat"</span>
+  <span class="k">if</span> ((ctx.options.blocked ?? []).includes(body.model)) <span class="k">return</span> ctx.reject(403, <span class="s">"not this model"</span>)
+  <span class="k">return</span> body
+}
+
+<span class="k">export function</span> onEvent(ev, ctx) {
+  ev.message.model = ctx.state.asked  <span class="c">// the agent sees the name it asked for</span>
+  <span class="k">return</span> ev
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-cli">Copy</button>
+      <pre id="mw-cli">Agent Link plugin add ./alias.middleware.js   <span class="c"># or a package whose package.json has "Agent Link": { "middleware": "./mw.js" }</span></pre>
+    </div>
+    <h3 id="middleware-community"><a class="anchor" href="#middleware-community">Ready-made middleware</a></h3>
+    <p>The community repository has middleware ready to add, most of it what <a href="https://github.com/QuantumNous/new-api">New API</a> does for its channels, taking the same JSON. They are under <span class="ui">Plugins → Discover → Gateway middleware</span>, and every card there says whether it is a provider or middleware.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Package</th><th>What it does</th></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/param-override"><code>param-override</code></a></td><td>New API’s <code>param_override</code>: set, delete, move, copy or rewrite fields of the request, for some models or under conditions, or turn a request away. A <code>param_override</code> copied from New API works unchanged.</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/model-map"><code>model-map</code></a></td><td>New API’s <code>model_mapping</code>: send a model under another name, by name or <code>/pattern/</code>. Replies name the model the agent asked for.</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/system-prompt"><code>system-prompt</code></a></td><td>A system prompt of yours on every request, or only some agents’ or models’, in each API’s own place. A request with its own keeps it unless <code>override</code> is on.</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/word-guard"><code>word-guard</code></a></td><td>New API’s sensitive-word filter: turn away or mask words and patterns in what users send, and in replies if you like.</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/think-tags"><code>think-tags</code></a></td><td>Take a <code>&lt;think&gt;…&lt;/think&gt;</code> block out of the start of a reply’s text, or put a Chat reply’s <code>reasoning_content</code> into it (New API’s <code>thinking_to_content</code>).</td></tr>
+      <tr><td><a href="https://github.com/Agent Link-community/plugins/tree/main/packages/antigravity-cloak"><code>antigravity-cloak</code></a></td><td>Breaks up the words Antigravity turns Claude Code’s and the Agent SDK’s system prompts away for, in what it sends Antigravity only. Other providers are sent the prompt as it was.</td></tr>
+    </table></div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="mw-add">Copy</button>
+      <pre id="mw-add">Agent Link plugin add @Agent Link-community/middleware-model-map
+Agent Link plugin options model-map '{"mapping": {"fast": "deepseek/deepseek-chat"}}'</pre>
+    </div>
+    <h3 id="middleware-options"><a class="anchor" href="#middleware-options">Options</a></h3>
+    <p>A middleware reads its settings from <code>ctx.options</code>, which are its entry’s <code>options</code> in <code>plugins.json</code>. Set them in <span class="ui">Plugins → Installed</span> with the middleware’s <span class="ui">Options</span> button, which edits them as JSON in its row, or with <code>Agent Link plugin options &lt;name&gt; '&lt;json&gt;'</code> (<code>off</code> clears them). The name can be the package’s, its spec, or its short name: <code>model-map</code> for <code>@Agent Link-community/middleware-model-map</code>. They apply from the next request on. A package can suggest options with <code>"Agent Link": { "options": { … } }</code> in its <code>package.json</code>: the editor starts from those when none are set, but a middleware runs with no options until you save some.</p>
+    <h3>How it runs</h3>
+    <p>Middleware isn’t run on Bun. It runs inside the gateway’s own process, in <a href="https://github.com/Calcium-Ion/moejs">moejs</a>, a JavaScript engine written in Go, because a reply streams thousands of events and each one waits for it. A hook on one event costs about a microsecond; a round trip to Bun would cost tens. Each middleware is compiled once, and each request gets a runtime of its own, so requests run in parallel and a request’s hooks share <code>ctx.state</code>.</p>
+    <ul>
+      <li><b>Declaring it.</b> <code>"Agent Link": { "middleware": "./mw.js" }</code> in <code>package.json</code>, or a single file named <code>*.middleware.js</code> (or <code>.mjs</code>). A package with no <code>main</code> and no <code>exports</code> is only middleware, and the plugin host leaves it alone; one with both is a provider plugin and middleware at once.</li>
+      <li><b>Imports.</b> Only files inside the plugin, by relative path. There is no <code>node_modules</code> here: bundle what you import into the file.</li>
+      <li><b>What it has.</b> Standard JavaScript and <code>console.log</code> (into Agent Link’s log, at most 60 lines a minute). There are no timers, no <code>fetch</code> and no Node APIs. A hook may be <code>async</code>, but there is nothing for it to wait on.</li>
+      <li><b>Changes.</b> Agent Link looks at the files and <code>plugins.json</code> once a second, and loads a middleware again when they changed.</li>
+    </ul>
+    <h3>The hooks</h3>
+    <p>Each is a named export or a member of <code>export default { … }</code>. Bodies and events are in the agent’s own API (<code>ctx.protocol</code>), not the provider’s. Return the object to send on, or nothing to send it on as it was.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Hook</th><th>Is given</th><th>Returns</th></tr>
+      <tr><td><code>onRequest(body, ctx)</code></td><td>The request body, before routing: a new <code>model</code> routes it elsewhere.</td><td>The body, or nothing. <code>ctx.reject(status, message)</code> turns the request away with that error, in the agent’s API (403 when no status is given).</td></tr>
+      <tr><td><code>onProvider(body, ctx)</code></td><td>The request body as it is about to go to one provider; <code>ctx.provider</code> has its <code>id</code>, <code>name</code>, <code>account</code> (the subscription’s kind, such as <code>claude</code> or <code>antigravity</code>; absent for an API key) and <code>model</code>. It is called again for each provider a request is tried on, each time with the body <code>onRequest</code> left, so a change for one provider reaches no other.</td><td>The body, or nothing. The request is routed by now: it can’t be turned away or sent elsewhere.</td></tr>
+      <tr><td><code>onEvent(event, ctx)</code></td><td>Each event of a streamed reply: its <code>data:</code> JSON.</td><td>The event, nothing, or <code>null</code> to leave the event out.</td></tr>
+      <tr><td><code>onResponse(body, ctx)</code></td><td>A reply that isn’t streamed, whole; <code>ctx.status</code> is its status.</td><td>The body, or nothing.</td></tr>
+    </table></div>
+    <p><code>export const events = ["content_block_delta"]</code> calls <code>onEvent</code> only for events of those names (Anthropic Messages and Responses name theirs). Chat Completions and Gemini events have no name, so leave <code>events</code> out for them. An event holds a piece of the reply, so a word can be split over two events. A <code>data: [DONE]</code> line and comments pass by unseen. A compressed reply passes as it is.</p>
+    <p><code>ctx</code> has <code>protocol</code> (<code>anthropic</code>, <code>chat</code>, <code>responses</code> or <code>gemini</code>), <code>model</code> and <code>stream</code> as the agent asked, <code>path</code>, <code>agent</code> when Agent Link knows it, <code>options</code> (the plugin’s <a href="#middleware-options">options</a>) and <code>state</code>, an object of the request’s own.</p>
+    <h3>When a hook fails</h3>
+    <p>A hook has 250 ms for a request, a provider’s try or a whole reply and 50 ms for an event; loading has a second. A hook that throws, runs out of time or returns something else goes on as if it weren’t there: the request or the event is sent as it was. Settings → Plugins shows each middleware’s hooks, how many calls it had, the average time each took and how many failed, with the last error. The hooks see what the agent sent and gets back, before Agent Link’s redaction on the way out and after it on the way back. Agent Link’s own requests (thread titles, the router’s classifier) don’t go through middleware.</p>
+
+    <h3 id="gateway-points"><a class="anchor" href="#gateway-points">Routings and usage rows</a></h3>
+    <p>The same module can also export <code>strategies</code> and <code>onUsage</code>. Such a file can be named <code>*.gateway.js</code>, and a package can say <code>"Agent Link": { "gateway": "./gw.js" }</code>.</p>
+    <ul>
+      <li><b>Routings.</b> Each <code>strategies[name]</code> is a routing named <code>&lt;plugin&gt;/&lt;name&gt;</code> (the package’s short name, or the file’s name without <code>.gateway.js</code>), offered in every routing picker of a provider, a pool and a group while the plugin is on. It is a function <code>(pool, seats, options)</code>, or an object with <code>order</code>, and returns the order to try the seats in, as indexes. Each seat has <code>key</code>, <code>account</code>, <code>known</code>, <code>learns</code>, <code>used</code>, <code>soon</code> (when its windows renew, in ms), <code>pace</code>, <code>weight</code>, <code>resting</code> and <code>tokens</code> (what it was sent lately). It has 20 ms; if it throws, takes longer or returns something else, the seats are tried in their listed order. Off, a provider or group routed by it is too.</li>
+      <li><b>Usage.</b> <code>onUsage(row, options)</code> gets each request’s usage row after it ends: provider, account and key, model, tokens, <code>ms</code>, <code>ttftMs</code>, status, error type and cost, never a body, prompt or error text. It runs on its own, so a request never waits for it; rows that come while it is busy past a queue are dropped and counted. It has 250 ms.</li>
+    </ul>
+    <div class="code">
+      <span class="lang">spread.gateway.js</span>
+      <button class="copy" data-copy="gp-ex">Copy</button>
+      <pre id="gp-ex"><span class="c">// spread.gateway.js</span>
+<span class="k">export const</span> strategies = {
+  <span class="s">"fewest-tokens"</span>: (pool, seats) =&gt;
+    seats.map((_, i) =&gt; i).sort((a, b) =&gt;
+      (seats[a].resting - seats[b].resting) || (seats[a].tokens - seats[b].tokens)),
+}
+
+<span class="k">let</span> slow = 0
+
+<span class="k">export function</span> onUsage(row, options) {
+  <span class="k">if</span> (row.ms &gt; (options.slowMs ?? 30000)) {
+    slow++
+    console.log(`slow: ${row.provider} ${row.model} ${row.ms} ms (${slow} so far)`)
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="gp-cli">Copy</button>
+      <pre id="gp-cli">Agent Link plugin add ./spread.gateway.js
+Agent Link group set fast routing=spread/fewest-tokens</pre>
+    </div>
+
+    <h2 id="tools"><a class="anchor" href="#tools">Tools for every agent</a></h2>
+    <p>A plugin can give tools, with OpenCode’s <code>tool</code> hook, and Agent Link offers them to every agent, not only OpenCode: they are an MCP server of Agent Link’s own at <code>/mcp/Agent Link/tools</code> (Streamable HTTP). Add that address to any agent that takes an MCP server, and its model can call every tool your plugins that are on give. Each is named <code>&lt;plugin&gt;_&lt;tool&gt;</code>, the plugin’s short name first: <code>weather-tools_now</code> below.</p>
+    <div class="code">
+      <span class="lang">index.js</span>
+      <button class="copy" data-copy="tools-ex">Copy</button>
+      <pre id="tools-ex"><span class="k">import</span> { tool } <span class="k">from</span> <span class="s">"@opencode-ai/plugin"</span>
+
+<span class="k">export const</span> WeatherTools = <span class="k">async</span> () =&gt; ({
+  tool: {
+    now: tool({
+      description: <span class="s">"The weather now in a city."</span>,
+      args: { city: tool.schema.string().describe(<span class="s">"A city, e.g. Berlin"</span>) },
+      <span class="k">async</span> execute({ city }, ctx) {
+        <span class="k">const</span> r = <span class="k">await</span> fetch(<span class="s">`https://wttr.in/${encodeURIComponent(city)}?format=3`</span>, { signal: ctx.abort })
+        <span class="k">return</span> <span class="k">await</span> r.text()  <span class="c">// text; an object is sent as its JSON</span>
+      },
+    }),
+  },
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="tools-cli">Copy</button>
+      <pre id="tools-cli">Agent Link plugin add ./weather-tools
+claude mcp add --transport http Agent Link-tools http://127.0.0.1:7500/mcp/Agent Link/tools   <span class="c"># Claude Code; other agents take the same address</span></pre>
+    </div>
+    <p>Settings → Plugins lists each plugin’s tools by these names and copies the server’s address. <code>args</code> is a zod shape (<code>tool.schema</code> is zod), a zod object or a JSON Schema object. The agent is shown it, and Agent Link checks a call’s arguments against it before <code>execute</code> runs; a wrong argument is answered as an error naming it. <code>ctx</code> is OpenCode’s, with <code>agent</code> the agent that called. A tool has 55 seconds, and <code>ctx.abort</code> fires when they are up.</p>
+    <p>The built-in plugin <span class="ui">Plugin tools</span> serves the server. It stays on while a plugin that is on gives a tool; off, no tool is listed and a call says so. A call made with a gateway key counts against that key’s limits. A tool runs in the plugin host with your rights, as a provider plugin does, and its answer goes only to the agent that called it.</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">Agent plugins</a></h2>
+    <p>A plugin can also add an <em>agent</em>: one Agent Link has no setup of its own for. It says where the agent keeps its model and what else to write there for the agent to use Agent Link’s gateway. The agent is then on the <span class="ui">Agents</span> page like Agent Link’s own: pick one of Agent Link’s models in its row and Agent Link writes it into the agent’s config, with the gateway’s address and a key of the agent’s own; switch it off and everything goes back to how the user had it. The example below adds <a href="https://aider.chat">Aider</a>.</p>
+    <div class="code">
+      <span class="lang">agent.js</span>
+      <button class="copy" data-copy="ag-ex">Copy</button>
+      <pre id="ag-ex"><span class="c">// agent.js, named by "Agent Link": { "agent": "./agent.js" } in package.json</span>
+<span class="k">export const</span> agent = {
+  id: <span class="s">"aider"</span>, name: <span class="s">"Aider"</span>, bin: <span class="s">"aider"</span>,
+  config: <span class="s">"~/.aider.conf.yml"</span>,  <span class="c">// the file Agent Link edits</span>
+  model: <span class="s">"model"</span>,                 <span class="c">// the key of the model in it</span>
+  prefix: <span class="s">"openai/"</span>,              <span class="c">// written before Agent Link's model id</span>
+  ua: [<span class="s">"aider"</span>, <span class="s">"litellm"</span>],
+  notice: <span class="s">"Aider reads its settings when it starts: restart it to use the new model."</span>,
+}
+
+<span class="k">export function</span> connect({ gateway, model }) {
+  <span class="k">return</span> {
+    <span class="s">"openai-api-base"</span>: gateway.v1,
+    <span class="s">"openai-api-key"</span>: gateway.key,
+    <span class="s">"show-model-warnings"</span>: <span class="k">false</span>,
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">shell</span>
+      <button class="copy" data-copy="ag-cli">Copy</button>
+      <pre id="ag-cli">Agent Link plugin add ./agent-aider   <span class="c"># or a single *.agent.js file</span></pre>
+    </div>
+    <h3>The agent export</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Field</th><th>What it says</th></tr>
+      <tr><td><code>id</code></td><td>Its id, as the Agents page, usage and the CLI name it: lower-case letters, digits, <code>.</code>, <code>_</code> and <code>-</code>. One of Agent Link’s own agents’ ids (<code>codex</code>, <code>claude</code>, …) is refused: a plugin adds an agent, it doesn’t replace one.</td></tr>
+      <tr><td><code>name</code></td><td>What the page calls it. The id when left out.</td></tr>
+      <tr><td><code>config</code></td><td>The file Agent Link edits. <code>~</code> and <code>$VAR</code> are expanded. It is made when it isn’t there.</td></tr>
+      <tr><td><code>format</code></td><td><code>json</code>, <code>yaml</code> or <code>env</code>, when the file’s name doesn’t say it (<code>.json</code>/<code>.jsonc</code>, <code>.yaml</code>/<code>.yml</code>, <code>.env</code>). TOML isn’t supported yet.</td></tr>
+      <tr><td><code>model</code></td><td>The key of the model in the file, as a dotted path for JSON and YAML (<code>llm.model</code>). Leave it out for an agent whose model is picked in the agent itself, among the models <code>connect</code> writes (Raycast): the row is then a switch with no model picker, and <code>connect</code>, which such a plugin must have, is called without <code>model</code>.</td></tr>
+      <tr><td><code>prefix</code></td><td>Written before Agent Link’s model id: <code>openai/</code> for an agent that reaches OpenAI-compatible endpoints through LiteLLM. The id itself is <code>&lt;provider&gt;/&lt;model&gt;</code>, as the gateway takes it.</td></tr>
+      <tr><td><code>bin</code>, <code>dir</code></td><td>The command on <code>PATH</code> and the folder that say the agent is installed.</td></tr>
+      <tr><td><code>ua</code></td><td>Words of the agent’s User-Agent, to name its requests in Usage when they come without its key.</td></tr>
+      <tr><td><code>icon</code></td><td>A picture for its row: an icon name, an <code>https://</code> or <code>data:</code> URL. The plugin’s own icon, else a generic one, when left out.</td></tr>
+      <tr><td><code>notice</code></td><td>Said after its model is changed, as for Agent Link’s own agents.</td></tr>
+      <tr><td><code>library</code></td><td>Where the agent reads what the <span class="ui">Library</span> gives: <code>instructions</code> (a Markdown file it reads before every conversation), <code>mcp</code> (its MCP servers file) with <code>mcpFormat</code>, the agent whose file it is shaped like (<code>alma</code>, <code>antigravity</code>, <code>claude</code>, <code>cline</code>, <code>codex</code>, <code>commandcode</code>, <code>copilot</code>, <code>crush</code>, <code>cursor</code>, <code>devin</code>, <code>gemini</code>, <code>goose</code>, <code>grok</code>, <code>hermes</code>, <code>kimi</code>, <code>omp</code>, <code>opencode</code>, <code>zed</code>; <code>claude</code> is <code>{"mcpServers": {…}}</code>), and <code>skills</code> (a folder of <code>SKILL.md</code> folders). Each is optional, with <code>~</code> and <code>$VAR</code> expanded: <code>library: { instructions: "~/.toy/AGENTS.md", mcp: "~/.toy/mcp.json", mcpFormat: "claude", skills: "~/.toy/skills" }</code>. Without it the agent is given nothing from the Library, and giving it an item is refused, naming the key its plugin would set.</td></tr>
+    </table></div>
+    <h3>connect</h3>
+    <p><code>connect(input)</code> returns the other keys to write beside the model, by key path, each with its value; it may be <code>async</code>. It is given <code>gateway</code> (<code>url</code>, <code>v1</code> — the URL ending in <code>/v1</code> — and <code>key</code>, the agent’s own key, which counts its requests under its id), <code>model</code> (<code>id</code>, <code>name</code>, <code>context</code>, <code>output</code>, <code>images</code>, <code>efforts</code>), <code>models</code> (every model Agent Link offers the agent, the same way) and <code>agent</code> (<code>id</code>, <code>config</code>). A plugin without <code>connect</code> writes only the model. It is called again when Agent Link’s models change, so a list it writes stays current.</p>
+    <h3>What Agent Link does with it</h3>
+    <ul>
+      <li><b>Writing.</b> Each key is set in place, the user’s comments and other keys kept. Before the first write, what each key held is kept aside, typed (a number stays a number).</li>
+      <li><b>The way back.</b> Picking the agent’s own model again, or switching it off, puts every key back as it was and takes out the keys that weren’t there. The file is never written over whole.</li>
+      <li><b>Connected or not.</b> The row says connected while the key that holds Agent Link’s key still holds it. A key changed by hand afterwards is said in the row, as for Agent Link’s own agents.</li>
+      <li><b>How it runs.</b> As <a href="#middleware">middleware</a> does: in moejs, in Agent Link’s own process, with imports inside the plugin only, no Node APIs and <code>console.log</code> into Agent Link’s log. Loading and <code>connect</code> each have a second. A plugin whose module doesn’t load, or whose <code>connect</code> throws, says why in its row on the Plugins page and writes nothing.</li>
+      <li><b>The Library.</b> With <code>library</code>, the agent is one of the Library’s agents: its instructions go between Agent Link’s marker lines in the file, its MCP servers into the file beside the user’s own (whose other fields are kept), and its skills linked or copied into the folder. Taking one off takes away only what Agent Link wrote there, and what a file held before is kept in Agent Link’s backups. An <code>mcpFormat</code> that isn’t one of the list, or an <code>mcp</code> without one, keeps the plugin from loading.</li>
+      <li><b>Declaring it.</b> <code>"Agent Link": { "agent": "./agent.js" }</code> in <code>package.json</code>, or a single file named <code>*.agent.js</code> (or <code>.mjs</code>). A package can be a provider, middleware and an agent at once. In the plugin market an agent’s entry has <code>"kind": "agent"</code> and is listed under <span class="ui">Agents</span>; a community one is named <code>@Agent Link-community/agent-&lt;name&gt;</code>.</li>
+    </ul>
+
+    <h2 id="pages"><a class="anchor" href="#pages">Pages in the window</a></h2>
+    <p>A plugin can add a page of its own to Agent Link’s window. Once it is on, the page has a tab in the sidebar’s <span class="ui">Plugins</span> group, after Agent Link’s own pages. The page is plain HTML, CSS and JavaScript in the plugin’s folder, and needs no Bun and no build step. The example below shows today’s usage.</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-pkg">Copy</button>
+      <pre id="pg-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-usage-glance"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"page"</span>: {
+      <span class="s">"title"</span>: <span class="s">"Usage glance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"icon"</span>: <span class="s">"page/icon.svg"</span>,
+      <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"用量速览"</span>, <span class="s">"ja"</span>: <span class="s">"使用量の概要"</span> }
+    },
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/index.html</span>
+      <button class="copy" data-copy="pg-html">Copy</button>
+      <pre id="pg-html">&lt;!doctype html&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;
+&lt;script src="_Agent Link/bridge.js"&gt;&lt;/script&gt;   <span class="c">&lt;!-- served beside every page --&gt;</span>
+&lt;script src="app.js" defer&gt;&lt;/script&gt;
+&lt;p id="calls"&gt;…&lt;/p&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-js">Copy</button>
+      <pre id="pg-js"><span class="k">await</span> Agent Link.ready                                  <span class="c">// the window's theme, painted</span>
+<span class="k">const</span> s = <span class="k">await</span> Agent Link.read(<span class="s">"usage:summary"</span>, { period: <span class="s">"today"</span> })
+document.getElementById(<span class="s">"calls"</span>).textContent = `${s.calls} calls`
+<span class="k">const</span> opts = <span class="k">await</span> Agent Link.options.get()            <span class="c">// this plugin's own options</span>
+<span class="k">await</span> Agent Link.options.set({ ...opts, hideCost: <span class="k">true</span> })</pre>
+    </div>
+    <p>The Plugins page shows the page, and what it may read, on the plugin’s row before it is turned on. <code>page.file</code> and <code>page.icon</code> are paths inside the plugin. The page’s files are what sits in <code>file</code>’s folder; a path out of it, or a link that leads out, isn’t served. A package can be a page and a provider, middleware or an agent too. A plugin that is only a page doesn’t start the plugin host. <code>page.titles</code> (and a panel’s <code>titles</code>) names the tab in other languages, by language code (<code>zh</code>, <code>zh-TW</code>, <code>ja</code>, <code>de</code>); <code>title</code> is used for any other.</p>
+    <p>What the page leaves unstyled already looks like Agent Link: the bridge adds a stylesheet for the font, colours, headings, buttons, fields and tables, with no weight (<code>:where()</code>), so any rule of the page’s own wins. Use the <code>--Agent Link-*</code> variables to match the window in your own styles.</p>
+    <h3>What the page can ask</h3>
+    <div class="table-wrap"><table>
+      <tr><th>Field / call</th><th>What it gives</th></tr>
+      <tr><td><code>Agent Link.ready</code></td><td>A promise of the window’s theme. It resolves once the window has answered. Until then the page has said nothing to Agent Link, and a page that doesn’t say it in 10 seconds is shown as not answering.</td></tr>
+      <tr><td><code>Agent Link.theme, Agent Link.onTheme(fn)</code></td><td><code>{ dark, lang, tokens }</code>. The bridge also sets <code>data-theme</code>, <code>lang</code>, <code>color-scheme</code> and <code>--Agent Link-bg</code>, <code>--Agent Link-fg</code>, <code>--Agent Link-accent</code> and so on on <code>&lt;html&gt;</code>, and again on each change.</td></tr>
+      <tr><td><code>Agent Link.options.get(), .set(o)</code></td><td>The plugin’s own options in plugins.json, never another plugin’s. <code>set</code> takes an object and answers with the options saved. It can be called at most once a second.</td></tr>
+      <tr><td><code>Agent Link.read(name, params)</code></td><td>A read that <code>Agent Link.permissions</code> declares. Anything else is refused, by the window and again by Agent Link. <code>usage:summary</code> (<code>period</code>: <code>today</code>, <code>7d</code> or <code>30d</code>) gives calls, errors, tokens and cost, with the top 20 models. <code>providers:list</code> gives each provider’s id and name. No read gives keys, accounts, sign-ins or request bodies.</td></tr>
+    </table></div>
+    <h3>What the page can’t do</h3>
+    <ul>
+      <li>The page runs in a frame sandboxed to scripts alone (<code>sandbox="allow-scripts"</code>, and the same in its <code>Content-Security-Policy</code>), in an origin of its own. It can’t reach the window, Agent Link’s cookie or the window’s storage.</li>
+      <li>Its policy allows its own files and nothing else: <code>connect-src 'none'</code>, so no <code>fetch</code>, WebSocket or beacon, and no forms or frames. Scripts must be files (<code>&lt;script src&gt;</code>), not inline. Inline styles and <code>data:</code> pictures are fine.</li>
+      <li>Agent Link’s API refuses any request a frame like this one can make (<code>Origin: null</code>, a frame or another site’s request), so it is closed to the page even without the policy. Its files are served at <code>/_Agent Link/plugin/&lt;token&gt;/</code>, a token that changes each time Agent Link starts.</li>
+      <li>A page can still send itself to another site, which then holds its frame. That is why reads give nothing secret. Treat what a page can read as public.</li>
+      <li>An error the page doesn’t catch shows <span class="ui">This page stopped working</span> in its place, with <span class="ui">Try again</span>. Its own scripts’ errors reach it as “Script error.”, so look in the window’s console for the rest.</li>
+    </ul>
+
+    <h3 id="panels"><a class="anchor" href="#panels">Panels in Agent Link’s own pages</a></h3>
+    <p>A plugin can also put panels into the pages Agent Link draws itself. Each one is a small page of its own in the plugin’s folder, with the same bridge, reads, options and sandbox as a page. It sits in a card under a heading with its title, as tall as it draws.</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pn-pkg">Copy</button>
+      <pre id="pn-pkg">{
+  <span class="s">"name"</span>: <span class="s">"Agent Link-provider-notes"</span>,
+  <span class="s">"version"</span>: <span class="s">"0.1.0"</span>,
+  <span class="s">"Agent Link"</span>: {
+    <span class="s">"panels"</span>: [
+      { <span class="s">"slot"</span>: <span class="s">"provider"</span>, <span class="s">"file"</span>: <span class="s">"ui/notes.html"</span>, <span class="s">"title"</span>: <span class="s">"Notes"</span> },
+      { <span class="s">"slot"</span>: <span class="s">"usage"</span>, <span class="s">"file"</span>: <span class="s">"ui/spend.html"</span>, <span class="s">"title"</span>: <span class="s">"Top models today"</span> }
+    ],
+    <span class="s">"permissions"</span>: [<span class="s">"usage:summary"</span>]
+  }
+}</pre>
+    </div>
+    <div class="table-wrap"><table>
+      <tr><th><code>slot</code></th><th>Where the panel goes</th><th><code>Agent Link.context</code></th></tr>
+      <tr><td><code>agents</code></td><td>The end of the Agents page</td><td><code>{}</code></td></tr>
+      <tr><td><code>usage</code></td><td>The end of Usage’s Overview</td><td><code>{}</code></td></tr>
+      <tr><td><code>settings</code></td><td>A <span class="ui">Plugins</span> tab in Settings, there only while a plugin has a panel in it</td><td><code>{}</code></td></tr>
+      <tr><td><code>provider</code></td><td>Each saved provider’s editor</td><td><code>{ provider: { id, name } }</code></td></tr>
+    </table></div>
+    <p>A plugin has at most 8 panels. A panel’s height follows its <code>&lt;html&gt;</code> (up to 2400px), so let the page size itself and don’t give <code>html</code> or <code>body</code> a fixed height. A panel that throws, or doesn’t answer in 10 seconds, shows <span class="ui">{name} stopped working</span> with <span class="ui">Try again</span> in its own place; the page around it and the panels beside it go on.</p>
+    <h3 id="replaces"><a class="anchor" href="#replaces">Taking a built-in page’s place</a></h3>
+    <p>A page can take the place of one of Agent Link’s own: add <code>"replaces"</code> to <code>Agent Link.page</code>, one of <code>sessions</code>, <code>library</code>, <code>routing</code> or <code>usage</code>. Its tab then stands where the built-in’s was, and links to that page open the plugin’s. When two plugins ask for the same page, the first in the Plugins list takes it and the other is a page of its own. Turn the plugin off and the built-in page is back as it was.</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-replaces">Copy</button>
+      <pre id="pg-replaces"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"My library"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span>, <span class="s">"replaces"</span>: <span class="s">"library"</span> }</pre>
+    </div>
+    <h3 id="actions"><a class="anchor" href="#actions">Items in Agent Link’s menus</a></h3>
+    <p>A plugin with a page can add items to the menus of Agent Link’s rows: a provider’s (right-click it) and an agent’s (its handle, or right-click). They come after Agent Link’s own, named in the window’s language like a page’s title. Picking one opens the plugin’s page and tells it which item, and the row’s id and name, nothing else of it. The page handles it with <code>Agent Link.onAction</code>; an item picked before the page gave its handler waits for it.</p>
+    <div class="code">
+      <span class="lang">package.json</span>
+      <button class="copy" data-copy="pg-actions">Copy</button>
+      <pre id="pg-actions"><span class="s">"page"</span>: { <span class="s">"title"</span>: <span class="s">"Balance"</span>, <span class="s">"file"</span>: <span class="s">"page/index.html"</span> },
+<span class="s">"actions"</span>: [
+  { <span class="s">"id"</span>: <span class="s">"check"</span>, <span class="s">"menu"</span>: <span class="s">"provider"</span>, <span class="s">"title"</span>: <span class="s">"Check balance"</span>, <span class="s">"titles"</span>: { <span class="s">"zh"</span>: <span class="s">"查余额"</span> } }
+]</pre>
+    </div>
+    <div class="code">
+      <span class="lang">page/app.js</span>
+      <button class="copy" data-copy="pg-onaction">Copy</button>
+      <pre id="pg-onaction">Agent Link.onAction(({ id, provider }) =&gt; {
+  <span class="c">// id: "check"; provider: { id, name }</span>
+});</pre>
+    </div>
+    <p><code>menu</code> is <code>provider</code> or <code>agent</code>. An <code>id</code> is lower-case letters, digits and dashes, up to 40. A plugin has at most 8 items, and an item with no <code>title</code> takes its page’s. A plugin without a page adds no items. The Plugins page says which menus a plugin adds to.</p>
+    <h2 id="pi"><a class="anchor" href="#pi">pi packages</a></h2>
+    <p>Agent Link also runs <a href="https://github.com/earendil-works/pi">pi</a>’s packages. A pi extension that registers a provider with <code>pi.registerProvider</code> works in Agent Link as it does in pi, with nothing to change, and is added like any plugin (<code>Agent Link plugin add pi-antigravity</code>).</p>
+    <ul>
+      <li><b>What makes a package pi’s.</b> Its <code>package.json</code> has a <code>pi</code> manifest (<code>"pi": { "extensions": [...] }</code>), the <code>pi-package</code> keyword, or <code>@earendil-works/pi-coding-agent</code> (or the older <code>@mariozechner/pi-coding-agent</code>) among its <code>dependencies</code> or <code>peerDependencies</code>. A single file counts when it imports pi.</li>
+      <li><b>Loading.</b> Agent Link installs pi beside the package and loads it with pi’s own loader, in the same plugin host. The providers it registers become agent-link providers, with the models pi lists for them (an account’s own list when pi can fetch one). Its commands, tools, renderers and event handlers are left alone.</li>
+      <li><b>Signing in.</b> An OAuth login runs as pi runs it: its questions (<code>onPrompt</code>) are asked in Agent Link’s sign-in, its page (<code>onAuth</code>) opens in the browser, and <code>refreshToken</code> renews it. The dialogs a package shows with <code>ctx.ui</code> (<code>select</code>, <code>confirm</code>, <code>input</code>, <code>editor</code>) and the terminal components it gives <code>ctx.ui.custom</code> are asked as Agent Link’s questions too. A provider that takes an API key gets a key field. Each sign-in is an account, so a pi provider can have several.</li>
+      <li><b>pi’s files.</b> pi’s settings, its <code>auth.json</code> (each provider’s first account, as pi keeps it) and the files a package writes are in <code>pi/</code> under Agent Link’s config directory, not the user’s <code>~/.pi</code>, unless <code>PI_CODING_AGENT_DIR</code> is set. Agent Link keeps the accounts in <code>plugin-auth.json</code>, like any plugin’s.</li>
+      <li><b>Requests.</b> A pi provider’s models take Anthropic Messages: the gateway translates what the agent sends, Agent Link streams it through pi, and the answer keeps its thinking, signatures and tool calls. A vendor error is passed on with its status, so failover works as with any plugin.</li>
+      <li><b>Ids.</b> A pi provider’s id follows the same rule as any plugin’s; see <a href="#ids">Provider ids</a>.</li>
+    </ul>
+
+    <h2 id="protocol"><a class="anchor" href="#protocol">The host protocol</a></h2>
+    <p>Writing a plugin doesn’t need this section. It is for people working on Agent Link itself, or debugging the host. Agent Link writes <code>{id, method, params}</code> to the host’s stdin, one per line. The host answers <code>{id, result}</code> or <code>{id, error: {message}}</code>.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Method</th><th>Does</th></tr>
+      <tr><td><code>init</code></td><td>Loads the plugins; runs their <code>config</code> hooks. Every other call waits for it.</td></tr>
+      <tr><td><code>providers</code></td><td>Each provider, its methods, accounts and each account’s models.</td></tr>
+      <tr><td><code>prompt</code>, <code>validate</code></td><td>A method’s next question; an answer checked.</td></tr>
+      <tr><td><code>authorize</code>, <code>callback</code>, <code>apiKey</code></td><td>Signing in.</td></tr>
+      <tr><td><code>load</code></td><td>The loader’s options for an account.</td></tr>
+      <tr><td><code>fetch</code></td><td>One request. It streams <code>{id, event: "head", status, headers}</code>, then <code>{id, event: "chunk", data}</code> (base64), then <code>{id, result: null}</code>. <code>{method: "abort", params: {id}}</code> cancels it.</td></tr>
+      <tr><td><code>usage</code>, <code>check</code></td><td>An account’s usage; an account tried as a request would.</td></tr>
+      <tr><td><code>import</code>, <code>take</code>, <code>signOut</code>, <code>reload</code></td><td>Accounts moved in and out, forgotten, their loaders run again.</td></tr>
+    </table></div>
+    <p>The host also sends events of its own: <code>log</code>, <code>toast</code>, <code>auth</code> (a sign-in saved or refreshed) and <code>signIn</code> (an account’s sign-in state, as above). The source is <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/plugin/host.js"><code>internal/plugin/host.js</code></a>.</p>
+
+    <h2 id="faq"><a class="anchor" href="#faq">FAQ</a></h2>
+    <h3>Does my OpenCode plugin work in Agent Link unchanged?</h3>
+    <p>Yes, as long as it signs in and makes requests through <code>auth</code>, <code>config</code>, <code>provider</code> and <code>chat.headers</code>. What Agent Link adds (<code>auth.usage</code>, <code>auth.refresh</code>, <code>Agent Link.icon</code>, <code>maxConcurrency</code>, <code>free</code>, <code>rate</code>, <code>X-Agent Link-Sign-In</code>) is ignored by OpenCode, so one package serves both.</p>
+    <h3>Does my pi package work in Agent Link?</h3>
+    <p>Yes, if it signs in and serves models through <code>pi.registerProvider</code>. Agent Link uses only the providers it registers; see <a href="#pi">pi packages</a>. Give it the <code>pi-package</code> keyword so the search finds it.</p>
+    <h3>Why is my provider called <code>…-plugin</code>?</h3>
+    <p>Its id is one Agent Link already has. See <a href="#ids">Provider ids</a>.</p>
+    <h3>Some of my helper functions run as plugins.</h3>
+    <p>Every function the entry module exports is called as a plugin. Export only the plugin function, or <code>export default { id, server }</code>.</p>
+    <h3>Can I use npm dependencies?</h3>
+    <p>Yes. They are installed with the plugin, but their install scripts aren’t run. Bun’s <code>fetch</code>, <code>crypto</code>, <code>fs</code> and <code>$</code> cover most needs.</p>
+    <h3>Can my plugin run the vendor’s CLI?</h3>
+    <p>Yes, with Bun’s <code>$</code> or <code>child_process</code>. Several community plugins sign in through the vendor’s own CLI. Expect it to be missing on some machines, and say how to install it in the error.</p>
+    <h3>What does a plugin see of the user’s work?</h3>
+    <p>Everything in the requests it makes: the conversation, the tools and their results. Send it only where the user asked it to go, and don’t log it.</p>
+    <h3>How do I make Agent Link see my edits?</h3>
+    <p>A <code>Agent Link</code> command in a terminal loads the folder as it is now. In the app, turn the plugin off and on in <span class="ui">Plugins</span>.</p>
+
+    <p style="margin-top:48px">Questions, or a plugin to share? Ask on <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>, or open an issue in <a href="https://github.com/Agent Link-community/plugins">Agent Link-community/plugins</a>.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

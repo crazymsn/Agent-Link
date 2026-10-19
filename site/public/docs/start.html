@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get started · Agent Link docs</title>
+<meta name="description" content="How Agent Link fits together and how to set it up: add the providers you have, pick a model for each agent, and optionally route one model over several accounts.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/start">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/start">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/start">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Get started with Agent Link">
+<meta property="og:description" content="Add the providers you have, pick a model for each agent. The setup, step by step.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/start">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/start" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/start" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/start" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Get started</p>
+    <a href="#overview">How it fits together</a>
+    <a href="#providers">1 · Providers</a>
+    <a href="#agents">2 · Agents</a>
+    <a href="#routing">3 · Routing groups</a>
+    <a href="#usage">Usage and profiles</a>
+    <a href="#cli">Terminal</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Guide</p>
+    <h1>Get started</h1>
+    <p class="lede">Agent Link is one place to choose the model each of your agents uses. Add the providers you have, then pick a model per agent; Agent Link writes it into that agent’s own config.</p>
+
+    <p>Behind it is a small gateway on your machine, at <code>127.0.0.1:7500</code>. It speaks the OpenAI, Anthropic and Gemini APIs and translates between them, streaming and tool calls included, so any agent can use any provider’s models: Claude Code on a GPT model from your ChatGPT plan, Codex on DeepSeek, OpenCode on your Claude plan.</p>
+
+    <div class="cards">
+      <div><h3>Providers</h3><p>Where models come from: subscriptions you sign in to, vendors you have an API key for, and your own endpoints. Each model is named <code>provider/model</code>.</p></div>
+      <div><h3>Agents</h3><p>The tools that use them: Claude Code, Codex, Gemini CLI, OpenCode and the rest. One row each, with the model it is set to.</p></div>
+      <div><h3>Gateway</h3><p>The local endpoint every agent is pointed at when you pick a model through Agent Link. It sends each request to whoever serves that model.</p></div>
+      <div><h3>Routing groups</h3><p>Optional. Several models or accounts an agent picks as one, <code>group/&lt;id&gt;</code>, for when one runs out of quota.</p></div>
+    </div>
+
+    <ol class="steps">
+      <li><b>Add providers</b>Sign in to your subscriptions, paste API keys. Once is enough.</li>
+      <li><b>Pick a model for each agent</b>Click the agent’s model, choose one. Agent Link rewrites that agent’s config.</li>
+      <li><b>Start a new session</b>Agents read their config when they start; the next session uses the new model.</li>
+    </ol>
+
+    <h2 id="providers"><a class="anchor" href="#providers">1 · Add your providers</a></h2>
+    <p>Open the <span class="ui">Providers</span> tab and press <span class="ui">＋ Add provider</span>. Pick a tile, or type a vendor’s name to find it.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/add-light.png" width="2080" height="1250" loading="lazy" alt="The Add provider sheet: subscriptions, vendors, relays, what’s on this machine, and custom URLs">
+      <img class="for-dark" src="/img/add-dark.png" width="2080" height="1250" loading="lazy" alt="The Add provider sheet: subscriptions, vendors, relays, what’s on this machine, and custom URLs">
+      <figcaption>Add provider: sign in to a subscription, pick a vendor, or point at any compatible URL.</figcaption>
+    </figure>
+
+    <h3>Subscriptions · sign in, no key</h3>
+    <p>Claude (Pro, Max, Team), ChatGPT (Plus, Pro, Business), Cursor, Grok (SuperGrok), Copilot and Devin. Click the tile and Agent Link opens the vendor’s own sign-in page in your browser; the account shows up as soon as you finish (Copilot gives you a code to enter on GitHub’s page). Subscriptions are added here, in Agent Link, not by logging in inside another agent.</p>
+    <ul>
+      <li><b>More than one account.</b> Click the Claude or ChatGPT tile again to add another; each is listed under the provider, one click from being the one in use.</li>
+      <li><b>Already signed in?</b> An agent you are signed in to on this machine shows up as a provider too, <em>signed in as …</em>.</li>
+      <li><b>Every agent can use it.</b> A subscription’s models are <code>claude/…</code>, <code>codex/…</code>, <code>copilot/…</code> in every other agent’s picker. Claude subscription requests run through the Claude Code installed on this machine, so keep it installed.</li>
+    </ul>
+
+    <h3>Vendors</h3>
+    <p>Anthropic, OpenAI, Google Gemini, DeepSeek, Kimi, Zhipu GLM, MiniMax, Qwen, Mistral, Groq, xAI and more. Pick one, paste the key (<span class="ui">Get a key ↗</span> links to the vendor’s key page), save. Agent Link asks the vendor which models it serves and offers those; open the provider’s row to choose which ones agents see, or <span class="ui">Test</span> it.</p>
+
+    <h3>On this machine</h3>
+    <p>Ollama and LM Studio. No key.</p>
+
+    <h3>Custom · any compatible URL</h3>
+    <p>For anything else: a <span class="ui">Name</span>, an <span class="ui">OpenAI compatible</span> base URL (ending in <code>/v1</code>), an <span class="ui">Anthropic compatible</span> one (the root, what <code>ANTHROPIC_BASE_URL</code> would take), or both, and the key. Give every API the endpoint speaks; each agent uses the one it speaks natively and Agent Link translates for the rest.</p>
+
+    <div class="callout"><b>Already set up providers in Claude Code or Codex?</b> <span class="ui">Import…</span> at the top of the sheet reads Claude Code’s <code>settings.json</code> and Codex’s <code>config.toml</code>, changes nothing in them, and brings over the providers you tick.</div>
+    <p>Keys live in <code>~/.config/Agent Link/providers.json</code>, readable by you alone. Agent Link never reads keys from your shell environment: what you add is what it uses.</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">2 · Pick a model for each agent</a></h2>
+    <p>The <span class="ui">Agents</span> tab has a row for each agent installed or configured on this machine. Agent Link knows Claude Code, Codex, Gemini CLI, OpenCode, MiMo Code, DevEco Code, Pi, Goose, Cursor CLI, Copilot CLI, Crush, DeepSeek Harness, Command Code, omp, OmO, Devin, Hermes Agent, MiniMax Code, Grok Build, ZCode, OpenHanako and Alma.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/agents-light.png" width="2080" height="1256" loading="lazy" alt="The Agents tab: one row per agent with the model it uses, and saved profiles at the bottom">
+      <img class="for-dark" src="/img/agents-dark.png" width="2080" height="1256" loading="lazy" alt="The Agents tab: one row per agent with the model it uses, and saved profiles at the bottom">
+      <figcaption>One row per agent. Pick a model from any provider; profiles switch everything at once.</figcaption>
+    </figure>
+    <ul>
+      <li><b>Click the model</b> to open the picker. Models are grouped: the agent’s own, your routing groups, then each provider you added. Type to filter, or type any model id that is not listed.</li>
+      <li><b>Reasoning effort</b>, where the agent has it (Codex’s <em>effort</em>, Pi’s <em>thinking</em>), is a slider under the list.</li>
+      <li><b>Claude Code through Agent Link</b> can also give its opus, sonnet and haiku tiers models of their own; by default they follow the main model.</li>
+    </ul>
+    <p>Picking a model writes it into the agent’s own config file. Only the keys Agent Link needs change; comments, ordering and indentation survive, and writes are atomic.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Agent</th><th>What a model through Agent Link writes</th></tr>
+      <tr><td>Claude Code</td><td><code>~/.claude/settings.json</code>: <code>ANTHROPIC_BASE_URL</code>, <code>ANTHROPIC_AUTH_TOKEN</code> and the model variables in its <code>env</code> block</td></tr>
+      <tr><td>Codex</td><td><code>~/.codex/config.toml</code>: a <code>[model_providers.Agent Link]</code> table and the model, with the list in <code>Agent Link-models.json</code>. Your ChatGPT sign-in is left alone</td></tr>
+      <tr><td>OpenCode, MiMo Code, DevEco Code, Pi, Crush</td><td>A <code>Agent Link</code> provider entry, and <code>Agent Link/provider/model</code></td></tr>
+      <tr><td>AtomCode</td><td><code>~/.atomcode/config.toml</code>: a <code>Agent Link</code> provider account and one model entry per catalog model</td></tr>
+      <tr><td>Snow CLI</td><td><code>~/.snow/profiles/Agent Link.json</code>: a <code>Agent Link</code> profile, made the active one (Snow App takes it in with "Sync Snow CLI API config")</td></tr>
+      <tr><td>Gemini CLI</td><td><code>GOOGLE_GEMINI_BASE_URL</code> pointed at the gateway, API-key auth, and the model</td></tr>
+    </table></div>
+    <p><b>A running session keeps the model it started with.</b> Agents read their config when they start, so the change applies to the next session. Codex builds its model list at start-up too: restart the Codex app and open <code>codex</code> sessions after a switch.</p>
+    <div class="callout"><b>Paseo, editor extensions and other front-ends</b> that run Claude Code or Codex for you start the same CLI, which reads the same <code>~/.claude</code> or <code>~/.codex</code> config. Set the model once in Agent Link and they get it too, from their next session.</div>
+
+    <h2 id="routing"><a class="anchor" href="#routing">3 · Optional: routing groups</a></h2>
+    <p>With one account per provider you can skip this. It matters once you have several: two ChatGPT accounts, or the same model from a subscription and from a key.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/routing-light.png" width="2080" height="1914" loading="lazy" alt="The Routing tab: four agents sending at once through three routing groups, with a rate-limited provider sitting out">
+      <img class="for-dark" src="/img/routing-dark.png" width="2080" height="1996" loading="lazy" alt="The Routing tab: four agents sending at once through three routing groups, with a rate-limited provider sitting out">
+      <figcaption>Routing groups: several models or accounts behind one name, with smart or ordered fallback.</figcaption>
+    </figure>
+
+    <h3>Several accounts or keys in one provider</h3>
+    <p>Open the provider’s row and tick every account or key to use. <span class="ui">Routing</span> says how requests spread over them: <span class="ui">Smart</span> (the default), <span class="ui">In order</span>, <span class="ui">In turn</span>, <span class="ui">Least used first</span> or <span class="ui">Weekly pace</span>. <span class="ui">Fallback</span> lists models to use instead when the provider is out of quota, rate limited or down.</p>
+
+    <h3>One model over several providers</h3>
+    <p>A group is several models, from one provider or many, that an agent picks as one: <code>group/&lt;id&gt;</code>, under <em>Routing groups</em> in the picker. A model two of your providers serve under the same name becomes a group on its own; <span class="ui">New group</span> in the <span class="ui">Routing</span> tab makes one of any models you like. The first model answers for what the group can do.</p>
+    <div class="callout"><b>Groups you get without doing anything.</b> Add a second provider that serves a model you already have — Claude Opus from your Claude subscription and from Copilot, DeepSeek from its own API and from OpenRouter — and Agent Link makes it a group by itself, <code>group/auto-&lt;model&gt;</code>, over every provider that serves it. The name is matched however each vendor spells it (<code>deepseek/deepseek-chat</code>, <code>deepseek-chat</code>). Pick it for an agent to spread its requests over all of them; <code>Agent Link group rm</code> hides one you don’t want.</div>
+    <div class="table-wrap"><table>
+      <tr><th>Routing</th><th>What goes first</th></tr>
+      <tr><td>Smart <code>smart</code></td><td>The default. Over the members’ accounts and keys together (a group in the group as one, see below): of the subscriptions with quota to spare, the one whose allowance renews soonest. The week decides; an account with five hours and no week (Claude Enterprise) goes by its five hours, so ahead of every week renewing later. Credits with no reset (WorkBuddy’s packages, each ending on its own day) count as renewing when the soonest of those left run out, so the WorkBuddy account whose credits end first goes first. One resting after a failure goes last.</td></tr>
+      <tr><td>In order <code>order</code></td><td>The first model until it can’t answer, then the next.</td></tr>
+      <tr><td>In turn <code>rotate</code></td><td>Each conversation’s next turn goes to the next member’s account or key, spreading the load.</td></tr>
+      <tr><td>Least used <code>usage</code></td><td>The account or key with the most of its allowance left.</td></tr>
+      <tr><td>Weekly pace <code>pace</code></td><td>The account with the most of its week left per hour until it renews — the one with the most to lose at its reset — so less of each member’s week is lost at its reset; an account with five hours and no week (Claude Enterprise) by what its five hours have left per hour until they renew, so almost always first. One at 90% or more waits until the others can’t answer. A key by the tokens sent it lately.</td></tr>
+      <tr><td>By weight <code>weight</code></td><td>Each model takes its share of the requests by the weight set beside it in the group editor (1 to 1000, 1 if unset): one weighing 3 takes three for every one a model weighing 1 takes, spread out rather than in bursts. Each model is tried whole over its own accounts or keys, as its provider routes them, and a group in the group counts as one. One resting after a failure leaves the round; the next model is the fallback when one fails.</td></tr>
+    </table></div>
+    <div class="table-wrap"><table>
+      <tr><th>Stays</th><th>How long a conversation stays with the account or key that answered it</th></tr>
+      <tr><td>Auto <code>auto</code></td><td>The default. Within a turn always, across turns while what the vendor cached of it is worth keeping.</td></tr>
+      <tr><td>Session <code>session</code></td><td>The whole session, while it can answer.</td></tr>
+      <tr><td>Within a turn <code>turn</code></td><td>While the agent sends tool results back; when you speak again, routing decides afresh.</td></tr>
+      <tr><td>Off <code>off</code></td><td>Every request is routed afresh.</td></tr>
+      <tr><td>Strict <code>strict</code></td><td>Never moves to another account or key, even past its usage cap: when that one is rate limited or out of quota, the error goes to the agent. New conversations are routed as usual.</td></tr>
+    </table></div>
+    <h3 id="rules">Rules · a turn to a chosen model</h3>
+    <p>A group’s <span class="ui">Rules</span> send a turn to one of its models when the turn is of a kind you name: long (<code>tokens ≥ N</code>), carrying an image, asking for reasoning (on, or at least a level), from certain agents, asking for something you describe (an <em>intent</em>), the agent compacting its context, or working in one of some folders (a project). A rule’s conditions all have to hold, so one can say “in ~/work/acme, and long”. They are looked at top first when you send a message; the first that matches puts its model first, with the group’s others behind it if it fails. A turn no rule matches is routed as the group always routes, and keeps to where it was.</p>
+    <ul>
+      <li>A rule decides as a turn begins, and the turn stays on that model while the agent sends tool results back, so what the vendor cached isn’t lost halfway. The one exception: a turn that grows past its model’s context moves to a member that takes it.</li>
+      <li>Tokens are estimated from the request’s size, or what the vendor counted for the conversation’s last request, whichever is more. Leave some margin: a rule at 150k for a 200k model, not 199k.</li>
+      <li>A subagent is a conversation of its own, so a rule can send it elsewhere while its agent keeps where it is.</li>
+      <li>An intent is a few words for what the user asks for — “writing or fixing tests”, “a quick question”. As a turn begins, the group’s classifier — any model Agent Link has; a small, fast one without reasoning is best — is asked once which of the intents that could match the user’s message is. Only the message is sent, not the conversation. If it fails, is slow (8 s) or can’t say, no intent matches and the turn goes by the other rules. It isn’t asked when a rule without an intent would decide anyway, and the same message isn’t asked about twice. Its calls show in Usage as Agent Link’s own. Exactly what it is asked, how its answer is used and what happens when it fails: <a href="/docs/intent">Intent routing</a>.</li>
+      <li><span class="ui">compacting</span> matches an agent compacting its conversation — Claude Code’s <code>/compact</code> and auto-compact, Codex, OpenCode, Pi, Gemini CLI, Qwen Code, Kimi Code — so a cheaper, faster model writes the summary while the conversation stays on its own. A compaction is decided on its own: the turn it happens in, and its cache, stay where they were. When the conversation is longer than the rule’s model takes, the next rule that matches, or the group’s order, decides instead.</li>
+      <li><b>Hours and days.</b> A rule can hold only at some hours, on some days, by this computer’s clock — a vendor’s peak hours, say. A rule that sends those turns elsewhere still leaves the vendor’s model behind it for failover. To keep a model out entirely, choose <span class="ui">Pause the model instead</span> from the rule’s <span class="ui">⋯</span> menu: while it holds (its hours and days, its agents), that model is left out of the group — never first, never a fallback, not kept for the conversation it was in — and it is back once they end. A pause holds by hours, days and agents only; if every model of the group is paused, the agent is told so.</li>
+      <li><b>Folders.</b> <span class="ui">in folder</span> matches a turn from an agent working in one of the folders you list, or a folder inside one: <code>~/work/acme</code> takes <code>~/work/acme/web</code>, not <code>~/work/acme-old</code>. The folder is the one the agent tells its model in the request — Claude Code, Codex, OpenCode and Pi say it — so an agent that doesn’t say its folder matches no folder rule. <code>~</code> is your home folder, <code>C:\work</code> is also WSL’s <code>/mnt/c/work</code>, and on macOS and Windows case doesn’t count.</li>
+      <li><b>Reasoning.</b> A rule can also set the reasoning its model is asked for, so an intent picks the model and the effort as a pair: <span class="ui">Set its reasoning</span> in the rule’s <span class="ui">⋯</span> menu, or <code>use-effort=low</code> from a terminal. The model is asked for it whatever the agent asked, at the model’s nearest level; a model whose levels Agent Link doesn’t know, and the models behind it for failover, are asked as the agent asked. See <a href="/docs/intent#effort">Intent routing</a>.</li>
+      <li>The Routing tab says which rule sent each turn where, what the classifier said, and the folder the agent said it was in.</li>
+    </ul>
+    <h3 id="nested">Groups in groups</h3>
+    <p>A group’s models can include another group: pick it under <em>Routing groups</em> in <span class="ui">Add a model</span>, or <code>models+=group/&lt;id&gt;</code> from a terminal. The group in it takes its place in the order and routes among its own models by its own routing and rules. So Coder can be <code>deepseek-v4-pro</code> then <em>Fast</em>, and Fast its own order of cheap models. A Coder rule can send a turn to <code>group/fast</code>, and Fast’s own rules then pick which of its models goes first.</p>
+    <ul>
+      <li><b>No loops.</b> A group can’t be in itself, directly or through the groups in it. Saving Fast with Coder in it, while Coder has Fast, is refused, and the picker doesn’t offer such a group. Groups go at most 8 deep. A group can’t be removed while another has it: take it out there first.</li>
+      <li><b>Each group routes by its own routing.</b> Whatever the outer group’s routing, it never reaches inside a group in it: Smart, In turn, Least used or Weekly pace weighs the inner group as one member, by the account or key the inner group would try first, and where it lands the inner group is tried whole, in its own order. Coder on Smart with Claude (In order) and GPT (In order) in it compares Claude’s first with GPT’s first, not all of their accounts together.</li>
+      <li><b>So does a provider routed its own way.</b> A model whose provider routes its accounts or keys In order, In turn, by Least used, Weekly pace or Weight keeps that inside any group, weighed as one by the account or key it would try first and tried whole in its own order. One left on Smart, the default, has its accounts weighed with the group’s others as one pool, so the one whose allowance renews soonest goes first whichever provider it is of.</li>
+      <li><b>Failover goes through.</b> If every model in the inner group fails, the outer group’s next member answers, as with any member.</li>
+      <li>A model that appears twice (on its own and in a group in it) is asked once, at its first place.</li>
+    </ul>
+    <figure class="figure">
+      <img class="for-light" src="/img/nested-routing-light.png" width="2080" height="1330" loading="lazy" alt="The Routing tab with a group in a group: Coder has deepseek-v4-pro and the group Fast, whose deepseek-v4-flash and kimi-k2.5 sit under it; Kimi answered">
+      <img class="for-dark" src="/img/nested-routing-dark.png" width="2080" height="1330" loading="lazy" alt="The Routing tab with a group in a group: Coder has deepseek-v4-pro and the group Fast, whose deepseek-v4-flash and kimi-k2.5 sit under it; Kimi answered">
+      <figcaption>Coder’s rule sent a quick question to the group Fast; Fast’s own rule put Kimi first there. The trace says what each group’s rules and classifier decided.</figcaption>
+    </figure>
+    <p>The <span class="ui">Routing</span> tab shows the gateway’s decisions live: who answered each request, and why. The same groups from a terminal:</p>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="ex-group">Copy</button>
+      <pre id="ex-group">Agent Link groups                        <span class="c"># yours, then those Agent Link found</span>
+Agent Link group add <span class="s">"Opus anywhere"</span> models=claude/claude-opus-5-5,copilot/claude-opus-5.5 routing=order stays=session
+Agent Link group set opus-anywhere models+=openrouter/anthropic/claude-opus-5.5
+Agent Link group set opus-anywhere routing=weight weight=claude/claude-opus-5-5=3  <span class="c"># three of every four requests to it</span>
+Agent Link group rule add opus-anywhere use=openrouter/anthropic/claude-opus-5.5 tokens=150k  <span class="c"># long turns to it first</span>
+Agent Link group rule add opus-anywhere use=copilot/claude-opus-5.5 intent=<span class="s">"a quick question"</span> classifier=groq/llama-3.1-8b-instant
+Agent Link group rule add opus-anywhere use=deepseek/deepseek-v4-flash compact  <span class="c"># /compact summaries to a cheap model</span>
+Agent Link group rule add opus-anywhere use=kimi/kimi-k2.6 folders=~/oss,<span class="s">"~/My Project"</span>  <span class="c"># turns in those projects to it first</span>
+Agent Link group rule add opus-anywhere pause=copilot/claude-opus-5.5 time=14:00-18:00 days=mon-fri  <span class="c"># left out in those hours</span>
+Agent Link group rule add opus-anywhere pause=claude/claude-opus-5-5 except-folders=~/big-task  <span class="c"># the model kept for the task in ~/big-task: left out of every other folder</span>
+Agent Link group set coder models+=group/opus-anywhere  <span class="c"># a group in a group</span>
+Agent Link group rule opus-anywhere      <span class="c"># its rules; rule rm|mv &lt;n&gt;, rule classifier &lt;group&gt; &lt;model&gt;</span>
+Agent Link group copy opus-anywhere <span class="s">"Opus test"</span>  <span class="c"># the same models, routing and rules, to change on its own</span>
+Agent Link group rm opus-anywhere        <span class="c"># one Agent Link found is hidden; Agent Link group restore &lt;id&gt;</span>
+Agent Link claude group/opus-anywhere    <span class="c"># use it</span></pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">Usage and profiles</a></h2>
+    <p><b>Usage.</b> The <span class="ui">Usage</span> tab counts tokens, cache hits and cost for each agent and model, from every call through the gateway, for <span class="ui">Today</span>, <span class="ui">7 days</span>, <span class="ui">30 days</span> or <span class="ui">All</span>; your subscriptions’ allowance used, and when it resets, sits on top. Calls an agent makes to its own vendor directly don’t pass through Agent Link and aren’t counted.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/usage-light.png" width="2080" height="842" loading="lazy" alt="The Usage tab: remaining balances, token and cost totals, and a 30-day chart">
+      <img class="for-dark" src="/img/usage-dark.png" width="2080" height="842" loading="lazy" alt="The Usage tab: remaining balances, token and cost totals, and a 30-day chart">
+      <figcaption>Balances, tokens, cache hits and cost for every call through the gateway.</figcaption>
+    </figure>
+    <p><b>Context.</b> Usage’s <span class="ui">Context</span> tab shows what each agent’s prompts hold, read as they pass through the gateway: its system prompt, tool definitions (an MCP server’s as one), instruction files and skills, the files its tools read, their other output and the conversation, as parts of the model’s context window. Each agent gets a score out of 100 — how much of its prompt the cache reads, how lean it starts, how fast it fills and how often it fails — and tags such as <i>Lean start</i> or <i>MCP-heavy</i> that say what the score was told by. Open a session to see its latest request’s window, cell by cell; the <span class="ui">Routing</span> page shows the same for any request you pick. Click a part, a cell or an item to read its text as Agent Link sent it, masked where masking is on. That text is kept for the last 10 requests only, in memory while Agent Link runs; what is saved keeps names only, never your prompt’s text, and nothing of it is sent anywhere.</p>
+    <p><b>Profiles.</b> At the bottom of the <span class="ui">Agents</span> tab, <span class="ui">＋ Save current</span> snapshots every agent’s settings under a name; click the chip to switch everything back in one move. The profile in use is ticked, and the tray panel’s <span class="ui">Profiles</span> button shows its name; a setting changed by hand since clears the tick.</p>
+
+    <h2 id="cli"><a class="anchor" href="#cli">From the terminal</a></h2>
+    <p><code>agent-link tui</code> is the whole app in a terminal, and every step above has a command. <code>Agent Link help</code> lists them all.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Command</th><th>Does</th></tr>
+      <tr><td><code>Agent Link ls</code></td><td>Every agent found and its settings</td></tr>
+      <tr><td><code>Agent Link presets</code></td><td>The vendors Agent Link knows</td></tr>
+      <tr><td><code>Agent Link provider add deepseek sk-…</code></td><td>Add a preset with its key</td></tr>
+      <tr><td><code>Agent Link accounts add codex</code></td><td>Sign in to one more Claude or ChatGPT subscription</td></tr>
+      <tr><td><code>Agent Link accounts discovery off</code></td><td>Never read your agents’ sign-ins (Claude Code’s and Codex’s files, the Keychain); <code>on</code> reads them again</td></tr>
+      <tr><td><code>agent-link providers</code></td><td>Your providers: host, key, models, who uses them</td></tr>
+      <tr><td><code>agent-link models</code></td><td>Every model agents can pick, as <code>provider/model</code></td></tr>
+      <tr><td><code>Agent Link claude codex/gpt-5.5</code></td><td>Set an agent’s model</td></tr>
+      <tr><td><code>Agent Link codex effort high</code></td><td>Set another field</td></tr>
+      <tr><td><code>Agent Link codex default</code></td><td>Back to the agent’s own default, Agent Link’s wiring removed</td></tr>
+      <tr><td><code>Agent Link save work</code> · <code>use work</code></td><td>Save and apply a profile</td></tr>
+      <tr><td><code>agent-link usage 7d</code></td><td>Tokens and cost per agent and model</td></tr>
+      <tr><td><code>Agent Link tray</code></td><td>Start with the menu bar icon only</td></tr>
+    </table></div>
+
+    <h2 id="faq"><a class="anchor" href="#faq">FAQ</a></h2>
+    <h3>Do I need to export <code>OPENAI_BASE_URL</code> or <code>ANTHROPIC_BASE_URL</code>?</h3>
+    <p>No. For the agents Agent Link lists, it writes the gateway’s address and token into the agent’s own config file. Those variables are only for other tools with a base-URL setting: the <span class="ui">Gateway</span> tab’s <span class="ui">Connect</span> section has them as copy buttons and snippets.</p>
+    <h3>Does Agent Link have to be running?</h3>
+    <p>For a model through Agent Link, yes: the gateway runs with the app. Closing the window leaves it running in the menu bar or tray; <code>Agent Link tray</code> starts the icon alone (put it in your login items), and <code>Agent Link serve</code> runs just the gateway, and <code>Agent Link daemon install</code> keeps it running as a service (systemd on Linux, launchd on the Mac), from login or boot, with no window; <code>Agent Link daemon install --web</code> has it serve the browser page too, and <code>Agent Link daemon status</code> prints the page’s link. An agent on its own model and its own sign-in doesn’t go through Agent Link.</p>
+    <h3>How do I put an agent back the way it was?</h3>
+    <p>Pick one of the agent’s own models in the picker, or run <code>Agent Link &lt;agent&gt; default</code>. Agent Link removes what it wrote and restores the values it replaced, such as an <code>ANTHROPIC_BASE_URL</code> you had before.</p>
+    <h3>I switched models, but my agent still uses the old one.</h3>
+    <p>A running session keeps what it started with. Start a new one; for Codex, restart the Codex app too.</p>
+    <h3>Does editing the agent’s config by hand break anything?</h3>
+    <p>No. Agent Link reads the files each time and touches only the keys it sets, so your other settings and comments stay. Providers brought over with <span class="ui">Import…</span> are copies: later changes in the agent’s settings aren’t copied again.</p>
+    <h3>Installing or updating behind a firewall, or without access to GitHub?</h3>
+    <p>Give the installer and <code>Agent Link update</code> a proxy: <code>curl -fsSL https://useAgent Link.ai/install.sh | sh -s -- --proxy http://127.0.0.1:7890</code>, or <code>Agent Link update --proxy socks5://127.0.0.1:1080</code> (http, https, socks5 and socks5h; <code>HTTPS_PROXY</code> and <code>ALL_PROXY</code> are honoured too). <code>--mirror &lt;prefix&gt;</code> fetches the release file from a GitHub download mirror you choose, as <code>&lt;prefix&gt;https://github.com/…</code>; <code>Agent Link update mirror &lt;prefix&gt;</code> keeps it for every update, the app’s too, and <code>Agent Link update mirror off</code> removes it. No mirror is used unless you give one, and the file’s SHA-256 still comes from useAgent Link.ai, never from the mirror: a file the mirror changed is refused. The app’s own updates go through <span class="ui">Settings</span> → <span class="ui">Proxy</span>.</p>
+
+    <h3 id="privacy">What does Agent Link send about me?</h3>
+    <p>Your prompts, replies, keys and accounts go only to the providers you use; Agent Link has no server of its own in the path. Once a day a released Agent Link tells us it is in use, so we know how many people use it and what to look after first: a random id made up on your computer, Agent Link’s version and your system, and which agents, providers and models it is used with, by Agent Link’s own ids (<code>claude</code>, <code>deepseek</code>, <code>deepseek/deepseek-v4</code>) with how many of each. A provider you added yourself, and a model on it, is only <code>custom</code>. For each partner listed first in the add sheet, how many times a day it was shown, opened and added from goes with them, as counts only. No names, base URLs, accounts, keys, prompts or usage are sent. <span class="ui">Settings</span> → <span class="ui">Privacy</span> → <span class="ui">Share the agents, providers and models I use</span> leaves out the agents, providers and models, and the partner counts; <span class="ui">Count me as a user</span>, <code>DO_NOT_TRACK=1</code> or <code>AGENT_LINK_NO_STATS=1</code> turns it all off. Builds from source never send it. A partner's website and key-page links go through <code>useAgent Link.ai/go/…</code>, which counts the click (the partner, which link, and a country) before sending you on, and useAgent Link.ai counts how many times the partner list is fetched. The server sees these whatever the settings say, as any website sees its visits; no id, address or account is kept with them. Icons named by a plugin, an import link or the library are fetched through <code>useAgent Link.ai/api/icon</code>, so their hosts see Cloudflare's address, not yours; the server only passes the picture on, and counts and keeps nothing. The <a href="/docs/privacy">Privacy page</a> lists everything Agent Link sends by itself, with an example of the daily count, the files it keeps and every switch.</p>
+
+    <h3 id="proxy-loopback">The agent gets 502 or can’t connect, and nothing shows in Agent Link’s Routing tab?</h3>
+    <p>A proxy app (Surge, Clash, mihomo and the like, with system proxy, TUN or enhanced mode on) has taken the agent’s request to <code>http://127.0.0.1:7500</code> and sent it somewhere else, so it never reaches Agent Link. The bypass list (<code>skip-proxy</code>, “bypass”) isn’t always enough: some agents, Codex among them, send it through the proxy anyway. Add rules that send the local addresses direct, ahead of your other rules:</p>
+    <div class="code">
+      <span class="lang">Surge</span>
+      <button class="copy" data-copy="ex-loopback">Copy</button>
+      <pre id="ex-loopback">IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+IP-CIDR6,::1/128,DIRECT,no-resolve</pre>
+    </div>
+    <p>In a Clash or mihomo config the same lines go under <code>rules:</code>, each starting with <code>- </code>. Then send the agent a new request.</p>
+    <p style="margin-top:48px">Stuck, or have a setup worth sharing? Ask on <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>. Vendors who want to hand their users a ready-made provider: see <a href="/docs/import">Add to Agent Link</a>.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

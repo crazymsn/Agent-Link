@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>接入你的应用 · Agent Link 文档</title>
+<meta name="description" content="AI 应用、Agent 或客户端如何与 Agent Link 配合：本地网关、端点与模型、以应用自己的名字统计用量、在 Agents 页面占一行，以及插件。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/integrate">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/integrate">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="接入你的应用">
+<meta property="og:description" content="在你的应用里使用 Agent Link 的网关，或在 Agents 页面拥有自己的一行。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/zh/integrate">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 Agent Link</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/integrate" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/integrate" hreflang="zh" lang="zh">中文</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>接入你的应用</p>
+    <a href="#overview">概览</a>
+    <a href="#gateway">直接调用网关</a>
+    <a href="#agent">在 Agents 页面占一行</a>
+    <a href="#plugins">插件</a>
+    <a href="#not">目前没有的</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 开发者</p>
+    <h1>接入你的应用</h1>
+    <p class="lede">写给 AI 应用、Agent 或客户端的开发者：想让自己的应用和 Agent Link 配合好，有三个层次，从 Agent Link 这边什么都不用改，到在 Agents 页面拥有自己的一行。</p>
+
+    <div class="table-wrap"><table>
+      <tr><th>你想要</th><th>做法</th><th>Agent Link 需要改动</th></tr>
+      <tr><td>应用的请求由 Agent Link 提供服务，并在用量里以自己的名字统计</td><td><a href="#gateway">直接调用网关</a></td><td>无</td></tr>
+      <tr><td>Agents 页面上的一行：自动检测、在那里选模型、断开时还原</td><td><a href="#agent">Agent 适配器</a></td><td>一个 PR</td></tr>
+      <tr><td>新的模型来源（订阅、厂商），或改写请求</td><td><a href="#plugins">插件</a></td><td>无</td></tr>
+    </table></div>
+
+    <h2 id="gateway"><a class="anchor" href="#gateway">1. 直接调用网关</a></h2>
+    <p>Agent Link 在本机运行一个 LLM 网关。用户在 Agent Link 里有的所有模型（订阅、API key、本地模型、路由组）都以各自的 id 在那里提供，所以你的应用只需要一个供应商条目，而不是每个厂商一个。</p>
+
+    <h3>找到它</h3>
+    <p>网关监听 <code>127.0.0.1:7500</code>，或 Agent Link 的 <code>settings.json</code> 里 <code>port</code> 指定的端口（<code>~/.config/Agent Link/settings.json</code>，Windows 上是用户目录下的同一路径；设置了 <code>$XDG_CONFIG_HOME</code> 时为 <code>$XDG_CONFIG_HOME/Agent Link</code>）。<code>GET /api/hello</code> 在是 Agent Link 时返回 <code>{"name":"Agent Link","version":"…"}</code>。这个文件只读、不要写。Agent Link 需要在运行（应用本身或 <code>Agent Link serve</code>）；找不到时，你的应用照常提供它自己的供应商即可。</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-hello">Copy</button>
+      <pre id="ex-hello">curl -s http://127.0.0.1:7500/api/hello
+curl -s http://127.0.0.1:7500/v1/models -H "Authorization: Bearer Agent Link-acme"</pre>
+    </div>
+
+    <h3>端点</h3>
+    <p>厂商本身支持你的 API 时请求原样转发，否则会被转换，流式、工具调用、图片和推理都包括在内。OpenAI 客户端的 base URL 是 <code>http://127.0.0.1:&lt;port&gt;/v1</code>，Anthropic 或 Gemini 客户端是 <code>http://127.0.0.1:&lt;port&gt;</code>。</p>
+    <div class="table-wrap"><table>
+      <tr><th>路径</th><th>API</th></tr>
+      <tr><td><code>/v1/chat/completions</code></td><td>OpenAI Chat Completions</td></tr>
+      <tr><td><code>/v1/responses</code></td><td>OpenAI Responses</td></tr>
+      <tr><td><code>/v1/messages</code>、<code>/v1/messages/count_tokens</code></td><td>Anthropic Messages</td></tr>
+      <tr><td><code>/v1beta/models/{model}:generateContent</code>（以及 <code>:streamGenerateContent</code>）</td><td>Google Gemini</td></tr>
+      <tr><td><code>/v1/models</code></td><td>模型目录</td></tr>
+    </table></div>
+
+    <h3>用 key 标明你的应用</h3>
+    <p>在本机，网关接受任意 key。发送 <code>Agent Link-&lt;你的应用 id&gt;</code>（<code>Authorization: Bearer Agent Link-acme</code>，或 <code>x-api-key</code>），每次调用都会在用量、请求记录以及按 Agent 匹配的路由规则里记为 <code>acme</code>。不带它时，Agent Link 按 <code>User-Agent</code> 的第一个词统计（<code>Acme/1.4 (darwin)</code> 记为 <code>Acme</code>）；SDK 自带的 User-Agent（<code>OpenAI/JS …</code>、<code>ai-sdk/…</code>）会被记成那个 SDK。从另一台电脑访问时（<span class="ui">设置</span> → <span class="ui">局域网共享</span>），key 必须是用户的网关密钥之一，应用名就靠 User-Agent。</p>
+
+    <h3>模型</h3>
+    <p><code>GET /v1/models</code> 列出用户打开的模型：<code>id</code>（<code>provider/model</code>，或路由组的名字，原样发送即可）、<code>display_name</code>、<code>owned_by</code>（供应商）、<code>reasoning</code> 与 <code>supported_reasoning_levels</code>（<code>[{"effort":"low"},…]</code>；同样的档位以纯名字列在 <code>reasoning_levels</code>），已知时还有 <code>context_window</code>、<code>max_output_tokens</code>，以及 Agent Link 知道是否支持图片时的 <code>modalities</code>。请从这里读取，而不是内置一份列表：用户会在 Agent Link 里增删供应商。推理强度用你所用 API 自己的字段传（<code>reasoning_effort</code>、<code>reasoning.effort</code>、Anthropic 的 <code>thinking</code> 或 <code>output_config.effort</code>）。<code>?format=text</code> 每行一个 id。</p>
+
+    <h3>可选</h3>
+    <p>在同一会话的请求里带上 <code>X-Agent Link-Session: &lt;id&gt;</code>，<code>GET /v1/Agent Link/route?session=&lt;id&gt;</code> 就能在第一个 token 之前告诉你路由组为这一轮选了哪个模型、尝试过哪些后备（用 <code>after=&lt;seq&gt;&amp;wait=&lt;s&gt;</code> 长轮询）。<code>GET /v1/Agent Link/quotas</code> 列出用户各订阅的额度，<code>GET /v1/Agent Link/usage</code> 和 <code>/v1/Agent Link/usage/requests</code> 给出用量页的统计和逐条请求（带 <code>session</code>；Claude Code 子代理的调用还有 <code>subagent</code>/<code>parent_agent</code>）。它们只回答本机，或带网关密钥的其他机器；限了额度、模型或账号的密钥只看得到自己的调用和路由，额度不告诉它，除非它的主人允许它看自己可用部分的额度（<code>Agent Link gateway-key quotas &lt;id&gt; on</code>；它自己的限额见 <code>GET /v1/Agent Link/limit</code>）。你的应用直接发给厂商、不经过 Agent Link 的调用，可以用 <code>POST /v1/Agent Link/usage/requests</code> 上报（每次一条，或最多 5000 条，格式同 <code>usage.jsonl</code> 的一行，每条带 <code>rid</code>；过去的时间照原样保留，所以可以补录历史）。它们在用量页上标为上报，且从不计入密钥的限额。细节见<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#connecting-anything-else">参考文档</a>。</p>
+
+    <div class="callout"><b>保留用户自己的供应商。</b>把 Agent Link 作为又一个供应商（名为 Agent Link）加在用户已有的供应商旁边，而不是替换它们，这样关掉 Agent Link 就只是换选另一个供应商。</div>
+
+    <h2 id="agent"><a class="anchor" href="#agent">2. 在 Agents 页面占一行</a></h2>
+    <p>Agent Link 列出的 Agent（Claude Code、Codex、OpenCode、dsh、Alma、Cindy……）都是 <a href="https://github.com/crazymsn/Agent-Link/tree/main/internal/agent"><code>internal/agent</code></a> 里的适配器，每个一个文件。有了这一行，你的应用会显示自己的名字和图标，安装后自动出现，用户可以从 Agent Link 的目录里为它选模型（和推理强度），供应商变化时跟着更新，断开时还原你的应用原来的设置。目前没有运行时注册：这一行通过给 Agent Link 提 PR 加入，随下一个版本发布。</p>
+    <p>适配器是一个 <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/agent/agent.go"><code>Agent</code></a> 值，形态取决于你的应用提供什么：</p>
+    <ul>
+      <li><b>Agent Link 编辑你的配置文件</b>（大多数适配器，如 <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/agent/fx.go"><code>fx.go</code></a>、<a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/agent/empryo.go"><code>empryo.go</code></a>）。<code>Dir</code>、<code>Path</code>、<code>Bin</code> 用来检测应用；每个 <code>Field</code>（<code>model</code>、<code>effort</code>……）有 <code>Get</code>、<code>Set</code>、<code>Options</code>。连接时加入一个指向网关、key 为 <code>Agent Link-&lt;id&gt;</code> 的 <code>Agent Link</code> 供应商，并把模型设为 Agent Link 的模型；选回默认或 <code>Unwire</code> 会移除 Agent Link 的条目并还原原值。只动 Agent Link 设置的那些键。<code>Notice</code> 提示何时需要重启应用；<code>Sync</code> 更新你的应用保存在文件里的模型列表。</li>
+      <li><b>你的应用只通过自己的导入链接接收供应商，由用户在你的应用里确认</b>（<a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/agent/cindy.go"><code>cindy.go</code></a>）。<code>Import</code> 返回这个链接（<code>yourapp://provider/import?…</code>，带网关地址、key <code>Agent Link-&lt;id&gt;</code> 和各端点），这一行的按钮会打开它，用户在你的应用里确认一次即可。<code>Added</code> 只读地检查你的应用是否已经有 Agent Link。Agent Link 不写你的任何文件。适合把供应商存在数据库里或加密保存的应用——这也最接近“检测到 Agent Link → 用户确认一次 → 完成接入”。</li>
+      <li><b>你的应用运行时有本地 API</b>（如 Alma）：Agent Link 通过它把自己加为供应商并设置默认模型。</li>
+    </ul>
+    <p>一个 PR 需要：适配器及其在 <code>agents.go</code> 里的注册；<code>UA</code>（你的 User-Agent 开头，小写），让用量认得你的调用；<code>internal/gui/assets/icons</code> 里的图标；在临时 <code>HOME</code> 下运行的测试（连接、切换、断开后原文件还原）；参考文档 Agents 表里的一行。最有帮助的是一个稳定、有文档的配置格式或导入链接，以及它在各系统上的位置。</p>
+
+    <h2 id="plugins"><a class="anchor" href="#plugins">3. 插件</a></h2>
+    <p>插件是 Agent Link 运行的 npm 包，由用户在 <span class="ui">设置</span> → <span class="ui">插件</span> 里或用 <code>Agent Link plugin add &lt;package&gt;</code> 安装。<b>供应商插件</b>（OpenCode 的 <code>auth</code> 钩子或 pi 扩展包）添加一个模型来源，比如 Agent Link 自己不登录的订阅。<b>网关中间件</b>在请求和回复经过时改写它们。见<a href="/docs/zh/plugins">插件开发</a>。插件不能在 Agents 页面加一行，也不能写别的应用的配置，所以它不是应用注册自己的方式。</p>
+
+    <h2 id="not"><a class="anchor" href="#not">目前没有的</a></h2>
+    <ul>
+      <li>没有让别的应用不经用户就把自己注册为 Agent、或安装插件的 API 或链接：插件由用户在 Agent Link 里安装，Agent 行来自 Agent Link 源码里的适配器。</li>
+      <li><code>Agent Link://import</code> 链接添加的是<em>供应商</em>（模型来源及其 key），不是 Agent 或应用：见 <a href="/docs/zh/import">Add to Agent Link</a>。</li>
+    </ul>
+
+    <p style="margin-top:48px">有问题，或想先讨论一个适配器：提一个 <a href="https://github.com/crazymsn/Agent-Link/issues">issue</a>，或来 <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> 聊。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 Agent Link</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

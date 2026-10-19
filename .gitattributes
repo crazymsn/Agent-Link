@@ -1,0 +1,6 @@
+# Every text file checks out with LF, whatever core.autocrlf says: the
+# guard tests parse source files line by line (the notices, the built-in
+# and purpose assets, the redaction kinds), and gofmt writes LF. A Windows
+# checkout with autocrlf on gave them CRLF and four went red (#1827).
+# internal/agent/testdata/.gitattributes keeps its real CRLF bytes.
+* text=auto eol=lf

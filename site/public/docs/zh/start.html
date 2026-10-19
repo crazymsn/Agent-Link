@@ -1,0 +1,333 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>快速上手 · Agent Link 文档</title>
+<meta name="description" content="Agent Link 的整体思路和配置方法：添加你已有的供应商，给每个 Agent 选模型，需要时再把多个账号组成路由组。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/start">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/start">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/start">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Agent Link 快速上手">
+<meta property="og:description" content="添加你已有的供应商，给每个 Agent 选模型。一步步配置。">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/zh/start">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 Agent Link</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/start" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/start" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/start" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>快速上手</p>
+    <a href="#overview">整体思路</a>
+    <a href="#providers">1 · 供应商</a>
+    <a href="#agents">2 · Agent</a>
+    <a href="#routing">3 · 路由组</a>
+    <a href="#usage">用量与方案</a>
+    <a href="#cli">命令行</a>
+    <a href="#faq">常见问题</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 指南</p>
+    <h1>快速上手</h1>
+    <p class="lede">Agent Link 是给你所有 Agent 统一选模型的地方。先把你有的供应商加进来，再给每个 Agent 选一个模型；Agent Link 会把它写进那个 Agent 自己的配置文件。</p>
+
+    <p>背后是一个跑在你本机 <code>127.0.0.1:7500</code> 的小网关。它同时支持 OpenAI、Anthropic 和 Gemini 三种 API，并在它们之间互相转换（流式输出、工具调用都支持），所以任何 Agent 都能用任何供应商的模型：Claude Code 用 ChatGPT 订阅里的 GPT 模型，Codex 用 DeepSeek，OpenCode 用你的 Claude 订阅。</p>
+
+    <div class="cards">
+      <div><h3>供应商</h3><p>模型从哪里来：登录的订阅、有 API 密钥的厂商、你自己的接口地址。每个模型都写作 <code>provider/model</code>。</p></div>
+      <div><h3>Agent</h3><p>使用模型的工具：Claude Code、Codex、Gemini CLI、OpenCode 等。每个一行，显示它当前用的模型。</p></div>
+      <div><h3>网关</h3><p>通过 Agent Link 选模型时，Agent 指向的本地地址。它把每个请求转给提供该模型的供应商。</p></div>
+      <div><h3>路由组</h3><p>可选。把多个模型或账号合成一个给 Agent 选，<code>group/&lt;id&gt;</code>，一个额度用完时换下一个。</p></div>
+    </div>
+
+    <ol class="steps">
+      <li><b>添加供应商</b>登录你的订阅，粘贴 API 密钥。只需做一次。</li>
+      <li><b>给每个 Agent 选模型</b>点 Agent 的模型，选一个。Agent Link 改写那个 Agent 的配置。</li>
+      <li><b>开一个新会话</b>Agent 启动时读取配置，下一个会话就用上新模型。</li>
+    </ol>
+
+    <h2 id="providers"><a class="anchor" href="#providers">1 · 添加供应商</a></h2>
+    <p>打开 <span class="ui">供应商</span> 标签页，点 <span class="ui">＋ 添加供应商</span>。点选一个卡片，或输入厂商名字查找。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/add-zh-light.png" width="2080" height="1250" loading="lazy" alt="添加供应商面板：订阅、厂商、中转、本机和自定义 URL">
+      <img class="for-dark" src="/img/add-zh-dark.png" width="2080" height="1250" loading="lazy" alt="添加供应商面板：订阅、厂商、中转、本机和自定义 URL">
+      <figcaption>添加供应商：登录订阅、选厂商，或填任意兼容的 URL。</figcaption>
+    </figure>
+
+    <h3>订阅 · 登录即可，无需密钥</h3>
+    <p>Claude（Pro、Max、Team）、ChatGPT（Plus、Pro、Business）、Cursor、Grok（SuperGrok）、Copilot 和 Devin。点卡片后 Agent Link 会在浏览器里打开厂商自己的登录页，登录完成后账号立刻出现（Copilot 会给你一个验证码，在 GitHub 页面上输入）。订阅是在 Agent Link 里添加的，不需要先去别的 Agent 里登录。</p>
+    <ul>
+      <li><b>多个账号。</b>再点一次 Claude 或 ChatGPT 卡片即可再加一个；它们都列在这个供应商下面，点一下就能切换使用哪个。</li>
+      <li><b>已经登录过？</b>本机上已经登录的 Agent 也会作为供应商出现，显示为 <em>已登录 …</em>。</li>
+      <li><b>所有 Agent 都能用。</b>订阅里的模型在其他 Agent 的选择列表里写作 <code>claude/…</code>、<code>codex/…</code>、<code>copilot/…</code>。Claude 订阅的请求通过本机安装的 Claude Code 运行，所以请保留 Claude Code。</li>
+    </ul>
+
+    <h3>供应商（厂商预设）</h3>
+    <p>Anthropic、OpenAI、Google Gemini、DeepSeek、Kimi、Zhipu GLM、MiniMax、Qwen、Mistral、Groq、xAI 等。选一个，粘贴密钥（<span class="ui">获取密钥 ↗</span> 会打开厂商的密钥页面），保存。Agent Link 会向厂商询问它提供哪些模型并列出来；展开供应商那一行可以选择给 Agent 暴露哪些模型，或点 <span class="ui">测试</span>。</p>
+
+    <h3>本机</h3>
+    <p>Ollama 和 LM Studio，无需密钥。</p>
+
+    <h3>自定义 · 任意兼容的 URL</h3>
+    <p>其他接口都走这里：填 <span class="ui">名称</span>、<span class="ui">OpenAI 兼容</span> 地址（以 <code>/v1</code> 结尾）、<span class="ui">Anthropic 兼容</span> 地址（根地址，即 <code>ANTHROPIC_BASE_URL</code> 的值），或两个都填，再填密钥。接口支持几种 API 就填几种；每个 Agent 用它原生的那种，其余由 Agent Link 转换。</p>
+
+    <div class="callout"><b>之前在 Claude Code 或 Codex 里配过供应商？</b>面板顶部的 <span class="ui">导入…</span> 会读取 Claude Code 的 <code>settings.json</code> 和 Codex 的 <code>config.toml</code>，不改动它们，把你勾选的供应商导入进来。</div>
+    <p>密钥保存在 <code>~/.config/Agent Link/providers.json</code>，只有你自己可读。Agent Link 从不读取 shell 环境变量里的密钥：你添加什么，它就用什么。</p>
+
+    <h2 id="agents"><a class="anchor" href="#agents">2 · 给每个 Agent 选模型</a></h2>
+    <p><span class="ui">Agent</span> 标签页里，本机装了或配置过的每个 Agent 各占一行。Agent Link 支持 Claude Code、Codex、Gemini CLI、OpenCode、MiMo Code、DevEco Code、Pi、Goose、Cursor CLI、Copilot CLI、Crush、DeepSeek Harness、Command Code、omp、OmO、Devin、Hermes Agent、MiniMax Code、Grok Build、ZCode、OpenHanako 和 Alma。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/agents-zh-light.png" width="2080" height="1256" loading="lazy" alt="Agent 页：每个 Agent 一行，显示当前模型，底部是保存的方案">
+      <img class="for-dark" src="/img/agents-zh-dark.png" width="2080" height="1256" loading="lazy" alt="Agent 页：每个 Agent 一行，显示当前模型，底部是保存的方案">
+      <figcaption>每个 Agent 一行，可以选任意供应商的模型；方案一键切换全部设置。</figcaption>
+    </figure>
+    <ul>
+      <li><b>点模型</b>打开选择列表。模型分组显示：Agent 自带的、你的路由组、再是你添加的每个供应商。输入可以筛选，也可以直接输入列表里没有的模型 ID。</li>
+      <li><b>推理强度</b>：Agent 有这个选项时（Codex 的 <em>推理强度</em>、Pi 的 <em>思考</em>），列表下方会出现滑块。</li>
+      <li><b>Claude Code 通过 Agent Link 使用模型时</b>，opus、sonnet、haiku 各档还可以单独指定模型；默认跟随主模型。</li>
+    </ul>
+    <p>选好的模型会写进 Agent 自己的配置文件。只改 Agent Link 需要的那几个键；注释、顺序、缩进都保留，写入是原子的。</p>
+    <div class="table-wrap"><table>
+      <tr><th>Agent</th><th>通过 Agent Link 选模型时写入什么</th></tr>
+      <tr><td>Claude Code</td><td><code>~/.claude/settings.json</code>：<code>env</code> 里的 <code>ANTHROPIC_BASE_URL</code>、<code>ANTHROPIC_AUTH_TOKEN</code> 和模型变量</td></tr>
+      <tr><td>Codex</td><td><code>~/.codex/config.toml</code>：一个 <code>[model_providers.Agent Link]</code> 表和模型，模型列表写在 <code>Agent Link-models.json</code>。你的 ChatGPT 登录不受影响</td></tr>
+      <tr><td>OpenCode、MiMo Code、DevEco Code、Pi、Crush</td><td>一个 <code>Agent Link</code> 供应商条目，以及 <code>Agent Link/provider/model</code></td></tr>
+      <tr><td>AtomCode</td><td><code>~/.atomcode/config.toml</code>：一个 <code>Agent Link</code> 供应商账号，以及目录中每个模型各自的条目</td></tr>
+      <tr><td>Snow CLI</td><td><code>~/.snow/profiles/Agent Link.json</code>：一个 <code>Agent Link</code> 配置文件，并设为当前配置（Snow App 用“同步 Snow CLI API 配置”导入）</td></tr>
+      <tr><td>Gemini CLI</td><td><code>GOOGLE_GEMINI_BASE_URL</code> 指向网关、API 密钥认证，以及模型</td></tr>
+    </table></div>
+    <p><b>已在运行的会话保持它启动时的模型。</b>Agent 启动时读取配置，所以改动从下一个会话生效。Codex 也在启动时生成模型列表：切换后请重启 Codex 应用和已打开的 <code>codex</code> 会话。</p>
+    <div class="callout"><b>Paseo、编辑器插件等</b>替你运行 Claude Code 或 Codex 的前端，启动的是同一个 CLI，读的也是同一份 <code>~/.claude</code> 或 <code>~/.codex</code> 配置。在 Agent Link 里设一次模型，它们从下一个会话起也会用上。</div>
+
+    <h2 id="routing"><a class="anchor" href="#routing">3 · 可选：路由组</a></h2>
+    <p>每个供应商只有一个账号时可以跳过这一步。等你有了多个——比如两个 ChatGPT 账号，或者同一个模型既有订阅又有密钥——再来设置。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/routing-zh-light.png" width="2080" height="1960" loading="lazy" alt="路由页：四个 Agent 同时经三个路由组发请求，被限流的供应商暂时让开">
+      <img class="for-dark" src="/img/routing-zh-dark.png" width="2080" height="1960" loading="lazy" alt="路由页：四个 Agent 同时经三个路由组发请求，被限流的供应商暂时让开">
+      <figcaption>路由组：多个模型或账号合成一个名字，按智能或顺序切换。</figcaption>
+    </figure>
+
+    <h3>一个供应商里的多个账号或密钥</h3>
+    <p>展开供应商那一行，勾选要用的每个账号或密钥。<span class="ui">路由</span> 决定请求怎么分给它们：<span class="ui">智能</span>（默认）、<span class="ui">按顺序</span>、<span class="ui">轮流</span>、<span class="ui">用量少的优先</span> 或 <span class="ui">重置前用完</span>。<span class="ui">备用</span> 里列出这个供应商额度用完、被限流或不可用时改用的模型。</p>
+
+    <h3>跨供应商的同一个模型</h3>
+    <p>路由组是几个模型（来自一个或多个供应商），Agent 把它当作一个来选：<code>group/&lt;id&gt;</code>，在选择列表的 <em>路由组</em> 下面。两个供应商用同一个名字提供的模型会自动成组；在 <span class="ui">路由</span> 标签页点 <span class="ui">新建组</span> 可以把任意模型组到一起。排第一的模型决定这个组对外的能力。</p>
+    <div class="callout"><b>不用手动建的组。</b>再加一个供应商，只要它提供的模型和已有的同名（比如 Claude 订阅和 Copilot 都有 Claude Opus，DeepSeek 官方 API 和 OpenRouter 都有 DeepSeek），Agent Link 就会自动把它们组成一个路由组：<code>group/auto-&lt;模型&gt;</code>，包含所有提供这个模型的供应商。名字按各家不同的写法匹配（<code>deepseek/deepseek-chat</code> 和 <code>deepseek-chat</code> 算同一个）。给 Agent 选这个组，请求就会分摊到这些供应商上；不想要的可以用 <code>Agent Link group rm</code> 隐藏。</div>
+    <div class="table-wrap"><table>
+      <tr><th>路由</th><th>谁排在前面</th></tr>
+      <tr><td>智能 <code>smart</code></td><td>默认。把成员的账号和 Key 放在一起排（组里的路由组算一个，见下文）：还有余量的订阅里，额度最先重置的排第一。看周额度的重置时间；只有 5 小时额度、没有周额度的账号（如 Claude Enterprise）看它的 5 小时重置，所以排在所有更晚重置的周额度前面。没有重置时间的积分（WorkBuddy 的积分包，各自到期）按剩余积分最早过期的时间算，所以积分最先过期的 WorkBuddy 账号排第一。失败后在休息的排最后。</td></tr>
+      <tr><td>按顺序 <code>order</code></td><td>先用第一个模型，它答不了再换下一个。</td></tr>
+      <tr><td>轮流 <code>rotate</code></td><td>会话的每一轮交给下一个成员的账号或 Key，均摊负载。</td></tr>
+      <tr><td>最少使用 <code>usage</code></td><td>剩余额度最多的账号或 Key 排第一。</td></tr>
+      <tr><td>重置前用完 <code>pace</code></td><td>每周剩余额度除以距重置的小时数，最高的账号排第一——重置时损失最多的那个——少让成员的周额度到重置时作废；只有 5 小时额度、没有周额度的账号（如 Claude Enterprise）按 5 小时窗口的剩余额度除以距它重置的小时数算，所以几乎总排第一。用到 90% 以上的等其他账号都答不了时才用。Key 按最近发给它的 token 数排。</td></tr>
+      <tr><td>按权重 <code>weight</code></td><td>每个模型按群组编辑器里它旁边设的权重（1 到 1000，不设为 1）分得请求：权重 3 的模型每拿三个，权重 1 的拿一个，均匀穿插而不是成批。每个模型按它自己提供方的路由用自己的账号或 Key，群组里的群组算一个成员。失败后歇着的那个退出这一轮；一个失败时，下一个模型接上。</td></tr>
+    </table></div>
+    <div class="table-wrap"><table>
+      <tr><th>会话保持</th><th>会话在回答过它的账号或 Key 上留多久</th></tr>
+      <tr><td>自动 <code>auto</code></td><td>默认。一轮之内总是保持，跨轮则在厂商缓存还值得保留时保持。</td></tr>
+      <tr><td>整个会话 <code>session</code></td><td>整个会话，只要它还能回答。</td></tr>
+      <tr><td>一轮之内 <code>turn</code></td><td>Agent 回传工具结果时不换；你再次发言时，路由重新决定。</td></tr>
+      <tr><td>关闭 <code>off</code></td><td>每个请求都重新路由。</td></tr>
+      <tr><td>严格 <code>strict</code></td><td>绝不换到别的账号或密钥，即使超过其用量上限也一样：它被限流或额度用完时，错误直接交给 Agent。新会话照常路由。</td></tr>
+    </table></div>
+    <h3 id="rules">规则 · 把某类对话交给指定模型</h3>
+    <p>路由组的 <span class="ui">规则</span> 把符合条件的一轮对话交给组里指定的模型：够长（<code>tokens ≥ N</code>）、带图片、要求推理（开启，或不低于某个强度）、来自某些 Agent，用户想做的事符合你描述的<em>意图</em>、Agent 正在压缩上下文，或者 Agent 在某些文件夹（项目）里工作。一条规则的条件要同时满足，所以可以写“在 ~/work/acme 里，并且够长”。每次你发新消息时从上往下检查，第一条命中的规则把它的模型排在最前，其余成员排在后面做故障转移。没有命中任何规则的一轮照组本来的方式路由，并保持在原来的账号上。</p>
+    <ul>
+      <li>规则只在一轮开始时决定；Agent 回传工具结果的过程中一直留在那个模型上，不会半途换掉而丢掉厂商的缓存。唯一例外：这一轮涨到超过所在模型的上下文，会换到装得下的成员。</li>
+      <li>token 数取请求大小的估算与厂商对这个会话上一个请求的计数中较大的一个。请留出余量：给 200k 的模型设 150k，而不是 199k。</li>
+      <li>子代理是单独的会话，规则可以把它发到别处，主代理仍留在原处。</li>
+      <li>意图是用几个词描述用户想做什么，例如“写或修测试”“一个简单问题”。每一轮开始时，Agent Link 会问一次组里指定的意图判断模型：用户这条消息属于哪个可能命中的意图。这个模型可以是 Agent Link 里的任意模型，建议选小而快、不带推理的。发过去的只有这条消息，不包括整段对话。它出错、超时（8 秒）或给不出答案时，意图条件都不命中，这一轮按其他规则走。如果前面有不带意图的规则已经能决定，就不会去问；同一条消息也不会问两次。它的调用在用量里显示为 Agent Link 自己的调用。它具体被问了什么、回答怎么用、失败时怎么办，详见<a href="/docs/zh/intent">意图路由</a>。</li>
+      <li><span class="ui">压缩上下文时</span>：Agent 压缩对话上下文时命中——Claude Code 的 <code>/compact</code> 和自动压缩、Codex、OpenCode、Pi、Gemini CLI、Qwen Code、Kimi Code——让更便宜、更快的模型来写总结，对话本身仍留在原来的模型上。压缩请求单独决定：它所在的这一轮和缓存都留在原处。对话比规则里的模型能装下的还长时，改由下一条命中的规则或组本来的顺序决定。</li>
+      <li><b>时段和星期。</b>规则可以只在某些时段、某几天生效，按这台电脑的时钟——比如厂商的高峰期。把这段时间的对话“先发给”别的模型，厂商那个模型仍排在后面做故障转移。要把它完全拿掉，在规则的 <span class="ui">⋯</span> 菜单里选 <span class="ui">改为暂停该模型</span>：规则生效期间（它的时段、星期和 Agent），这个模型移出分组——不排第一、不做备用、也不会因为会话粘性被留住——时段过了自动回来。暂停只按时段、星期和 Agent 判断；组里所有模型都被暂停时，会告诉 Agent。</li>
+      <li><b>文件夹。</b><span class="ui">项目文件夹</span>：Agent 的工作目录是你列出的文件夹之一或其子文件夹时命中：<code>~/work/acme</code> 包括 <code>~/work/acme/web</code>，不包括 <code>~/work/acme-old</code>。文件夹以 Agent 在请求里告诉模型的为准——Claude Code、Codex、OpenCode 和 Pi 都会说——不说明工作目录的 Agent 不会命中任何按文件夹的规则。<code>~</code> 是你的主目录，<code>C:\work</code> 也就是 WSL 里的 <code>/mnt/c/work</code>，macOS 和 Windows 上不区分大小写。</li>
+      <li><b>推理强度。</b>规则还可以设定它的模型用什么推理强度，让一个意图同时选定模型和推理强度：在规则的 <span class="ui">⋯</span> 菜单里选 <span class="ui">设定推理强度</span>，或在终端用 <code>use-effort=low</code>。不管 Agent 要求什么，该模型都按这个推理强度发送，取模型最接近的档位；Agent Link 不知道档位的模型，以及排在它后面做备用的模型，按 Agent 的要求发送。详见<a href="/docs/zh/intent#effort">意图路由</a>。</li>
+      <li>路由标签页会显示每一轮是被哪条规则送到哪里的、意图判断模型给出的答案，以及 Agent 说的工作目录。</li>
+    </ul>
+    <h3 id="nested">路由组里放路由组</h3>
+    <p>路由组的成员也可以是另一个路由组：在 <span class="ui">添加模型</span> 的 <em>路由组</em> 分类里选它，或者在终端里用 <code>models+=group/&lt;id&gt;</code>。子组占据它在顺序里的位置，在自己的模型之间按自己的路由方式和规则分配。比如 Coder 可以是 <code>deepseek-v4-pro</code>，然后是 <em>Fast</em>，而 Fast 是几个便宜模型的顺序。Coder 的规则可以把一轮对话交给 <code>group/fast</code>，再由 Fast 自己的规则决定它里面哪个模型排第一。</p>
+    <ul>
+      <li><b>不会无限递归。</b>一个组不能包含它自己，无论是直接包含，还是经由它里面的组间接包含。Coder 已经包含 Fast 时，再把 Coder 放进 Fast 会被拒绝，选择器里也不会列出这样的组。最多嵌套 8 层。一个组被别的组包含时不能删除，要先从那个组里移除它。</li>
+      <li><b>每一层按自己的路由。</b>外层组不管用什么路由，都不会伸进它里面的组：智能、轮流、最少使用、重置前用完都把子组当作一个成员，拿子组自己会先用的那个账号或 Key 来比；排到它时，子组按自己的顺序整体尝试。Coder 设为智能、里面放 Claude（按顺序）和 GPT（按顺序）两个组时，比较的是 Claude 组的第一个和 GPT 组的第一个，不会把两组的账号混在一起排。</li>
+      <li><b>服务商自己的路由也一样。</b>一个模型的服务商把账号或 Key 设为按顺序、轮流、用量少的优先、重置前用完或按权重时，在任何路由组里都保持这个路由：组拿它会先用的那个账号或 Key 来比，排到它时按它自己的顺序整体尝试。保持默认“智能”的服务商，它的账号和组里其他账号放在一起排，额度最先重置的排第一，不管属于哪个服务商。</li>
+      <li><b>故障转移照常。</b>子组里的模型全部失败时，由外层组的下一个成员接手，和其他成员一样。</li>
+      <li>同一个模型出现两次（单独一次，子组里一次）时只问一次，按它第一次出现的位置。</li>
+    </ul>
+    <figure class="figure">
+      <img class="for-light" src="/img/nested-routing-zh-light.png" width="2080" height="1294" loading="lazy" alt="路由标签页里的嵌套路由组：Coder 包含 deepseek-v4-pro 和路由组 Fast，Fast 的 deepseek-v4-flash 与 kimi-k2.5 列在它下面；Kimi 回答了请求">
+      <img class="for-dark" src="/img/nested-routing-zh-dark.png" width="2080" height="1294" loading="lazy" alt="路由标签页里的嵌套路由组：Coder 包含 deepseek-v4-pro 和路由组 Fast，Fast 的 deepseek-v4-flash 与 kimi-k2.5 列在它下面；Kimi 回答了请求">
+      <figcaption>Coder 的规则把一个简单问题交给路由组 Fast，Fast 自己的规则又把 Kimi 排在组内第一。路由记录会写明每一层的规则和意图判断模型分别做了什么决定。</figcaption>
+    </figure>
+    <p><span class="ui">路由</span> 标签页实时显示网关的决定：每个请求由谁回答、为什么。在终端里也能管理路由组：</p>
+    <div class="code">
+      <span class="lang">终端</span>
+      <button class="copy" data-copy="ex-group">复制</button>
+      <pre id="ex-group">Agent Link groups                        <span class="c"># 先列你建的，再列 Agent Link 自动发现的</span>
+Agent Link group add <span class="s">"Opus anywhere"</span> models=claude/claude-opus-5-5,copilot/claude-opus-5.5 routing=order stays=session
+Agent Link group set opus-anywhere models+=openrouter/anthropic/claude-opus-5.5
+Agent Link group set opus-anywhere routing=weight weight=claude/claude-opus-5-5=3  <span class="c"># 每四个请求有三个给它</span>
+Agent Link group rule add opus-anywhere use=openrouter/anthropic/claude-opus-5.5 tokens=150k  <span class="c"># 长对话优先发给它</span>
+Agent Link group rule add opus-anywhere use=copilot/claude-opus-5.5 intent=<span class="s">"一个简单问题"</span> classifier=groq/llama-3.1-8b-instant
+Agent Link group rule add opus-anywhere use=deepseek/deepseek-v4-flash compact  <span class="c"># /compact 的总结交给便宜的模型</span>
+Agent Link group rule add opus-anywhere use=kimi/kimi-k2.6 folders=~/oss,<span class="s">"~/My Project"</span>  <span class="c"># 这些项目里的对话先发给它</span>
+Agent Link group rule add opus-anywhere pause=copilot/claude-opus-5.5 time=14:00-18:00 days=mon-fri  <span class="c"># 这段时间不用它</span>
+Agent Link group rule add opus-anywhere pause=claude/claude-opus-5-5 except-folders=~/big-task  <span class="c"># 只留给 ~/big-task 里的任务：其他文件夹不用它</span>
+Agent Link group set coder models+=group/opus-anywhere  <span class="c"># 路由组里放路由组</span>
+Agent Link group rule opus-anywhere      <span class="c"># 查看规则；rule rm|mv &lt;n&gt;，rule classifier &lt;组&gt; &lt;模型&gt; 换判断模型</span>
+Agent Link group copy opus-anywhere <span class="s">"Opus test"</span>  <span class="c"># 复制一份：模型、路由方式和规则都一样，可单独修改</span>
+Agent Link group rm opus-anywhere        <span class="c"># 自动发现的组会被隐藏；Agent Link group restore &lt;id&gt; 恢复</span>
+Agent Link claude group/opus-anywhere    <span class="c"># 使用它</span></pre>
+    </div>
+
+    <h2 id="usage"><a class="anchor" href="#usage">用量与方案</a></h2>
+    <p><b>用量。</b><span class="ui">用量</span> 标签页按 Agent 和模型统计每次经过网关的调用的 token、缓存命中和费用，可选 <span class="ui">今天</span>、<span class="ui">7 天</span>、<span class="ui">30 天</span> 或 <span class="ui">全部</span>；最上面是各订阅已用的额度和重置时间。Agent 直接发给自己厂商的请求不经过 Agent Link，不会计入。</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/usage-zh-light.png" width="2080" height="842" loading="lazy" alt="用量页：剩余余额、token 与费用汇总，以及 30 天趋势图">
+      <img class="for-dark" src="/img/usage-zh-dark.png" width="2080" height="842" loading="lazy" alt="用量页：剩余余额、token 与费用汇总，以及 30 天趋势图">
+      <figcaption>经过网关的每次调用的余额、token、缓存命中和费用。</figcaption>
+    </figure>
+    <p><b>上下文。</b><span class="ui">用量</span> 里的 <span class="ui">上下文</span> 标签页显示每个 Agent 的提示词里装了什么，在请求经过网关时读出：系统提示词、工具定义（一个 MCP 服务器的工具算作一项）、指令文件与 skills、工具读入的文件、工具的其他输出和对话，各占模型上下文窗口的多少。每个 Agent 有一个百分制得分——缓存读到了多少提示词、起步多轻、上下文涨得多快、失败多不多——以及「起步轻」「MCP 偏重」之类的标签，说明得分从何而来。打开一个会话，可以一格一格地看它最近一次请求的窗口；在 <span class="ui">路由</span> 页点选任意请求也能看到。点一个部分、一格或一项，可以看到 Agent Link 发出去的原文，开着遮盖时是遮盖后的。原文只为最近 10 次请求留在内存里，Agent Link 退出就没了；存下来的只有名称，不保存提示词的文字，也不会发往任何地方。</p>
+    <p><b>方案。</b>在 <span class="ui">Agent</span> 标签页底部点 <span class="ui">＋ 保存当前</span>，把所有 Agent 的设置存成一个方案；之后点这个方案就能一键全部切回。正在使用的方案带 ✓，托盘面板的 <span class="ui">方案</span> 按钮也显示它的名字；之后手动改过设置，✓ 就会消失。</p>
+
+    <h2 id="cli"><a class="anchor" href="#cli">命令行</a></h2>
+    <p><code>agent-link tui</code> 是终端里的完整界面，上面每一步也都有对应命令。<code>Agent Link help</code> 列出全部命令。</p>
+    <div class="table-wrap"><table>
+      <tr><th>命令</th><th>作用</th></tr>
+      <tr><td><code>Agent Link ls</code></td><td>列出找到的每个 Agent 及其设置</td></tr>
+      <tr><td><code>Agent Link presets</code></td><td>Agent Link 内置的厂商预设</td></tr>
+      <tr><td><code>Agent Link provider add deepseek sk-…</code></td><td>用密钥添加一个预设</td></tr>
+      <tr><td><code>Agent Link accounts add codex</code></td><td>再登录一个 Claude 或 ChatGPT 订阅</td></tr>
+      <tr><td><code>Agent Link accounts discovery off</code></td><td>不读取智能体的登录信息（Claude Code 和 Codex 的文件、钥匙串）；<code>on</code> 重新读取</td></tr>
+      <tr><td><code>agent-link providers</code></td><td>你的供应商：地址、密钥、模型、谁在用</td></tr>
+      <tr><td><code>agent-link models</code></td><td>Agent 能选的所有模型，写作 <code>provider/model</code></td></tr>
+      <tr><td><code>Agent Link claude codex/gpt-5.5</code></td><td>设置 Agent 的模型</td></tr>
+      <tr><td><code>Agent Link codex effort high</code></td><td>设置其他字段</td></tr>
+      <tr><td><code>Agent Link codex default</code></td><td>恢复 Agent 自己的默认值，移除 Agent Link 的接入</td></tr>
+      <tr><td><code>Agent Link save work</code> · <code>use work</code></td><td>保存、应用方案</td></tr>
+      <tr><td><code>agent-link usage 7d</code></td><td>按 Agent 和模型统计 token 与费用</td></tr>
+      <tr><td><code>Agent Link tray</code></td><td>只启动菜单栏图标</td></tr>
+    </table></div>
+
+    <h2 id="faq"><a class="anchor" href="#faq">常见问题</a></h2>
+    <h3>需要自己 export <code>OPENAI_BASE_URL</code> 或 <code>ANTHROPIC_BASE_URL</code> 吗？</h3>
+    <p>不需要。对 Agent Link 列出的 Agent，它会把网关地址和令牌直接写进 Agent 自己的配置文件。这些环境变量只用于 Agent Link 不管理的、带 base URL 设置的其他工具：<span class="ui">网关</span> 标签页的 <span class="ui">接入</span> 部分有一键复制和示例代码。</p>
+    <h3>Agent Link 必须一直开着吗？</h3>
+    <p>通过 Agent Link 使用的模型需要：网关随应用一起运行。关掉窗口后它仍留在菜单栏或托盘里；<code>Agent Link tray</code> 只启动图标（可以放进登录项），<code>Agent Link serve</code> 只运行网关，<code>Agent Link daemon install</code> 把它装成服务（Linux 上是 systemd，Mac 上是 launchd），登录或开机就启动，不需要窗口；<code>Agent Link daemon install --web</code> 让服务同时提供浏览器页面，<code>Agent Link daemon status</code> 会打印页面的链接。Agent 用它自己的模型和自己的登录时，不经过 Agent Link。</p>
+    <h3>怎么把 Agent 恢复原样？</h3>
+    <p>在选择列表里选 Agent 自带的模型，或运行 <code>Agent Link &lt;agent&gt; default</code>。Agent Link 会删掉它写入的内容，并恢复被它替换掉的值，比如你原来的 <code>ANTHROPIC_BASE_URL</code>。</p>
+    <h3>换了模型，Agent 还在用旧的？</h3>
+    <p>已在运行的会话保持启动时的模型。开一个新会话；如果是 Codex，也请重启 Codex 应用。</p>
+    <h3>手动改 Agent 的配置会冲突吗？</h3>
+    <p>不会。Agent Link 每次都重新读取文件，只动它设置的那几个键，你的其他设置和注释都会保留。用 <span class="ui">导入…</span> 带进来的供应商是一份拷贝：之后在 Agent 里的改动不会再同步过来。</p>
+    <h3>没有梯子，安装或更新连不上 GitHub 怎么办？</h3>
+    <p>给安装脚本和 <code>Agent Link update</code> 加代理：<code>curl -fsSL https://useAgent Link.ai/install.sh | sh -s -- --proxy http://127.0.0.1:7890</code>，或 <code>Agent Link update --proxy socks5://127.0.0.1:1080</code>（支持 http、https、socks5、socks5h；环境变量 <code>HTTPS_PROXY</code>、<code>ALL_PROXY</code> 同样生效）。<code>--mirror &lt;前缀&gt;</code> 从你指定的 GitHub 下载镜像取发布文件，即 <code>&lt;前缀&gt;https://github.com/…</code>；<code>Agent Link update mirror &lt;前缀&gt;</code> 让之后每次更新（包括应用自己的更新）都用它，<code>Agent Link update mirror off</code> 取消。不指定就不用任何镜像；文件的 SHA-256 始终来自 useAgent Link.ai，而不是镜像，镜像改过的文件会被拒绝安装。应用自己的更新走 <span class="ui">设置</span> → <span class="ui">代理</span>。</p>
+
+    <h3 id="privacy">Agent Link 会发送我的哪些信息？</h3>
+    <p>你的提示词、回复、密钥和账号只发给你用的供应商，中间没有 Agent Link 自己的服务器。正式发布的 Agent Link 每天告诉我们一次它在用，好让我们知道有多少人在用、该先照顾哪些：本机随机生成的 ID、Agent Link 版本和系统，以及用了哪些 agent、供应商和模型，只用 Agent Link 自己的 ID（<code>claude</code>、<code>deepseek</code>、<code>deepseek/deepseek-v4</code>）和各自的数量。你自己添加的供应商及其上的模型只记作 <code>custom</code>。添加供应商页里排在最前的合作伙伴，每天被展示、打开和添加的次数也一并发送，只有次数。不发送名称、Base URL、账号、密钥、提示词和用量。<span class="ui">设置</span> → <span class="ui">隐私</span> → <span class="ui">分享我用的 agent、provider 和模型</span> 可以去掉 agent、供应商、模型和合作伙伴次数这部分；<span class="ui">计入用户数</span>、<code>DO_NOT_TRACK=1</code> 或 <code>AGENT_LINK_NO_STATS=1</code> 全部关闭。从源码构建的版本从不发送。合作伙伴的官网和「获取 Key」链接经 <code>useAgent Link.ai/go/…</code> 跳转，跳转前记一次点击（哪个合作伙伴、哪个链接、哪个国家），useAgent Link.ai 也会统计合作伙伴列表被拉取的次数。这部分是服务器本身看到的，和任何网站统计访问一样，不受上面的设置影响；不记录 ID、IP 和账号。插件、导入链接和库里的图标经 <code>useAgent Link.ai/api/icon</code> 获取，图标所在的服务器只看到 Cloudflare 的地址，看不到你的 IP；这台服务器只转发图片，不计数也不记录。<a href="/docs/zh/privacy">隐私页</a>列出了 Agent Link 自己发出的所有内容，附每日计数的示例、它在本机留下的文件和每个开关。</p>
+
+    <h3 id="proxy-loopback">Agent 报 502 或连不上，Agent Link 的路由标签页里却什么都没有？</h3>
+    <p>代理软件（Surge、Clash、mihomo 等，开了系统代理、TUN 或增强模式）把 Agent 发往 <code>http://127.0.0.1:7500</code> 的请求接走、转去了别处，请求根本没到 Agent Link。只在跳过列表（<code>skip-proxy</code>、「绕过」）里写 127.0.0.1 不一定够：有些 Agent（比如 Codex）照样会走代理。在代理软件里加两条本地地址直连的规则，放在其他规则前面：</p>
+    <div class="code">
+      <span class="lang">Surge</span>
+      <button class="copy" data-copy="ex-loopback">复制</button>
+      <pre id="ex-loopback">IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+IP-CIDR6,::1/128,DIRECT,no-resolve</pre>
+    </div>
+    <p>Clash / mihomo 的配置里把这两行写在 <code>rules:</code> 下，每行前面加 <code>- </code>。改完让 Agent 重新发一次请求即可。</p>
+    <p style="margin-top:48px">遇到问题，或者有值得分享的配置？来 <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> 聊。想给自己的用户一键添加供应商的厂商，请看 <a href="/docs/zh/import">Add to Agent Link</a>。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 Agent Link</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to Agent Link</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

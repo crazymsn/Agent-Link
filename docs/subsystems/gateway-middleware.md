@@ -1,0 +1,69 @@
+# Gateway middleware
+
+A plugin can be a JS gateway plugin: JavaScript that Agent Link runs inside its gateway on the requests agents send and the replies they get back (middleware), on the order a pool's accounts or keys are tried in (`strategies`), and on each usage row (`onUsage`), whatever provider serves them. It is separate from the provider plugins in [Provider and plugin ownership](provider-plugins.md), which run on Bun in the plugin host. Middleware runs in the gateway's own process on [moejs](https://github.com/Calcium-Ion/moejs), a JavaScript engine written in Go, because it sits on every request and every streamed event.
+
+## Responsibilities and sources of truth
+
+| Part | Responsibility | Source |
+| --- | --- | --- |
+| Discovery | Find a plugin's gateway module: `Agent Link.middleware` (or its alias `Agent Link.gateway`) in its package.json, or a path to a `*.middleware.js` / `*.gateway.js` (or `.mjs`) file | `plugin.Middleware` in [`internal/plugin/middleware.go`](../../internal/plugin/middleware.go) |
+| Bun host | Skip a plugin that is middleware only (no `main`, no `exports`) | `Middleware(...)` check in [`host.go`](../../internal/plugin/host.go) |
+| Load and run | Compile, pool runtimes, call hooks with limits, count calls and failures | [`internal/middleware`](../../internal/middleware): `middleware.go`, `run.go` |
+| Gateway | Run the chain on agents' requests only, as one `gwmw.Agent` on the gateway's middleware point; the built-in plugin `middleware` registers it (`middleware.Chain`), and with that plugin off no middleware runs | `serveAgent` in [`internal/gateway/middleware.go`](../../internal/gateway/middleware.go), called from `gateway.go` and `codex_backend.go`; [`internal/gwmw`](../../internal/gwmw/gwmw.go), [`plugins/middleware`](../../plugins/middleware/middleware.go); [Plugin runtime](plugin-runtime.md) |
+| Routings and usage | A module's `strategies` are routings `<short name>/<name>` (`routes.Register`) and its `onUsage` gets allow-listed usage rows, both while the gateway serves `middleware.Points()` (a `usage.Observer` the `middleware` plugin registers) | [`points.go`](../../internal/middleware/points.go) |
+| GUI and CLI | Show each middleware's hooks, calls, µs per call, failures and load error; its routings and how often they were asked; its usage rows and those dropped. The routings served are `jsRoutings` in the settings state, offered in every routing picker; `Agent Link group set <id> routing=<plugin>/<name>` takes one | `middleware.States()`; `pluginEntryJSON.Middleware` in [`internal/gui/plugins.go`](../../internal/gui/plugins.go), `mwLine` in `plugins.js`, `listPlugins` in [`plugins_cli.go`](../../internal/cli/plugins_cli.go) |
+| Options | A middleware's `options` in plugins.json, as `ctx.options`; set by name, spec, short name or the name without its scope (`plugin.Called`: agent-aider, which was its short name before `agent-`, `tools-` and `page-` came off too); a package's `Agent Link.options` is only the editor's example | `SetOptions`, `ShortName` in [`store.go`](../../internal/plugin/store.go); `pluginOptions` in `plugins_cli.go`; `optionsEditor` in `plugins.js` |
+| Kind | Whether a plugin is a provider, middleware or both, shown on every card and row, also for one that is off | `isMiddleware`, `middlewareOnly` in `pluginEntryJSON`; `kind: "middleware"` market entries (`market.json`, the community `registry.json`); `kindChip` in `plugins.js` |
+| Community middleware | Ready-made packages (`@Agent Link-community/middleware-<name>`), mostly New API's channel settings | `packages/{param-override,model-map,system-prompt,word-guard,think-tags,antigravity-cloak}` in [Agent Link-community/plugins](https://github.com/Agent Link-community/plugins), tested with `scripts/middleware.mjs` |
+| User docs | The hooks, `ctx` and an example for plugin authors | [useAgent Link.ai/docs/plugins#middleware](https://useAgent Link.ai/docs/plugins#middleware) (`site/public/docs/*plugins.html`) |
+
+plugins.json is the source of truth for which middleware is installed and on, in its order; a middleware that is off isn't loaded.
+
+## Runtime path
+
+1. `serveAgent` establishes the [gateway session identity and optional recording](gateway-sessions.md), runs any [asynchronous request hooks](gateway-request-hooks.md) through Bun, then calls `Begin` on each registered `gwmw.Agent` (the JS chain's is `middleware.Begin`) with the request's protocol, model, stream flag, path and agent. With no middleware it calls `serve` directly.
+2. `Run.Request` passes the agent's body, in its own API, to each `onRequest` in turn. An object returned is the body the next middleware and the gateway get; `undefined` keeps the bytes as they were. `ctx.reject(status, message)` stops the chain, and the agent gets that error in its API's shape (`writeError`).
+3. `Run.Tried` runs each `onProvider` on the body each time `serve` tries it on a provider, just before that try is sent (`triedOn` in the candidate loop of `gateway.go`; `serveAgent` puts the runs that are `gwmw.Tried` on the request's context). `ctx.provider` says which: `id`, `name`, `account` (the subscription's kind, as `accountAgent` gives it: `claude`, `antigravity`, …; absent for a key) and `model`, the model's id there. Every try starts again from the body `onRequest` left, so what one provider is sent changes no other try's: this is how a plugin acts on one vendor only, for an agent such as Claude Desktop whose model names say nothing of where they go. `null` and `ctx.reject` turn nothing away here; the request has been routed.
+4. `Run.Wrap` wraps the response writer when some middleware has `onEvent` or `onResponse`. An SSE reply is split into events. Each event whose data is a JSON object goes to every `onEvent` that wants its name (`export const events`): an object replaces it, `null` drops it, and `undefined` writes the original bytes. `data: [DONE]` and other non-object data pass by. A whole JSON reply is buffered for `onResponse`, with `ctx.status` set. A reply with a `Content-Encoding` passes as-is.
+5. `Run.End` returns the runtimes to their pools.
+
+Each middleware gets one runtime for the whole request, so its hooks share `ctx.state`. Runtimes come from a per-middleware `sync.Pool` and modules are compiled once per load. Compiling a plugin's module (imports kept inside the plugin) is [`internal/jsmod`](../../internal/jsmod/jsmod.go), which agent plugins ([Agent wiring](agent-wiring.md)) share.
+
+Only requests agents send go through `serveAgent`. Agent Link's own requests (thread titles, the router's classifier, the search and vision stand-ins) call `serve` directly. Middleware sees bodies before redaction, which still applies upstream, through the `redact` plugin's masker; masking asked for with no masker serving sends nothing ([Plugin runtime](plugin-runtime.md)).
+
+## Routings and usage rows
+
+`Points()` is the gateway's observer for both (`plugins/middleware` registers it with `usage.Observe`; only the gateway process serves it). While served it looks at the loaded modules once a second and registers each strategy as `<short name>/<name>`: the package's short name, or a file's base name less `.middleware`/`.gateway` and its extension. A reload or the module going off removes them, and a pool routed by one no plugin serves is tried in its listed order (`routingOf`).
+
+- A strategy is `strategies[name]`, a function `(pool, seats, options)` or an object with `order`. `seats` are `routes.Seat` in camelCase JSON (`key`, `account`, `known`, `learns`, `used`, `soon` in unix ms, `pace`, `weight`, `resting`, `tokens`). It returns an order of the seat indexes.
+- Each module has one runtime for its strategies and `onUsage`, so they share module state; one call runs at a time.
+- `onUsage(row, options)` gets a row of the allow-list in `usageRow`: time, operation, agent, provider and its account and key, the caller's key, model, requested, served, tokens, ms, ttftMs, status, errType, kind, rejected, tries and cost. No bodies, prompts, errors' text, sessions or request ids. Rows are queued (1024) and taken by one worker, off the request path; a full queue drops the row and counts it.
+- A routing of this form (`provider.PluginRouting`: a name of `A-Za-z0-9._-`, a slash, a name) is kept in providers.json as saved, by a provider's and a group's Save alike, whether or not a plugin serves it now, so turning a plugin off and on again keeps the groups routed by it. A file's base name is made into such a name (other characters become `-`). `Agent Link group set <id> routing=<plugin>/<name>` takes the same form.
+
+## Constraints and failure behavior
+
+- Limits: 250ms for `onRequest`, each `onProvider` and `onResponse`, 50ms for each `onEvent`, 1s to load. A hook past its limit is interrupted.
+- Fail open: a hook that throws, returns something that is neither an object, `null` nor `undefined` (an `onProvider` returning `null` too), or is interrupted leaves the request or event as it was. The failure is counted and kept as the last error, and logged at most 60 lines a minute.
+- A middleware imports only relative files; packages must be bundled into it.
+- Reload: a change to plugins.json or to a middleware file is picked up by the next request at most a second later (`stamp`).
+- A strategy has 20ms, waiting for its runtime included; one that throws, runs out of time or returns what isn't an order of the seats leaves them in their listed order (fail open), counted and logged as a failure. `onUsage` has 250ms and fails open the same way. A request never waits for `onUsage`.
+- Stats count the whole call, including parsing JSON into the runtime and writing it back. Calls are counted in the process that runs the gateway, so `Agent Link plugin` shows hooks and load errors only.
+
+Measured with a real account and real Claude Code: about 1–1.6µs an event, 0.2–0.7ms an `onRequest` that parses and rewrites Claude Code's ~80KB body. `BenchmarkEvent` is about 0.9µs, 11 allocations.
+
+## Verification
+
+```sh
+go test -tags nogui ./internal/middleware   # TestStrategy*, TestOnUsage*, TestDocsExample: points.go
+go test -tags nogui -run 'TestParseRouting|TestPluginListSaysMiddleware' ./internal/cli
+go test -tags nogui -run TestPluginRoutingKept ./internal/provider
+go test -tags nogui -run TestOnServesStrategies ./plugins/middleware
+node --test internal/gui/tests/routing-js.test.cjs
+go test -tags nogui -run 'TestMiddlewareThroughGateway|TestMiddlewareOnProviderPerTry' ./internal/gateway
+go test -tags nogui -run TestPluginListSaysMiddleware .
+go test -tags nogui -run "TestSetOptionsShortName|TestBuiltinMarket" ./internal/plugin
+go test -tags nogui -bench Event ./internal/middleware
+node --test internal/gui/tests/plugin-middleware.test.cjs
+# in Agent Link-community/plugins: each package runs its cases.json through the hooks
+bun test packages/think-tags packages/model-map packages/param-override packages/system-prompt packages/word-guard packages/antigravity-cloak
+```

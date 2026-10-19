@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker · agentlink 文档</title>
+<meta name="description" content="在服务器或 NAS 上用 Docker 运行 agentlink：ghcr.io/yetone/agentlink 镜像的端口、数据卷和环境变量，Web 界面，登录订阅，用网关密钥共享网关，以及 Compose 示例。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useagentlink.ai/docs/docker">
+<link rel="alternate" hreflang="zh" href="https://useagentlink.ai/docs/zh/docker">
+<link rel="alternate" hreflang="ja" href="https://useagentlink.ai/docs/ja/docker">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="在 Docker 里运行 agentlink">
+<meta property="og:description" content="在服务器或 NAS 上运行 agentlink 的网关，在浏览器里管理它。">
+<meta property="og:image" content="https://useagentlink.ai/img/og.png">
+<meta property="og:url" content="https://useagentlink.ai/docs/zh/docker">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/zh/"><img class="bird" src="/img/agentlink-small.svg" alt="">agentlink <small>文档</small></a>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a class="toc-only" href="/docs/zh/remote">远程 agentlink</a>
+    <a class="toc-only" href="/docs/zh/docker">Docker</a>
+    <a class="toc-only" href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to agentlink</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">版本发布</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="语言" title="语言" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/docker" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/docker" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/docker" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agentlink on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agentlink on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">下载</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Docker</p>
+    <a href="#overview">概览</a>
+    <a href="#run">运行</a>
+    <a href="#web">Web 界面</a>
+    <a href="#signin">登录订阅</a>
+    <a href="#volume">保存了什么</a>
+    <a href="#env">环境变量</a>
+    <a href="#share">网关密钥与其他机器</a>
+    <a href="#compose">在 NAS 上用 Docker Compose</a>
+    <a href="#ops">健康检查、终端与更新</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">文档 · 服务器</p>
+    <h1>在 Docker 里运行 agentlink</h1>
+    <p class="lede">在没有桌面的服务器或 NAS 上运行 agentlink：它的网关为其他电脑上的 Agent 提供模型，供应商的添加和订阅登录都在浏览器页面里完成。</p>
+
+    <div class="table-wrap"><table>
+      <tr><td><b>镜像</b></td><td><code>ghcr.io/yetone/agentlink</code>，支持 <code>linux/amd64</code> 和 <code>linux/arm64</code></td></tr>
+      <tr><td><b>标签</b></td><td><code>latest</code>（最新正式版）、<code>0.1.1150</code>（某个版本）、<code>0.1</code>、<code>edge</code>（<code>main</code> 上的每次改动）</td></tr>
+      <tr><td><b>端口</b></td><td><code>3425</code> 是 Agent 调用的网关；<code>3430</code> 是容器运行 <code>agentlink web</code> 时的 Web 界面</td></tr>
+      <tr><td><b>数据卷</b></td><td><code>/config</code>：供应商、密钥、登录、插件和用量</td></tr>
+      <tr><td><b>用户</b></td><td>nonroot（uid 65532）</td></tr>
+    </table></div>
+    <p>镜像里是 agentlink 的纯终端版本，基于 Debian 12 slim，带 bash，方便在容器里开终端，也带 curl，用来安装部分订阅登录时需要的 CLI（Cursor、Devin、Grok Build）。不指定命令时运行 <code>agentlink serve</code>（只有网关）。容器里找不到需要配置的 Agent，所以这里的 agentlink 是一个网关：用它的 Agent 运行在别的机器上。</p>
+
+    <h2 id="run"><a class="anchor" href="#run">运行</a></h2>
+    <p>带 Web 界面运行，给页面一个重启后不变的 key，两个端口都只发布在宿主机的回环地址上：</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-run">复制</button>
+      <pre id="ex-run">docker run -d --name agentlink --restart unless-stopped \
+  -p 127.0.0.1:3425:3425 -p 127.0.0.1:3430:3430 \
+  -e AGENT_LINK_WEB_KEY=$(openssl rand -hex 16) \
+  -v agentlink-config:/config \
+  ghcr.io/yetone/agentlink:latest web --addr 0.0.0.0:3430 --no-open
+
+docker logs agentlink</pre>
+    </div>
+    <p>日志里给出带 key 的页面地址：</p>
+    <div class="code">
+      <span class="lang">输出</span>
+      <pre>● agentlink web on http://127.0.0.1:3430/?k=0f3c9a1e…
+  on the network http://172.17.0.2:3430/?k=0f3c9a1e…
+  these are the container's own addresses: other machines use the host's, and AGENT_LINK_PUBLIC_URL=http://&lt;host&gt;:&lt;port&gt; puts it here
+! anyone with the link can change agentlink and see its keys, and the network carries it unencrypted
+  the link carries AGENT_LINK_WEB_KEY · gateway http://127.0.0.1:3425 · Ctrl-C to stop</pre>
+    </div>
+    <div class="callout"><b>容器外的 Agent 需要网关密钥。</b>在容器里任何 key 都行。来自宿主机或其他机器的请求只有带上启用的网关密钥才会应答，不带的返回 401：按<a href="#share">网关密钥</a>里的步骤生成一个。<code>-p</code> 里的 <code>127.0.0.1:</code> 让端口只在宿主机上；去掉它，或写成宿主机的局域网或 VPN 地址，其他机器才能访问。</div>
+    <p>不加 <code>web --addr 0.0.0.0:3430 --no-open</code> 时容器只跑网关，需要在容器终端里配置（<code>docker exec -it agentlink agentlink provider add …</code>）。也可以把一个目录绑定挂载到 <code>/config</code> 来代替命名卷，前提是 uid 65532 能写它：<code>sudo chown -R 65532:65532 /volume1/docker/agentlink/config</code>。</p>
+
+    <h2 id="web"><a class="anchor" href="#web">Web 界面</a></h2>
+    <p>打开日志里的链接。链接里的 key 会换成一个 cookie，并从地址栏里去掉；不带 key 打开会被拒绝（401）。设置了 <code>AGENT_LINK_WEB_KEY</code>（16 个以上的字母、数字或 <code>- . _ ~</code>；<code>openssl rand -hex 16</code> 可以生成一个）时，重启后 key 不变，浏览器保持登录 400 天。不设置时每次启动都会生成新 key，cookie 只在本次浏览器会话里有效。</p>
+    <p>这个页面处于<b>网关模式</b>：只有 <span class="ui">供应商</span>、<span class="ui">网关</span>、<span class="ui">路由</span>、<span class="ui">用量</span>、<span class="ui">插件</span>和 <span class="ui">设置</span>，没有 Agent、会话和资源库，因为容器里没有 Agent。<span class="ui">设置</span> → <span class="ui">常规</span> → <span class="ui">网关模式</span> 可以关掉它。</p>
+    <p>NAS 或通过 SSH 访问的服务器上，用隧道打开页面，不要发布 3430：<code>ssh -L 3430:127.0.0.1:3430 you@nas</code>，然后在自己电脑上打开日志里的链接。</p>
+    <div class="callout"><b>拿到链接的人都能修改 agentlink、看到它的密钥。</b>让 3430 只在回环地址或 VPN 上。要跨网络访问，就用 HTTPS：用 <code>AGENT_LINK_TLS_CERT</code> 和 <code>AGENT_LINK_TLS_KEY</code> 给 agentlink 一张证书，或者放在带 TLS 的反向代理（如 Caddy）后面。</div>
+
+    <h2 id="signin"><a class="anchor" href="#signin">登录订阅</a></h2>
+    <p>在 <span class="ui">供应商</span> 里添加 API key，和桌面版一样。订阅登录（ChatGPT、Claude……）会在你的浏览器里打开厂商页面，完成后厂商把浏览器跳回 <code>localhost</code>，ChatGPT 是 <code>http://localhost:1455/auth/callback?code=…</code>。那是你自己的电脑，不是容器，所以页面打不开。把地址栏里的完整地址复制下来，粘贴到登录的 <span class="ui">回调 URL</span> 一栏。</p>
+    <p>在终端里也可以：</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-signin">复制</button>
+      <pre id="ex-signin">docker exec -it agentlink agentlink accounts add codex</pre>
+    </div>
+    <p>打开它打印的链接并登录，再把浏览器最后停在的地址粘贴回去。Web 界面也能从文件导入登录。</p>
+    <p>Claude 订阅的登录和请求都经过 Claude Code，而镜像里没有它。先让 agentlink 下载 Anthropic 官方的构建：它会说明版本、下载来源和保存位置，问过你再下载，并用 Anthropic 清单里的 SHA-256 校验。它保存在 <code>/config/cache</code> 里；再运行一次可以更新到新版本。缺少 Claude Code 时，<code>agentlink accounts add claude</code> 也会提出下载。</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-claude-code">复制</button>
+      <pre id="ex-claude-code">docker exec -it agentlink agentlink claude-code install</pre>
+    </div>
+    <p>Grok（SuperGrok）订阅通过 xAI 的 Grok Build CLI 登录，镜像里同样没有它。在浏览器界面里登录，或者用 <code>agentlink plugin login grok</code> 登录时，agentlink 会先按 xAI 安装脚本的方式安装它：从 <code>x.ai/cli</code> 下载 stable 版本，放在 <code>/config/home/.grok</code>。要用你自己放进数据卷的 Grok Build，把 <code>GROK_BIN_DIR</code> 设为它所在的文件夹。</p>
+
+    <h2 id="volume"><a class="anchor" href="#volume">保存了什么</a></h2>
+    <p>agentlink 写的所有东西都在 <code>/config</code> 下，所以重启、或者在同一个数据卷上新建容器，供应商、密钥、登录和插件都还在。</p>
+    <div class="table-wrap"><table>
+      <tr><th>路径</th><th>内容</th></tr>
+      <tr><td><code>/config/agentlink</code></td><td>agentlink 自己的文件：<code>settings.json</code>、供应商、网关密钥、路由组</td></tr>
+      <tr><td><code>/config/home</code></td><td>容器的 <code>HOME</code>：登录保存在对应 Agent 保存的位置（<code>~/.codex</code>、<code>~/.claude</code>……）</td></tr>
+      <tr><td><code>/config/cache</code></td><td>模型目录、插件运行用的 Bun（第一次用插件时下载），以及 <code>agentlink claude-code install</code> 下载的 Claude Code</td></tr>
+      <tr><td><code>/config/data</code>、<code>/config/state</code></td><td>agentlink 保存的其他内容</td></tr>
+    </table></div>
+    <p>旧镜像创建的数据卷照样能用：agentlink 启动时会补上缺的目录。只有用旧镜像做的登录（当时存在数据卷之外）需要重新登录。</p>
+
+    <h2 id="env"><a class="anchor" href="#env">环境变量</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>变量</th><th>作用</th></tr>
+      <tr><td><code>AGENT_LINK_ADDR</code></td><td>网关监听的地址。镜像里设为 <code>0.0.0.0:3425</code>，发布的端口才能访问到它。</td></tr>
+      <tr><td><code>AGENT_LINK_PUBLIC_URL</code></td><td>其他机器访问网关用的地址，例如 <code>http://192.168.1.20:3425</code>（宿主机或 NAS 的地址，加发布的端口），或反向代理的 base URL。容器里 agentlink 只看得到 Docker 自己的 <code>172.17.x</code> 地址；设置后，它显示和打印的就是该用的地址。</td></tr>
+      <tr><td><code>AGENT_LINK_WEB_KEY</code></td><td>Web 界面的 key，重启后不变（16 个字符以上）</td></tr>
+      <tr><td><code>AGENT_LINK_TLS_CERT</code>、<code>AGENT_LINK_TLS_KEY</code></td><td>挂载进容器的 PEM 证书（后面跟着证书链）和私钥：其他机器只能用 <code>https://</code> 访问网关和 Web 界面，它们发来的明文 HTTP 返回 400。文件变了会重新读取，续期不用重启。只给一个，或文件读不出来，agentlink 不会启动。<code>AGENT_LINK_PUBLIC_URL</code> 也写成 <code>https://</code>。</td></tr>
+      <tr><td><code>AGENT_LINK_ALLOW_IPS</code></td><td>其他机器只能从这些地址访问网关和 Web 界面，写 IP 或 CIDR 网段：<code>203.0.113.7,10.0.0.0/8,2001:db8::/32</code>。其他地址即使带着网关密钥也会得到 403。不设置则所有地址都可访问，各自仍需密钥。见<a href="#allow">允许的地址</a>。</td></tr>
+      <tr><td><code>HOME</code>、<code>XDG_CONFIG_HOME</code>、<code>XDG_CACHE_HOME</code>、<code>XDG_DATA_HOME</code>、<code>XDG_STATE_HOME</code></td><td>镜像已设为上面 <code>/config</code> 下的目录，不要改</td></tr>
+    </table></div>
+
+    <h2 id="share"><a class="anchor" href="#share">网关密钥与其他机器</a></h2>
+    <ol class="steps">
+      <li><b>给每个客户端生成一个密钥</b><span class="ui">网关</span> → <span class="ui">网关密钥</span>，或在终端里 <code>docker exec agentlink agentlink gateway-key add "Laptop"</code>，它会打印新的 <code>sk-agentlink-key-…</code>。容器外的每个请求（包括宿主机自己的）都必须带一个启用的网关密钥，不带的返回 401。每个密钥可以有自己的每日、每周、每月、每 N 天或每 N 小时的上限和可用模型（<code>agentlink gateway-key limit</code>、<code>agentlink gateway-key models</code>）。</li>
+      <li><b>发布端口</b>用 <code>-p 3425:3425</code>（或绑定到 NAS 的局域网或 VPN 地址，<code>-p 192.168.1.20:3425:3425</code>）并加上 <code>-e AGENT_LINK_PUBLIC_URL=http://192.168.1.20:3425</code> 重新创建容器。</li>
+    </ol>
+    <p>在其他电脑上，把 Agent 指向这个网关，用其中一个密钥作为 API key：OpenAI 客户端用 <code>http://192.168.1.20:3425/v1</code>，Anthropic 或 Gemini 客户端用 <code>http://192.168.1.20:3425</code>。模型 id 是 <code>provider/model</code> 或路由组的名字，<code>GET /v1/models</code> 会列出它们。如果那台电脑自己也运行 agentlink，就把容器添加为<a href="/docs/zh/remote">远程 agentlink</a>，由 agentlink 替你配置 Agent。</p>
+    <p>容器里不需要打开 <span class="ui">设置</span> → <span class="ui">局域网共享</span>：打开它会另外生成一个名为 <span class="ui">Agent Link</span> 的网关密钥，而不论开关如何，网关都会向容器外的请求要密钥。</p>
+    <p><b>从旧镜像升级。</b>容器外发送 <code>agentlink</code> 或其他非启用网关密钥的 Agent，现在会收到 401（“the API key sent is not an enabled agentlink gateway key”）。按上面的步骤给它生成一个密钥，填进 Agent 的设置。已经发送网关密钥的 Agent，以及用网关密钥添加的远程 agentlink，照常工作。</p>
+    <p id="allow"><b>允许的地址。</b>在公网主机上，用 <code>-e AGENT_LINK_ALLOW_IPS=203.0.113.7,10.0.0.0/8</code> 写上你的客户端所在的地址。来自其他地址的请求在看密钥之前就被拒绝（403），所以泄露的密钥从别处也用不了；拒绝信息和容器日志都会写出请求来自的地址。agentlink 判断的是连接本身的地址，从不采信 <code>X-Forwarded-For</code> 头；写错的条目不会放行任何地址，而不是放行所有地址。Docker 默认的 bridge 网络会把客户端自己的地址传进容器，但宿主机自己发出的请求来自 bridge 的网关（<code>172.17.0.1</code>），Docker Desktop 和 rootless Docker 则把所有客户端显示成它们自己的一个地址：把它加上，或看 403 里写的是哪个。在反向代理或隧道后面时，所有请求都来自代理的地址，请在代理那里限制谁能访问。桌面版里同一个列表在 <span class="ui">设置</span> → <span class="ui">网络与共享</span> → <span class="ui">允许的地址</span>。</p>
+    <div class="callout"><b>跨互联网访问时，优先用 VPN</b>（如 Tailscale 或 WireGuard），不要直接开放 3425。容器前面的反向代理或隧道也算网络：它的客户端和其他机器一样需要网关密钥。</div>
+
+    <h2 id="compose"><a class="anchor" href="#compose">在 NAS 上用 Docker Compose</a></h2>
+    <div class="code">
+      <span class="lang">compose.yaml</span>
+      <button class="copy" data-copy="ex-compose">复制</button>
+      <pre id="ex-compose">services:
+  agentlink:
+    image: ghcr.io/yetone/agentlink:latest
+    restart: unless-stopped
+    ports:
+      <span class="c"># 127.0.0.1：只在宿主机上；容器外的每个调用方都需要网关密钥</span>
+      - "127.0.0.1:3425:3425"
+      - "127.0.0.1:3430:3430"
+    environment:
+      AGENT_LINK_PUBLIC_URL: http://&lt;nas-address&gt;:3425
+      AGENT_LINK_WEB_KEY: &lt;random-key&gt;
+    volumes:
+      - ./config:/config
+    command: [web, --addr, 0.0.0.0:3430, --no-open]</pre>
+    </div>
+    <p>然后：<code>sudo chown -R 65532:65532 ./config</code>，<code>docker compose up -d</code>，通过 SSH 隧道打开 <code>http://127.0.0.1:3430/?k=&lt;random-key&gt;</code>，添加供应商，给每台机器生成一个网关密钥。要让其他机器访问网关，把它那一行改成 <code>"3425:3425"</code>（或 NAS 的局域网、VPN 地址），重新 <code>docker compose up -d</code>。</p>
+
+    <h2 id="ops"><a class="anchor" href="#ops">健康检查、终端与更新</a></h2>
+    <ul>
+      <li><b>健康检查。</b>镜像带 <code>HEALTHCHECK</code>：网关能应答时 <code>agentlink healthcheck</code> 返回 0，<code>serve</code> 和 <code>web</code> 都一样，所以 <code>docker ps</code> 会显示 healthy，Compose 可以用 <code>depends_on: condition: service_healthy</code> 等它。</li>
+      <li><b>终端。</b><code>docker exec -it agentlink bash</code> 或 NAS 面板里的终端会打开一个 shell，<code>agentlink</code> 在 PATH 里：<code>agentlink providers</code>、<code>agentlink models</code>、<code>agentlink usage</code>、<code>agentlink quota</code> 以及其他 <a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md">CLI 命令</a>。</li>
+      <li><b>更新。</b>拉取新镜像，在同一个数据卷上重新创建容器：<code>docker pull ghcr.io/yetone/agentlink:latest</code>，然后 <code>docker rm -f agentlink</code> 再执行同样的 <code>docker run</code>；或 <code>docker compose pull &amp;&amp; docker compose up -d</code>。</li>
+      <li><b>自己构建。</b>在<a href="https://github.com/crazymsn/Agent-Link">仓库</a>的检出目录里 <code>docker build -t agentlink .</code> 得到同样的镜像。</li>
+    </ul>
+
+    <p style="margin-top:48px">遇到问题，或者有值得分享的配置？来 <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> 聊。细节见<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#docker">参考文档</a>（英文）。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 agentlink · MIT</span>
+  <div class="links">
+    <a href="/zh/">首页</a>
+    <a href="/docs/zh/start">快速上手</a>
+    <a href="/docs/zh/intent">意图路由</a>
+    <a href="/docs/zh/plugins">插件开发</a>
+    <a href="/docs/zh/remote">远程 agentlink</a>
+    <a href="/docs/zh/docker">Docker</a>
+    <a href="/docs/zh/privacy">隐私</a>
+    <a href="/docs/zh/import">Add to agentlink</a>
+    <a href="/docs/zh/integrate">接入应用</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">版本发布</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "已复制"; setTimeout(() => (b.textContent = "复制"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

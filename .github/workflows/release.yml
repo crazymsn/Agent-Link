@@ -1,0 +1,85 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version without the v prefix; an existing v tag is required'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  CGO_ENABLED: '0'
+
+jobs:
+  windows:
+    name: Windows client
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build Windows client
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -n "$VERSION" ] || VERSION="${{ github.event.inputs.version }}"
+          go run github.com/tc-hib/go-winres@v0.3.3 make --in build/windows/winres.json --arch amd64 --out rsrc --file-version "$VERSION" --product-version "$VERSION"
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -tags production -trimpath -ldflags="-s -w -H windowsgui -X main.version=$VERSION" -o Agent-Link-windows-amd64.exe .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Agent-Link-windows
+          path: Agent-Link-windows-amd64.exe
+
+  macos:
+    name: macOS client
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build macOS client
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          [ -n "$VERSION" ] || VERSION="${{ github.event.inputs.version }}"
+          make icons
+          CGO_ENABLED=1 GOOS=darwin GOARCH=arm64 go build -tags production -trimpath -ldflags="-s -w -X main.version=$VERSION" -o agent-link
+          mkdir -p Agent-Link.app/Contents/MacOS Agent-Link.app/Contents/Resources
+          cp agent-link Agent-Link.app/Contents/MacOS/agent-link
+          cp build/darwin/agent-link.icns Agent-Link.app/Contents/Resources/agent-link.icns
+          cp build/darwin/Info.plist Agent-Link.app/Contents/Info.plist
+          sed -i '' "s/@VERSION@/$VERSION/g" Agent-Link.app/Contents/Info.plist
+          ditto -c -k --sequesterRsrc --keepParent Agent-Link.app Agent-Link-macos-arm64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Agent-Link-macos
+          path: Agent-Link-macos-arm64.zip
+
+  release:
+    name: Publish GitHub Release
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            REF="$GITHUB_REF_NAME"
+          else
+            REF="v${{ github.event.inputs.version }}"
+          fi
+          gh release create "$REF" dist/* --repo "$GITHUB_REPOSITORY" --verify-tag --title "Agent Link $REF" --generate-notes

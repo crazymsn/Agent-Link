@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Intent routing · Agent Link docs</title>
+<meta name="description" content="How Agent Link routes a turn by what the user asks for: when the classifier is asked, exactly what it sees, how its answer is used, what happens when it fails, and a detailed FAQ.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/intent">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/intent">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/intent">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Intent routing">
+<meta property="og:description" content="Send each turn to a model by what it asks for.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/intent">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/intent" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/intent" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/intent" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Intent routing</p>
+    <a href="#overview">Overview</a>
+    <a href="#setup">Set it up</a>
+    <a href="#how">How a turn is routed</a>
+    <a href="#prompt">What the classifier sees</a>
+    <a href="#failures">When it can’t say</a>
+    <a href="#turn">The rest of the turn</a>
+    <a href="#trace">Reading the trace</a>
+    <a href="#cost">Latency, cost, privacy</a>
+    <a href="#tips">Writing good intents</a>
+    <a href="#limits">Numbers</a>
+    <a href="#faq">FAQ</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Routing groups</p>
+    <h1>Intent routing</h1>
+    <p class="lede">Send a turn to a model by what the user asks for: tests to the strong model, quick questions to the fast cheap one. You describe each kind in a few words. When a turn begins, a small model you choose picks which kind the message is.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-rules-light.png" width="2060" height="1590" alt="A routing group's editor: three rules, two with an intent (asks for “a quick question”, asks for “writing or fixing tests”), and Intent told by llama-3.1-8b-instant on Groq">
+      <img class="for-dark" src="/img/intent-rules-dark.png" width="2060" height="1590" alt="A routing group's editor: three rules, two with an intent (asks for “a quick question”, asks for “writing or fixing tests”), and Intent told by llama-3.1-8b-instant on Groq">
+      <figcaption>The Coder group: long turns go to Kimi, quick questions to DeepSeek Flash, tests to DeepSeek Pro. Llama 3.1 8B on Groq picks the intent.</figcaption>
+    </figure>
+
+    <p>Intent is one of the conditions a <a href="/docs/start#rules">routing group’s rule</a> can have, next to length, images, reasoning and agent. This page describes exactly what Agent Link does with it, as of v0.1.99, so you can predict every decision and check it in the Routing tab.</p>
+
+    <div class="callout"><b>In one paragraph.</b> Agent Link decides once per turn: when you send a message, not while the agent works through tool calls. If a rule with an intent could be the first to match, Agent Link asks the group’s <em>classifier</em> model one short question through its own gateway. The question holds the intents as a numbered list plus the text of your latest message, and the classifier answers with a number. Agent Link reads that number and checks the rules top first with it. The first rule that matches puts its model first, and the group’s other models stay behind it for failover. The turn then stays on that model until you speak again. If the classifier fails, times out or answers something else, no intent matches and the turn is routed as if those rules weren’t there. There are no embeddings, no keyword lists and no training: the model you pick reads your message and picks a number.</div>
+
+    <h2 id="setup"><a class="anchor" href="#setup">Set it up</a></h2>
+    <p>You need a <a href="/docs/start#routing">routing group</a> with at least two models, and one more model to classify with. The classifier can be any model Agent Link has, in the group or not.</p>
+    <ol class="steps">
+      <li><b>Open the group</b>Go to <span class="ui">Routing</span>, find the group under <em>Routing groups</em> and click <span class="ui">Edit</span>.</li>
+      <li><b>Add a rule with an intent</b>Click <span class="ui">Add a rule</span>. The new rule reads <span class="ui">asks for</span> → a model, with the intent box ready: type what the message asks for, such as <em>writing or fixing tests</em>, then pick the model after →. More conditions come from the rule’s <span class="ui">+</span>, and must hold too.</li>
+      <li><b>Pick the classifier</b><span class="ui">Intent told by</span> appears once a rule has an intent, set to Jev when you have a TypeSafe provider. Otherwise choose a small, fast model without reasoning. A group whose effort Jev already picks offers the same under its classifier: <span class="ui">It can pick the model too</span>. A group can’t be saved with an intent and no classifier.</li>
+      <li><b>Save, and send a message</b>Changes apply from the next turn, with no restart. The <span class="ui">Routing</span> tab shows what the classifier said and where the turn went.</li>
+    </ol>
+    <p>The same from a terminal:</p>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="ex-cli">Copy</button>
+      <pre id="ex-cli">Agent Link group rule add coder use=deepseek/deepseek-v4-flash intent=<span class="s">"a quick question"</span> classifier=groq/llama-3.1-8b-instant
+Agent Link group rule add coder use=deepseek/deepseek-v4-pro intent=<span class="s">"writing or fixing tests"</span>
+Agent Link group rule add coder use=deepseek/deepseek-v4-pro use-effort=low intent=<span class="s">"a simple edit"</span>   <span class="c"># the same model, asked for low reasoning</span>
+Agent Link group rule coder                           <span class="c"># the rules, numbered, and the classifier</span>
+Agent Link group rule classifier coder groq/llama-3.1-8b-instant   <span class="c"># change the classifier</span>
+Agent Link group rule mv coder 3 1                    <span class="c"># order matters: top first</span>
+Agent Link group rule rm coder 2</pre>
+    </div>
+    <p><code>intent=</code> also takes the spellings <code>asks=</code> and <code>about=</code>. <code>classifier=</code> also takes <code>classify=</code> and <code>by=</code>. <code>classifier=</code> on <code>rule add</code> sets the group’s classifier and is needed only the first time. The classifier is saved in the group’s record in <code>~/.config/Agent Link/providers.json</code> as <code>"classifier"</code>, and each rule as <code>{"use": …, "intent": …}</code>.</p>
+
+    <p id="effort">A rule can also set the reasoning its model is asked for, so an intent picks the model and the effort as a pair: <code>use-effort=</code> (<code>low</code>, <code>medium</code>, <code>high</code>, <code>xhigh</code> or <code>max</code>), saved as <code>"useEffort"</code>, such as <code>{"use": "deepseek/deepseek-v4-pro", "intent": "a simple edit", "useEffort": "low"}</code>. In the editor it is set from the rule’s <span class="ui">⋯</span> menu, <span class="ui">Set its reasoning</span>, and shows beside the model. The rule’s model is then asked for that effort on the turn’s requests, whatever the agent asked, at the model’s nearest level. A model whose levels Agent Link doesn’t know is asked as the agent asked, and so are the models the group fails over to. A model fixed at an effort in the group keeps its own. Without it, the model is asked as the agent asked. The Routing tab says when a rule set the effort.</p>
+
+    <h2 id="how"><a class="anchor" href="#how">How a turn is routed</a></h2>
+    <p>Every request an agent sends to a group with rules goes through these steps, in this order:</p>
+    <ol class="steps">
+      <li><b>Is this a new turn?</b>Agent Link looks at the request’s last user message. If it carries text or an image and no tool result, you just spoke, so a new turn begins. If it carries tool results, the agent is continuing a turn already under way (see <a href="#turn">The rest of the turn</a>). Turns are counted per conversation. A subagent is its own conversation: it shares its agent’s session but starts with different words.</li>
+      <li><b>Which intents could decide?</b>Agent Link walks the rules top first and ignores intent for now: a rule is a candidate if its other conditions (tokens, images, reasoning, agents) hold for this request. Each candidate’s intent is collected, and duplicates spelled the same apart from case count once. The walk stops at the first candidate <em>without</em> an intent, because that rule matches outright and nothing below it could come first. If no intents were collected, the classifier isn’t asked and costs nothing.</li>
+      <li><b>Ask the classifier</b>Agent Link sends the classifier the collected intents and the text of your message. The exact prompt is shown <a href="#prompt">below</a>. The call goes through Agent Link’s own gateway, like a request from an agent, so it uses that model’s provider with its keys or accounts and their failover. It has 8 seconds to answer.</li>
+      <li><b>Read the answer</b>Agent Link takes the first whole number in the reply. <code>1</code> to <code>n</code> names that intent, and <code>0</code> means none of them. Anything else, such as no number or one out of range, counts as a failure. The answer is kept for 10 minutes for the same message and intents.</li>
+      <li><b>Match the rules</b>The rules are checked top first with the answer. A rule with an intent matches only when the classifier named its intent, compared without case, and all its other conditions hold. The first rule that matches wins. If none matches, the group routes the turn as it always does.</li>
+      <li><b>Order the models</b>The winning rule’s model goes first, and the group’s other models follow in their usual order as failover. This holds even if another model answered the conversation’s last turn: a rule outranks the <span class="ui">Stays</span> setting as a turn begins. If the rule’s model has nothing ready right now (every key resting, the provider off), the group’s usual order stands and the trace says so.</li>
+      <li><b>Remember the decision</b>Agent Link keeps the decision for this conversation (the group, the agent’s session and the conversation’s first words) with the classifier’s answer, so the rest of the turn follows it.</li>
+    </ol>
+
+    <h3>An example</h3>
+    <p>The Coder group above has three rules:</p>
+    <div class="table-wrap"><table>
+      <tr><th>#</th><th>When</th><th>Send to</th></tr>
+      <tr><td>1</td><td>≥ 128000 tokens</td><td>kimi/kimi-k2.5</td></tr>
+      <tr><td>2</td><td>asks for “a quick question”</td><td>deepseek/deepseek-v4-flash</td></tr>
+      <tr><td>3</td><td>asks for “writing or fixing tests”</td><td>deepseek/deepseek-v4-pro</td></tr>
+    </table></div>
+    <ul>
+      <li>A 20k-token turn: rule 1 doesn’t hold, so both intents are candidates. The classifier is asked to choose between “a quick question” and “writing or fixing tests”.</li>
+      <li>A 150k-token turn: rule 1 has no intent and holds, so the walk stops there. The classifier isn’t asked, and the turn goes to Kimi.</li>
+      <li>The classifier says <code>0</code> (none): no rule matches, and the turn goes by the group’s routing (here <em>In order</em>, so deepseek-v4-pro first).</li>
+    </ul>
+
+    <h3>In the app</h3>
+    <p>A real request through a group with two intent rules (“a quick question or explanation, with no code to write or change” and “writing or fixing tests”), sent from Claude Code: “Add unit tests for the LRU cache in cache.go, covering eviction and concurrent reads and writes”. The <span class="ui">Routing</span> tab shows it as it happens.</p>
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-routing-hit-light.png" width="2080" height="1116" loading="lazy" alt="The Routing tab: Claude Code to Agent Link to aihubmix/glm-5.3, which answered; the trace says rule 2 matched “writing or fixing tests”, as deepseek-flash said in 964 ms">
+      <img class="for-dark" src="/img/intent-routing-hit-dark.png" width="2080" height="1116" loading="lazy" alt="The Routing tab: Claude Code to Agent Link to aihubmix/glm-5.3, which answered; the trace says rule 2 matched “writing or fixing tests”, as deepseek-flash said in 964 ms">
+      <figcaption>The classifier (deepseek-flash) said “writing or fixing tests” in 964 ms, so rule 2 put glm-5.3 first, ahead of the group’s usual first model; it answered in 5.6 s.</figcaption>
+    </figure>
+
+    <h2 id="prompt"><a class="anchor" href="#prompt">What the classifier sees</a></h2>
+    <p>This is the whole request, and nothing else is sent. The system message is fixed. The user message lists your intents in rule order, as they were collected in step 2:</p>
+    <div class="code">
+      <span class="lang">System</span>
+      <pre class="wrapped">You route a user's message to a coding assistant by what it asks for. Given numbered kinds of request and the user's message, answer with the number of the kind the message is, or 0 if it is none of them. Answer with the number only.</pre>
+    </div>
+    <div class="code">
+      <span class="lang">User</span>
+      <pre>Kinds:
+1. a quick question
+2. writing or fixing tests
+
+The user's message:
+&lt;message&gt;
+Write unit tests for the parseTokens function and fix any that fail.
+&lt;/message&gt;
+
+The number of its kind (0 for none):</pre>
+    </div>
+    <ul>
+      <li><b>Only your latest message.</b> Agent Link sends the text parts of the last user message and nothing else: no earlier turns, no system prompt, no tool definitions, no files.</li>
+      <li><b>Images aren’t sent.</b> A message that is only an image has no words to classify, so no intent matches. To route by images, use the rule’s <span class="ui">has an image</span> condition.</li>
+      <li><b>Agent reminders are removed.</b> <code>&lt;system-reminder&gt;…&lt;/system-reminder&gt;</code> blocks, which Claude Code adds to your message, are stripped. Other text an agent puts in the same message is kept.</li>
+      <li><b>Long messages are shortened.</b> Over 4,000 characters, Agent Link keeps the first 3,000 and the last 1,000, joined by <code>…</code>. The start and the end usually say what is being asked.</li>
+      <li><b>The request settings.</b> An OpenAI-style chat completion, not streamed, with <code>temperature 0</code>, <code>max_tokens 2048</code> and User-Agent <code>Agent Link-router/1</code>. When Agent Link knows the classifier’s reasoning levels, it asks for the least: <code>none</code> if the model has it, else its lowest level (for example <code>low</code>). When the levels aren’t known, nothing is sent and the vendor’s default applies. Agent Link translates it for the classifier’s provider, like any other request, so an Anthropic, Gemini or other model works too.</li>
+    </ul>
+
+    <h2 id="failures"><a class="anchor" href="#failures">When it can’t say</a></h2>
+    <p>A classifier is a helper, not a gate. Whatever happens to it, the turn is still answered: the intent rules just don’t match.</p>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>What happens</th><th>What Agent Link does</th></tr>
+      <tr><td>It answers <code>0</code></td><td>No intent matches. Rules without an intent and the group’s usual order decide.</td></tr>
+      <tr><td>No answer within 8 s</td><td>Treated as a failure: no intent matches, and the turn goes on at once.</td></tr>
+      <tr><td>An error (quota, 5xx, bad key)</td><td>Its provider’s own failover is tried first, within the 8 s. If it still fails, no intent matches.</td></tr>
+      <tr><td>An answer that isn’t a number from 0 to n</td><td>No intent matches this turn. The classifier did answer, so it isn’t rested: the next turn asks it again.</td></tr>
+      <tr><td>An error or the 8 s timeout</td><td>That classifier model is left alone for 30 s: turns in that time don’t wait on it, and the trace says it wasn’t asked. The first good answer clears this.</td></tr>
+      <tr><td>The message has no words</td><td>Not asked. No intent matches.</td></tr>
+    </table></div>
+    <p>Each case is written in the turn’s trace with the reason. An intent rule can therefore make a turn go to a different model than you hoped, but it can’t make it fail.</p>
+
+    <h2 id="turn"><a class="anchor" href="#turn">The rest of the turn</a></h2>
+    <p>A turn is often dozens of requests: the agent calls a tool, sends the result back, calls another, and so on. Agent Link deals with them like this:</p>
+    <ul>
+      <li><b>Held.</b> Every request within the turn goes to the model the turn began on, and the classifier isn’t asked again. Switching models mid-turn would throw away what the vendor cached of the conversation (prompt caching), and some vendors reject reasoning that another one wrote.</li>
+      <li><b>Failover sticks.</b> If the rule’s model failed and another member answered, that member keeps the rest of the turn (with <span class="ui">Stays</span> on <em>Auto</em>, <em>Session</em> or <em>Within a turn</em>). The rule decides again at your next message.</li>
+      <li><b>Outgrown.</b> The one exception: if the conversation grows within the turn to 95% of the current model’s context, Agent Link checks the rules again, keeping the classifier’s earlier answer. If a rule sends it to a model with <em>more</em> context, it moves. It never moves to a model with less.</li>
+      <li><b>Waits.</b> If Agent Link didn’t see the turn begin (it was started or restarted in the middle of one), or the rule that decided it was removed or now sends to another model, no rule moves the turn. The rules decide again at your next message.</li>
+      <li><b>Subagents.</b> A subagent’s turns are decided on their own, from the subagent’s own messages. A rule can send a subagent elsewhere while its agent stays where it is.</li>
+    </ul>
+    <p>Decisions are kept in memory for 24 hours after a conversation’s last request. Restarting Agent Link clears them, and the next message decides afresh.</p>
+
+    <h2 id="trace"><a class="anchor" href="#trace">Reading the trace</a></h2>
+    <p>The <span class="ui">Routing</span> tab shows each group’s latest request: who answered it, and under <span class="ui">How the last request was routed</span>, why.</p>
+    <figure class="figure">
+      <img class="for-light" src="/img/intent-trace-light.png" width="2064" height="898" loading="lazy" alt="The Routing tab after a request: Claude Code to Agent Link to DeepSeek deepseek-v4-pro, and the trace saying rule 3 matched and what the classifier said">
+      <img class="for-dark" src="/img/intent-trace-dark.png" width="2064" height="898" loading="lazy" alt="The Routing tab after a request: Claude Code to Agent Link to DeepSeek deepseek-v4-pro, and the trace saying rule 3 matched and what the classifier said">
+      <figcaption>A message asking for tests: the classifier said “writing or fixing tests” in 323 ms, so rule 3 put deepseek-v4-pro first.</figcaption>
+    </figure>
+    <p>The lines you can see about intent:</p>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>The trace says</th><th>Meaning</th></tr>
+      <tr><td>… was asked which of “A”, “B” turn 1 is, and said “B” (in 323 ms).</td><td>The classifier was asked, with these candidates, and named B.</td></tr>
+      <tr><td>… and said none (…).</td><td>It answered 0.</td></tr>
+      <tr><td>… (said before, for the same message).</td><td>The answer came from the 10-minute cache, so no call was made.</td></tr>
+      <tr><td>… was to tell which … but couldn’t — <em>reason</em> — so no rule with an intent matches it.</td><td>It failed. The reason is the error, the timeout, what it answered, or that it is resting after a failure.</td></tr>
+      <tr><td>Turn N begins and rule R matches — asks for “B” — so M goes first …</td><td>The rule that won, and the model put first.</td></tr>
+      <tr><td>Rule R matches, but M has no account or key that can take this request, so the group’s order stands.</td><td>No account or key for the rule’s model can take this request.</td></tr>
+      <tr><td>Rule R (…) sent turn N to M as it began; the turn stays there.</td><td>A tool round within the turn, held on its decision.</td></tr>
+      <tr><td>This turn began before Agent Link saw it, so the rules wait for the next one.</td><td>See <em>Waits</em> above.</td></tr>
+    </table></div>
+    <p>The classifier’s own calls appear in <span class="ui">Usage</span> under the agent <em>Agent Link</em>, with their tokens and cost, so you can see what classifying costs.</p>
+
+    <h2 id="cost"><a class="anchor" href="#cost">Latency, cost, privacy</a></h2>
+    <ul>
+      <li><b>Latency.</b> Only the first request of a turn waits for the classifier, typically a few hundred milliseconds on a fast provider (323 ms in the screenshot) and never more than 8 seconds. Tool rounds within the turn, turns where no intent could decide, and cached answers add nothing.</li>
+      <li><b>Cost.</b> One short call per turn: roughly the size of your message plus the intents in, and one or two tokens out. In the example above that was 212 tokens in and 1 out. With a subscription model as the classifier, these calls count against that subscription’s limits.</li>
+      <li><b>Privacy.</b> The text of your message (up to about 4,000 characters) goes to the classifier’s provider. To keep it on your machine, use a local model from Ollama or LM Studio as the classifier. Agent Link keeps only a hash of the message and the answer, in memory, for 10 minutes. The message itself isn’t stored or logged.</li>
+    </ul>
+
+    <h2 id="tips"><a class="anchor" href="#tips">Writing good intents</a></h2>
+    <ul>
+      <li><b>Describe the request, not the model.</b> Write “writing or fixing tests”, not “hard tasks for Opus”. The classifier sees only your words and the message.</li>
+      <li><b>Keep kinds apart.</b> If two intents overlap (“a question”, “a question about the code”), a small model will choose between them unpredictably. Merge them, or make the difference plain.</li>
+      <li><b>Few and broad beats many and narrow.</b> Two to five intents are easy for an 8B model. Up to 200 characters each is allowed, but a few words are usually enough.</li>
+      <li><b>Order still matters.</b> Only the first matching rule counts, so put a rule that must win (such as a long-context rule) above the intent rules. The classifier is then skipped whenever that rule holds.</li>
+      <li><b>“None” is a real answer.</b> A turn that fits no intent goes to the group’s usual order, so let that order be your default choice.</li>
+      <li><b>Any language.</b> Intents and messages can be in any language the classifier understands. The fixed prompt is in English, and small models read mixed languages well.</li>
+      <li><b>Choosing a classifier.</b> Pick a small, fast model without reasoning: Llama 3.1 8B on Groq, a Flash-Lite, nano or mini model, Claude Haiku, DeepSeek’s non-reasoning chat model, or a local model. A reasoning model is slower; Agent Link asks it for its least reasoning and leaves it 2048 tokens, but a slow one can still miss the 8 s. Check the trace for a few turns: if it guesses wrong, rewrite the intents before switching models.</li>
+    </ul>
+
+    <h2 id="limits"><a class="anchor" href="#limits">Numbers</a></h2>
+    <div class="table-wrap"><table class="loose">
+      <tr><th>What</th><th>Value</th></tr>
+      <tr><td>Classifier timeout</td><td>8 s, including its provider’s failover</td></tr>
+      <tr><td>Rest after a failure</td><td>30 s, per classifier model</td></tr>
+      <tr><td>Answer cache</td><td>10 min, per classifier + intents + message; in memory</td></tr>
+      <tr><td>Turn decisions kept</td><td>24 h after the conversation’s last request; in memory</td></tr>
+      <tr><td>Message sent</td><td>Up to 4,000 characters; longer is first 3,000 + last 1,000</td></tr>
+      <tr><td>Classifier request</td><td>temperature 0, max_tokens 2048, the least reasoning the model has, not streamed</td></tr>
+      <tr><td>Intent length</td><td>Up to 200 characters; spaces collapsed, compared without case</td></tr>
+      <tr><td>Outgrown</td><td>At 95% of the current model’s context, only to a model with more</td></tr>
+    </table></div>
+
+    <h2 id="faq"><a class="anchor" href="#faq">FAQ</a></h2>
+
+    <h3>Is this embeddings or a vector search?</h3>
+    <p>No. There is no embedding model, no similarity threshold, no keyword list and nothing to train. The classifier is an ordinary chat model that reads your intents and your message and answers with a number. It is only as good as that model and your wording, and the trace shows every answer.</p>
+
+    <h3>Does it look at the whole conversation?</h3>
+    <p>No, only the message you just sent. So a follow-up like “now do the same for the other file” is judged on those words alone. Give that turn a clearer message, or add an intent that fits follow-ups.</p>
+
+    <h3>My agent made 40 requests for one message. Was the classifier asked 40 times?</h3>
+    <p>No, once. The other 39 carried tool results, so they belong to the same turn and follow its decision. You can see this in the trace (“the turn stays there”) and in Usage (one <em>Agent Link</em> call).</p>
+
+    <h3>Can a turn switch models halfway?</h3>
+    <p>Only in two cases: the model it is on fails and another member takes over, or the conversation outgrows the model’s context and a rule sends it to one with more room. Intent is never re-asked mid-turn.</p>
+
+    <h3>What if the classifier is down or slow?</h3>
+    <p>The turn still goes through. After up to 8 s, no intent matches and the group’s other rules and order decide. For the next 30 s Agent Link doesn’t ask that classifier again, so turns don’t each wait out the timeout. The trace gives the reason.</p>
+
+    <h3>Why did the turn not go to the rule’s model when the classifier named its intent?</h3>
+    <p>Check the trace. The usual causes are:</p>
+    <ul>
+      <li>a rule above it matched first;</li>
+      <li>another condition on the rule didn’t hold (tokens, images, reasoning or agent);</li>
+      <li>no account or key for the rule’s model could take this request;</li>
+      <li>it was a tool round in a turn that began elsewhere;</li>
+      <li>Agent Link didn’t see the turn begin (“the rules wait”).</li>
+    </ul>
+
+    <h3>Two rules have the same intent. What happens?</h3>
+    <p>The intent is offered to the classifier once. If it is chosen, the first of those rules whose other conditions hold wins. Use this to send, for example, “writing or fixing tests” from Codex to one model and from Claude Code to another.</p>
+
+    <h3>Does changing a rule affect a turn already running?</h3>
+    <p>No. Saving applies from the next turn. A turn whose rule you removed, or pointed at another model, keeps where it is until then; the trace says the rules wait.</p>
+
+    <h3>Can the classifier be a routing group, or one of the group’s own models?</h3>
+    <p>It can’t be a group: it must be one model, <code>provider/model</code>, which Agent Link checks when you save. It can be any model Agent Link has, including one of the group’s members, a subscription model or a local model.</p>
+
+    <h3>Can I use a reasoning model?</h3>
+    <p>Yes, if it answers within 8 s. Agent Link asks it for the least reasoning it has (<code>none</code>, else its lowest level) and leaves 2048 tokens, so thinking doesn’t crowd out the answer. A small, fast model is still the better choice: cheaper, and every turn waits for it.</p>
+    <h3>How well does it work with real models?</h3>
+    <p>We ran 20 real coding messages (English and Chinese: quick questions, test work, and ordinary coding tasks, including “Fix the bug in parseTokens and add a test for it”) through a group with two intent rules. DeepSeek V4 Flash, GLM-5.3 Flash and MiMo v2.6 Flash each classified all 20 correctly; the median classifier time was 0.75 s, 1.3 s and 1.9 s. Gemini 3.8 Flash through one reseller took 11 s even at <code>low</code> reasoning, so every turn timed out and routed as if there were no intents — the trace said so each time. That is the pattern to expect: a wrong classifier costs you the routing, never the turn.</p>
+
+    <h3>Does retrying the same message ask again?</h3>
+    <p>Not within 10 minutes: the same message with the same intents and the same classifier is answered from the cache, and the trace says “said before”. Changing an intent or the classifier makes it ask again.</p>
+
+    <h3>Which agents does it work with?</h3>
+    <p>Any agent that sends to a routing group through Agent Link: Claude Code, Codex, OpenCode, Gemini CLI and the rest. Turns are detected from the request itself (a message with text and no tool results), whatever API the agent speaks.</p>
+
+    <h3>Is my message stored anywhere?</h3>
+    <p>Agent Link keeps a hash of it (for the cache) and the classifier’s answer, in memory only. The text goes to the classifier’s provider, like any request, under that provider’s terms. The classifier’s usage record holds its token counts, not the text.</p>
+
+    <h3>How accurate is it?</h3>
+    <p>That depends on the classifier and on how distinct your intents are. With a few clearly different kinds, a small model picks well; with overlapping ones it will sometimes guess. Since a wrong or missing answer only changes which model answers, start with two or three broad intents, watch the trace for a day and adjust the wording.</p>
+
+    <p style="margin-top:48px">Questions or a setup worth sharing? Ask on <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>. Routing groups in general are covered in <a href="/docs/start#routing">Get started</a>.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add to Agent Link · Agent Link docs</title>
+<meta name="description" content="Import links: give your users one link, and your models land in every agent they use. Link format, parameters, a link builder and the Add to Agent Link button.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/import">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/import">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/import">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Add to Agent Link">
+<meta property="og:description" content="One link puts your models in every agent your users run.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/import">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/import" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/import" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/import" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Add to Agent Link</p>
+    <a href="#overview">Overview</a>
+    <a href="#quick-start">Quick start</a>
+    <a href="#link">The link</a>
+    <a href="#parameters">Parameters</a>
+    <a href="#builder">Link builder</a>
+    <a href="#button">The button</a>
+    <a href="#generate">From your backend</a>
+    <a href="#security">Security</a>
+    <a href="#platforms">Platforms</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Integration</p>
+    <h1>Add to Agent Link</h1>
+    <p class="lede">Hand your users one link, and your models show up in every agent they run: Claude Code, Codex, OpenCode, Gemini CLI, Pi, Crush. No config files, no environment variables, no copy-pasting base URLs.</p>
+
+    <figure class="figure">
+      <img class="for-light" src="/img/import-light.png" width="1280" height="1120" alt="Agent Link asking whether to add Acme Relay, with the hosts, key and models from the link">
+      <img class="for-dark" src="/img/import-dark.png" width="1280" height="1120" alt="Agent Link asking whether to add Acme Relay, with the hosts, key and models from the link">
+      <figcaption>What your user sees. Nothing is saved until they press Add.</figcaption>
+    </figure>
+
+    <h2 id="quick-start"><a class="anchor" href="#quick-start">Quick start</a></h2>
+    <ol class="steps">
+      <li><b>Build a link</b>Describe your endpoint as URL parameters: a name, a base URL per API you speak, and optionally the user’s key and the models to offer.</li>
+      <li><b>Put it behind a button</b>On your dashboard, next to the key you just minted: <em>Add to Agent Link</em>.</li>
+      <li><b>The user confirms</b>Agent Link opens, shows exactly where prompts and the key will go, and adds the provider when the user says yes. Every agent can use it right away.</li>
+    </ol>
+
+    <div class="code" style="margin-top:20px">
+      <span class="lang">Link</span>
+      <button class="copy" data-copy="ex1">Copy</button>
+      <pre id="ex1">https://useAgent Link.ai/import#name=Acme%20Relay&amp;chat=https://api.acme.example/v1&amp;anthropic=https://api.acme.example&amp;key=sk-…&amp;models=gpt-5.5,claude-sonnet-5</pre>
+    </div>
+
+    <h2 id="link"><a class="anchor" href="#link">The link</a></h2>
+    <p>Agent Link registers the <code>Agent Link://</code> scheme with the system. An import link is that scheme, the word <code>import</code>, and a query string:</p>
+    <div class="url"><span class="n">Agent Link://import</span><span class="p">?</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <p>On the web, link to the same parameters on <code>useAgent Link.ai/import</code> instead, after a <code>#</code>:</p>
+    <div class="url"><span class="n">https://useAgent Link.ai/import</span><span class="p">#</span><span class="n">name</span><span class="p">=</span><span class="v">Acme%20Relay</span><span class="p">&amp;</span><span class="n">chat</span><span class="p">=</span><span class="v">https://api.acme.example/v1</span><span class="p">&amp;</span><span class="n">key</span><span class="p">=</span><span class="v">sk-…</span></div>
+    <div class="cards" style="margin-top:20px">
+      <div><h3>Why the https link</h3><p>It works everywhere a link does: GitHub READMEs, chat apps and email clients drop or block custom schemes. It opens Agent Link, and offers the download when Agent Link isn’t installed yet.</p></div>
+      <div><h3>Why after the <code>#</code></h3><p>Browsers never send the fragment to a server. The key goes from your page to the user’s machine without passing through useAgent Link.ai, not even its logs.</p></div>
+    </div>
+    <p>Every value is URL-encoded, as <code>URLSearchParams</code> or <code>urlencode</code> produce. Both <code>%20</code> and <code>+</code> work for spaces.</p>
+
+    <h2 id="parameters"><a class="anchor" href="#parameters">Parameters</a></h2>
+    <p>A link either names one of Agent Link’s <a href="#presets">presets</a>, which already knows the vendor’s endpoints, or describes a provider from scratch with a name and at least one base URL.</p>
+    <div class="table-wrap"><table>
+      <tr><th>Parameter</th><th>Meaning</th></tr>
+      <tr><td><code>name</code><span class="req">or preset</span></td><td>What the provider is called in Agent Link, at most 80 characters.</td></tr>
+      <tr><td><code>chat</code></td><td>OpenAI Chat Completions base URL, ending in <code>/v1</code> (Agent Link appends <code>/chat/completions</code>).</td></tr>
+      <tr><td><code>responses</code></td><td>OpenAI Responses base URL, ending in <code>/v1</code>. Codex speaks only this API; Agent Link translates for it when you don’t.</td></tr>
+      <tr><td><code>anthropic</code></td><td>Anthropic Messages base URL: the root, without <code>/v1</code>.</td></tr>
+      <tr><td><code>gemini</code></td><td>Google Gemini API base URL, ending in <code>/v1beta</code>, as the app’s editor and the TUI take one.</td></tr>
+      <tr><td><code>key</code></td><td>The user’s API key. Leave it out and the user pastes one in the dialog.</td></tr>
+      <tr><td><code>models</code></td><td>Model ids to offer the agents, comma separated. Without it, Agent Link lists the models your <code>/v1/models</code> returns.</td></tr>
+      <tr><td><code>id</code></td><td>The id agents use in <code>id/model</code>. Defaults to the name, lowercased with dashes (<code>Acme Relay</code> → <code>acme-relay</code>).</td></tr>
+      <tr><td><code>catalog</code></td><td>A <a href="https://models.dev">models.dev</a> provider id whose metadata applies, e.g. <code>openai</code> for a relay of OpenAI models: display names, context sizes (written into the agents that take them), reasoning levels and image input; the model list when the provider’s own <code>/models</code> can’t be read; and per-token prices, which the Usage page turns into a cost estimate in USD. Several ids may be given, comma-separated: their models are combined, and where two know the same model the first one’s entry is used.</td></tr>
+      <tr><td><code>website</code></td><td>Your site (https). Shown on the provider’s page.</td></tr>
+      <tr><td><code>keys</code></td><td>The page where users make keys (https). The dialog links to it when the link has no key.</td></tr>
+      <tr><td><code>icon</code></td><td>A picture of your own (https): PNG, JPEG, GIF, WebP, ICO or SVG, at most 1&nbsp;MB. Agent Link downloads it once, after the user confirms the import, and keeps it beside the provider. Without one, Agent Link shows the <code>catalog</code> vendor’s logo or a plain mark.</td></tr>
+      <tr><td><code>preset</code><span class="req">or name</span></td><td>A preset id; its endpoints, catalog and pages are used, and <code>name</code> may rename it.</td></tr>
+      <tr><td><code>region</code></td><td>With a preset that has regions, which one.</td></tr>
+    </table></div>
+    <p>At least one of <code>chat</code>, <code>responses</code>, <code>anthropic</code> and <code>gemini</code> is required without a preset; give every API you speak, and each agent uses the one it speaks natively. Base URLs must be <b>https</b>, except plain http to <code>localhost</code>, loopback, private addresses and <code>*.local</code>, where model servers usually run without TLS. They can’t carry a query, a fragment or credentials.</p>
+
+    <h3 id="presets">Presets</h3>
+    <p>Vendors Agent Link already knows. <code>Agent Link presets</code> prints the current list.</p>
+    <div class="chips">
+      <span class="chip"><code>anthropic</code></span><span class="chip"><code>openai</code></span><span class="chip"><code>google</code></span><span class="chip"><code>deepseek</code></span><span class="chip"><code>xai</code></span><span class="chip"><code>moonshot</code><span>Kimi</span></span><span class="chip"><code>moonshot-cn</code></span><span class="chip"><code>kimi-code</code></span><span class="chip"><code>kimi-code-cn</code></span><span class="chip"><code>zhipu</code><span>GLM · api · coding</span></span><span class="chip"><code>zai</code><span>api · coding</span></span><span class="chip"><code>minimax</code></span><span class="chip"><code>minimax-cn</code></span><span class="chip"><code>stepfun</code><span>plan · api</span></span><span class="chip"><code>stepfun-cn</code><span>plan · api</span></span><span class="chip"><code>xiaomi</code><span>MiMo</span></span><span class="chip"><code>baidu-qianfan</code><span>千帆 · personal · team · api</span></span><span class="chip"><code>tencent-cloud</code><span>plan · cn · intl · enterprise · enterprise-intl</span></span><span class="chip"><code>huaweicloud</code><span>plan · api</span></span><span class="chip"><code>volcengine</code><span>火山方舟 · coding · agent · api</span></span><span class="chip"><code>qwen</code></span><span class="chip"><code>qwen-cn</code></span><span class="chip"><code>qwen-token-plan</code></span><span class="chip"><code>bailian-token-plan</code></span><span class="chip"><code>mistral</code></span><span class="chip"><code>groq</code></span><span class="chip"><code>bedrock</code></span><span class="chip"><code>ollama-cloud</code></span><span class="chip"><code>openrouter</code></span><span class="chip"><code>opencode-go</code></span><span class="chip"><code>clinepass</code></span><span class="chip"><code>opencode-zen</code></span><span class="chip"><code>kilo</code></span><span class="chip"><code>commandcode</code></span><span class="chip"><code>together</code></span><span class="chip"><code>fireworks</code></span><span class="chip"><code>siliconflow</code><span>cn · intl</span></span><span class="chip"><code>nvidia</code></span><span class="chip"><code>modelscope</code><span>魔搭</span></span><span class="chip"><code>aihubmix</code></span><span class="chip"><code>pipellm</code></span><span class="chip"><code>302ai</code></span><span class="chip"><code>cherryin</code></span><span class="chip"><code>yylx</code><span>auto · global · cn</span></span><span class="chip"><code>ollama</code></span><span class="chip"><code>lmstudio</code></span>
+    </div>
+    <p>A vendor with a preset only needs to add the key: <code>Agent Link://import?preset=deepseek&amp;key=sk-…</code>. Want yours on the list? <a href="https://github.com/crazymsn/Agent-Link/issues">Open an issue</a>.</p>
+
+    <h2 id="builder"><a class="anchor" href="#builder">Link builder</a></h2>
+    <p>Fill in your endpoint; the link, the button and the Markdown follow as you type. Everything stays in this page.</p>
+    <div class="builder">
+      <form id="b" autocomplete="off" onsubmit="return false">
+        <div class="full"><div class="seg" role="tablist"><button type="button" data-mode="custom" class="on">Your endpoint</button><button type="button" data-mode="preset">A preset</button></div></div>
+        <label class="m-preset hide">Preset<select name="preset"></select></label>
+        <label class="m-preset hide" id="region-l">Region<select name="region"></select></label>
+        <label class="m-custom">Name<input name="name" placeholder="Acme Relay" value="Acme Relay"></label>
+        <label class="m-custom">Id <i>optional</i><input name="id" placeholder="acme-relay"></label>
+        <label class="m-custom">OpenAI Chat base URL<input name="chat" class="mono" placeholder="https://api.acme.example/v1" value="https://api.acme.example/v1"></label>
+        <label class="m-custom">Anthropic base URL<input name="anthropic" class="mono" placeholder="https://api.acme.example" value="https://api.acme.example"></label>
+        <label class="m-custom">OpenAI Responses base URL <i>optional</i><input name="responses" class="mono" placeholder="https://api.acme.example/v1"></label>
+        <label class="m-custom">Gemini base URL <i>optional</i><input name="gemini" class="mono" placeholder="https://api.acme.example/v1beta"></label>
+        <label class="m-custom">models.dev catalog <i>optional</i><input name="catalog" placeholder="openai"></label>
+        <label>API key <i>optional</i><input name="key" class="mono" placeholder="sk-…" spellcheck="false"></label>
+        <label>Models <i>comma separated</i><input name="models" class="mono" placeholder="gpt-5.5, claude-sonnet-5" value="gpt-5.5, claude-sonnet-5"></label>
+        <label class="m-custom">Website <i>optional</i><input name="website" placeholder="https://acme.example"></label>
+        <label class="m-custom">Key page <i>optional</i><input name="keys" placeholder="https://acme.example/keys"></label>
+        <label class="m-custom">Icon <i>optional, https</i><input name="icon" placeholder="https://acme.example/logo.svg"></label>
+      </form>
+      <div class="out">
+        <div class="row"><span>Web link</span><code id="o-web"></code><button class="copy" data-copy="o-web">Copy</button></div>
+        <div class="row"><span>App link</span><code id="o-app"></code><button class="copy" data-copy="o-app">Copy</button></div>
+        <div class="row"><span>HTML</span><code id="o-html"></code><button class="copy" data-copy="o-html">Copy</button></div>
+        <div class="row"><span>Markdown</span><code id="o-md"></code><button class="copy" data-copy="o-md">Copy</button></div>
+        <div class="msg hide" id="o-msg"></div>
+        <div class="try"><a class="btn small" id="o-try" href="#" target="_blank" rel="noopener"><img class="bird-inv" src="/img/Agent Link-small.svg" alt="">Try it</a><small>Opens Agent Link; nothing is added until you confirm.</small></div>
+      </div>
+    </div>
+
+    <h2 id="button"><a class="anchor" href="#button">The button</a></h2>
+    <p>Two ready-made badges, one for light pages and one for dark. Link them to your import link, or draw your own button: the words <em>Add to Agent Link</em> and the bird are yours to use.</p>
+    <div class="badges">
+      <div class="on-light"><img src="/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></div>
+      <div class="on-dark"><img src="/img/add-to-Agent Link-light.svg" alt="Add to Agent Link" width="176" height="40"></div>
+    </div>
+    <div class="code">
+      <span class="lang">HTML</span>
+      <button class="copy" data-copy="ex-html">Copy</button>
+      <pre id="ex-html">&lt;a href="https://useAgent Link.ai/import#preset=deepseek&amp;key=sk-…"&gt;
+  &lt;img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"&gt;
+&lt;/a&gt;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Markdown</span>
+      <button class="copy" data-copy="ex-md">Copy</button>
+      <pre id="ex-md">[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](https://useAgent Link.ai/import#preset=deepseek)</pre>
+    </div>
+    <p>For dark pages, use <code>add-to-Agent Link-light.svg</code>. A public page like a README should never carry a key; leave <code>key</code> out and the user pastes their own.</p>
+
+    <h2 id="generate"><a class="anchor" href="#generate">From your backend</a></h2>
+    <p>The natural place for the button is the page that shows a freshly minted key. Build the link where you have it:</p>
+    <div class="code">
+      <span class="lang">JavaScript</span>
+      <button class="copy" data-copy="ex-js">Copy</button>
+      <pre id="ex-js"><span class="k">const</span> params = <span class="k">new</span> URLSearchParams({
+  name: <span class="s">"Acme Relay"</span>,
+  chat: <span class="s">"https://api.acme.example/v1"</span>,
+  anthropic: <span class="s">"https://api.acme.example"</span>,
+  key: apiKey,
+  models: [<span class="s">"gpt-5.5"</span>, <span class="s">"claude-sonnet-5"</span>].join(<span class="s">","</span>),
+  icon: <span class="s">"https://acme.example/logo.svg"</span>,
+});
+<span class="k">const</span> href = <span class="s">"https://useAgent Link.ai/import#"</span> + params;</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Python</span>
+      <button class="copy" data-copy="ex-py">Copy</button>
+      <pre id="ex-py"><span class="k">from</span> urllib.parse <span class="k">import</span> urlencode
+
+href = <span class="s">"https://useAgent Link.ai/import#"</span> + urlencode({
+    <span class="s">"name"</span>: <span class="s">"Acme Relay"</span>,
+    <span class="s">"chat"</span>: <span class="s">"https://api.acme.example/v1"</span>,
+    <span class="s">"anthropic"</span>: <span class="s">"https://api.acme.example"</span>,
+    <span class="s">"key"</span>: api_key,
+    <span class="s">"models"</span>: <span class="s">"gpt-5.5,claude-sonnet-5"</span>,
+    <span class="s">"icon"</span>: <span class="s">"https://acme.example/logo.svg"</span>,
+})</pre>
+    </div>
+    <div class="code">
+      <span class="lang">Terminal</span>
+      <button class="copy" data-copy="ex-sh">Copy</button>
+      <pre id="ex-sh">agent-link import <span class="s">'Agent Link://import?preset=deepseek&amp;key=sk-…'</span>   <span class="c"># asks first; -y to skip</span></pre>
+    </div>
+
+    <h2 id="security"><a class="anchor" href="#security">Security</a></h2>
+    <p>An import link is a suggestion. The user decides.</p>
+    <ul>
+      <li><b>Always confirmed.</b> Agent Link shows the name, every host that prompts and the key will go to, and the models, and saves nothing until the user presses Add. The user can rename it, or replace the key, first.</li>
+      <li><b>No silent overwrites.</b> When the id is already taken, the dialog says so and the button reads <em>Replace</em>.</li>
+      <li><b>https only.</b> Plain http is refused except to this machine or the local network; <code>file:</code>, credentials in URLs and other schemes are refused outright.</li>
+      <li><b>Read once.</b> Inside the app, the link’s contents are handed to the window a single time; a reload doesn’t bring the dialog back.</li>
+      <li><b>Icons are fetched, not embedded.</b> An <code>icon=</code> URL is downloaded by Agent Link, only after the user confirms the import, only over https, and only into its own icons folder — at most 1&nbsp;MB, and the type is checked. Agent Link asks for it through useAgent Link.ai’s icon proxy, so your host sees Cloudflare’s address and never the user’s, and the fetch is made from Cloudflare, where nothing on the user’s own machine or network can be reached. A loopback or local-network name is refused before anything is asked. The page and the dialog never load a remote picture directly.</li>
+      <li><b>Keys stay out of servers.</b> The web link keeps parameters in the fragment. The key ends up only in <code>~/.config/Agent Link/providers.json</code>, readable by the user alone.</li>
+    </ul>
+    <div class="note"><b>Keys in links are secrets.</b> Put a key in a link only on a page that user alone sees, and prefer a key minted for Agent Link that they can revoke. Never put a shared key in a public link.</div>
+
+    <h2 id="platforms"><a class="anchor" href="#platforms">Platforms</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>System</th><th>How <code>Agent Link://</code> gets registered</th></tr>
+      <tr><td>macOS</td><td>By the app itself, as soon as Agent Link.app is in Applications.</td></tr>
+      <tr><td>Windows</td><td>For the current user, the first time Agent Link runs.</td></tr>
+      <tr><td>Linux</td><td>By a desktop entry (<code>x-scheme-handler/Agent Link</code>), written by the installer and again on first run.</td></tr>
+      <tr><td>Terminal</td><td><code>agent-link import &lt;link&gt;</code> shows the same summary and asks before adding.</td></tr>
+    </table></div>
+    <p>Import links need Agent Link 0.1.8 or later. When Agent Link is already running, the link goes to that instance and its window comes forward.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+
+
+  // Link builder. It mirrors the checks Agent Link makes, so a link that
+  // builds here imports there.
+  const PRESETS = [
+    ["anthropic", "Anthropic"], ["openai", "OpenAI"], ["google", "Google Gemini"], ["deepseek", "DeepSeek"], ["xai", "xAI"],
+    ["moonshot", "Kimi"], ["moonshot-cn", "Kimi (China)"], ["kimi-code", "Kimi Code"], ["kimi-code-cn", "Kimi Code (China)"], ["zhipu", "Zhipu GLM"],
+    ["zai", "Z.ai"], ["minimax", "MiniMax"], ["minimax-cn", "MiniMax (China)"], ["stepfun", "StepFun"], ["stepfun-cn", "StepFun (China)"],
+    ["xiaomi", "Xiaomi MiMo"], ["baidu-qianfan", "Baidu Qianfan"], ["tencent-cloud", "Tencent Cloud"],
+    ["huaweicloud", "Huawei Cloud MaaS"], ["volcengine", "Volcengine Ark"], ["qwen", "Qwen"], ["qwen-cn", "Qwen (China)"], ["qwen-token-plan", "Qwen Token Plan"], ["bailian-token-plan", "Bailian Token Plan"],
+    ["mistral", "Mistral"], ["groq", "Groq"], ["bedrock", "Amazon Bedrock"], ["ollama-cloud", "Ollama Cloud"], ["nous", "Nous Portal"], ["openrouter", "OpenRouter"],
+    ["opencode-go", "OpenCode Go"], ["clinepass", "ClinePass"], ["opencode-zen", "OpenCode Zen"], ["kilo", "Kilo Gateway"], ["commandcode", "Command Code"],
+    ["together", "Together AI"], ["fireworks", "Fireworks"], ["siliconflow", "SiliconFlow"], ["nvidia", "NVIDIA NIM"], ["modelscope", "ModelScope"],
+    ["aihubmix", "AiHubMix"], ["pipellm", "PipeLLM"], ["302ai", "302.AI"], ["cherryin", "CherryIN"], ["yylx", "鱼鱼连线"],
+    ["ollama", "Ollama"], ["lmstudio", "LM Studio"],
+  ];
+  const REGIONS = {
+    "zhipu": [["", "Pay as you go"], ["coding", "Coding Plan"]],
+    "zai": [["", "Pay as you go"], ["coding", "Coding Plan"]],
+    "stepfun": [["", "Step Plan"], ["api", "Pay as you go"]],
+    "stepfun-cn": [["", "Step Plan"], ["api", "Pay as you go"]],
+    "xiaomi": [["", "Plan · China"], ["plan-sgp", "Plan · Singapore"], ["plan-ams", "Plan · Europe"], ["api", "Pay as you go"]],
+    "baidu-qianfan": [["", "Token Plan Personal"], ["team", "Token Plan Enterprise"], ["api", "Pay as you go"]],
+    "tencent-cloud": [["", "Plan · China"], ["cn", "Pay as you go · China"], ["intl", "Pay as you go · Global"], ["enterprise", "Enterprise plan · China"], ["enterprise-intl", "Enterprise plan · Global"]],
+    "huaweicloud": [["", "Token Plan"], ["api", "Pay as you go"]],
+    "volcengine": [["", "Coding Plan"], ["agent", "Agent Plan"], ["api", "Pay as you go"]],
+    "bedrock": [["", "us-east-1"], ["us-east-2", "us-east-2"], ["us-west-2", "us-west-2"], ["eu-central-1", "eu-central-1"], ["eu-west-1", "eu-west-1"], ["eu-west-3", "eu-west-3"], ["ap-northeast-1", "ap-northeast-1"], ["ap-southeast-1", "ap-southeast-1"], ["ap-southeast-2", "ap-southeast-2"], ["ap-south-1", "ap-south-1"]],
+    "siliconflow": [["", "China"], ["intl", "Global"]],
+    "yylx": [["", "Auto"], ["global", "Global"], ["cn", "China Mainland"]],
+  };
+  const f = document.getElementById("b");
+  const el = (n) => f.elements[n];
+  el("preset").innerHTML = PRESETS.map(([id, n]) => `<option value="${id}">${n} · ${id}</option>`).join("");
+  el("preset").value = "deepseek";
+  let mode = "custom";
+
+  const local = (h) => h === "localhost" || h.endsWith(".local") || /^127\.|^10\.|^192\.168\.|^172\.(1[6-9]|2\d|3[01])\.|^\[?::1\]?$/.test(h);
+  const base = (v) => {
+    try {
+      const u = new URL(v);
+      if (u.username || u.password || u.search || u.hash) return false;
+      return u.protocol === "https:" || (u.protocol === "http:" && local(u.hostname));
+    } catch { return false; }
+  };
+  const esc = (s) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+
+  const build = () => {
+    document.querySelectorAll(".m-custom").forEach((e) => e.classList.toggle("hide", mode !== "custom"));
+    document.querySelectorAll(".m-preset").forEach((e) => e.classList.toggle("hide", mode !== "preset"));
+    const regions = REGIONS[el("preset").value];
+    document.getElementById("region-l").classList.toggle("hide", mode !== "preset" || !regions);
+    if (regions && el("region").dataset.for !== el("preset").value) {
+      el("region").innerHTML = regions.map(([id, n]) => `<option value="${id}">${n}</option>`).join("");
+      el("region").dataset.for = el("preset").value;
+    }
+
+    const q = new URLSearchParams();
+    const errs = [];
+    const put = (k) => { const v = el(k).value.trim(); if (v) q.set(k, v); return v; };
+    if (mode === "preset") {
+      q.set("preset", el("preset").value);
+      if (regions) put("region");
+    } else {
+      if (!put("name")) errs.push("A name is required.");
+      put("id");
+      let any = false;
+      for (const k of ["chat", "responses", "anthropic", "gemini"]) {
+        const v = put(k);
+        el(k).classList.toggle("bad", !!v && !base(v));
+        if (v) { any = true; if (!base(v)) errs.push(`${k}= must be an https base URL, without a query.`); }
+      }
+      if (!any) errs.push("Give at least one base URL.");
+      put("catalog");
+      for (const k of ["website", "keys"]) {
+        const v = put(k);
+        const ok = !v || /^https:\/\/[^/@\s]+/.test(v);
+        el(k).classList.toggle("bad", !ok);
+        if (!ok) errs.push(`${k}= must be an https page; Agent Link drops it otherwise.`);
+      }
+      {
+        const v = put("icon");
+        if (v && !/^https:\/\/[^/@\s?#]+\/[^\s#]*$/.test(v)) {
+          el("icon").classList.add("bad");
+          errs.push("icon= must be an https picture URL; Agent Link drops it otherwise.");
+        }
+      }
+    }
+    put("key");
+    const models = el("models").value.split(",").map((s) => s.trim()).filter(Boolean).join(",");
+    if (models) q.set("models", models);
+
+    // Readable, and what Agent Link parses: only what must be escaped is.
+    const enc = (v) => encodeURIComponent(v).replace(/%3A/gi, ":").replace(/%2F/gi, "/").replace(/%2C/gi, ",");
+    const s = [...q].map(([k, v]) => k + "=" + enc(v)).join("&");
+    const web = "https://useAgent Link.ai/import#" + s;
+    const app = "Agent Link://import?" + s;
+    document.getElementById("o-web").textContent = web;
+    document.getElementById("o-app").textContent = app;
+    document.getElementById("o-html").textContent = `<a href="${esc(web)}"><img src="https://useAgent Link.ai/img/add-to-Agent Link.svg" alt="Add to Agent Link" width="176" height="40"></a>`;
+    document.getElementById("o-md").textContent = `[![Add to Agent Link](https://useAgent Link.ai/img/add-to-Agent Link.svg)](${web})`;
+    document.getElementById("o-try").href = "/import#" + s;
+    const msg = document.getElementById("o-msg");
+    msg.textContent = errs.join(" ");
+    msg.classList.toggle("hide", !errs.length);
+  };
+
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll(".seg button").forEach((x) => x.classList.toggle("on", x === b));
+    if (mode === "preset" && el("models").value === "gpt-5.5, claude-sonnet-5") el("models").value = "";
+    build();
+  }));
+  f.addEventListener("input", build);
+  f.addEventListener("change", build);
+  build();
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

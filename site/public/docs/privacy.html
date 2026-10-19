@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy · Agent Link docs</title>
+<meta name="description" content="What Agent Link sends on its own and where: the once-a-day user count, the update feed and other public lists, what useAgent Link.ai sees, OTLP export, and every switch that turns them off.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useAgent Link.ai/docs/privacy">
+<link rel="alternate" hreflang="zh" href="https://useAgent Link.ai/docs/zh/privacy">
+<link rel="alternate" hreflang="ja" href="https://useAgent Link.ai/docs/ja/privacy">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Privacy">
+<meta property="og:description" content="Everything Agent Link sends by itself, and how to turn it off.">
+<meta property="og:image" content="https://useAgent Link.ai/img/og.png">
+<meta property="og:url" content="https://useAgent Link.ai/docs/privacy">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/"><img class="bird" src="/img/Agent Link-small.svg" alt="">agent-link <small>Docs</small></a>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a class="toc-only" href="/docs/remote">Remote Agent Link</a>
+    <a class="toc-only" href="/docs/docker">Docker</a>
+    <a class="toc-only" href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="Language" title="Language" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/privacy" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/privacy" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/privacy" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="agent-link on Discord" title="Join us on Discord"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="agent-link on GitHub" title="Source on GitHub"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">Download</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Privacy</p>
+    <a href="#overview">Overview</a>
+    <a href="#count">The daily count</a>
+    <a href="#off">Turning it off</a>
+    <a href="#files">Files on your computer</a>
+    <a href="#site">What useAgent Link.ai sees</a>
+    <a href="#lists">Public lists Agent Link fetches</a>
+    <a href="#otel">OTLP export</a>
+    <a href="#why">Why the count is on</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">Docs · Privacy</p>
+    <h1>Privacy</h1>
+    <p class="lede">Your prompts, replies, keys and accounts go only to the providers you use; Agent Link has no server of its own in that path. This page lists everything Agent Link sends by itself, beside those requests, and every switch that stops it. It is written from the code, which is linked in each section.</p>
+
+    <div class="table-wrap"><table>
+      <tr><th>What</th><th>Where to</th><th>Off by default?</th><th>How to stop it</th></tr>
+      <tr><td><a href="#count">The daily count</a></td><td>PostHog (<code>us.i.posthog.com</code>)</td><td>On in releases; never in builds from source</td><td><span class="ui">Settings</span> → <span class="ui">Privacy</span>, <code>DO_NOT_TRACK=1</code></td></tr>
+      <tr><td><a href="#site">Update checks</a>, release notes, the partner list, icons</td><td><code>useAgent Link.ai</code></td><td>On</td><td><code>noAutoUpdate</code> for update checks; the rest are needed by the app</td></tr>
+      <tr><td><a href="#lists">Model catalog and exchange rate</a></td><td><code>models.dev</code>, <code>open.er-api.com</code></td><td>On</td><td>Not switchable; nothing of yours is sent</td></tr>
+      <tr><td><a href="#otel">OTLP export</a></td><td>A collector you name</td><td>Off</td><td>Leave it off</td></tr>
+    </table></div>
+
+    <h2 id="count"><a class="anchor" href="#count">The daily count</a></h2>
+    <p>Once a day (UTC), a running release of Agent Link (the app, or <code>Agent Link serve</code>) sends one batch to PostHog, so we know how many people use it and which agents, providers and models to look after first. It is sent at start and then looked at every hour; a day already sent is skipped. Builds from source never send it.</p>
+    <p>The batch has one <code>Agent Link active</code> event with:</p>
+    <ul>
+      <li>a random id made up on your computer (32 hex characters, tied to nothing about you or the machine), sent as <code>distinct_id</code>;</li>
+      <li>Agent Link’s version, <code>kind</code> (<code>app</code> or <code>serve</code>), your system (<code>$os</code>) and architecture;</li>
+      <li>how many agents, providers and models it is used with, and how many routing groups (left out when you turn off sharing what you use).</li>
+    </ul>
+    <p>Unless you turn that part off, one <code>Agent Link uses</code> event follows for each agent, provider and model, by Agent Link’s own ids only (at most 50 of each):</p>
+    <ul>
+      <li><b>agents</b> connected to Agent Link: <code>claude</code>, <code>codex</code>. A WSL distro or an omp profile name is cut off (<code>omp</code>).</li>
+      <li><b>providers</b> that are on: a preset’s id (<code>deepseek</code>), a subscription’s (<code>codex</code>, <code>copilot</code>), a known community plugin’s (<code>plugin:kiro</code>). A provider you added yourself is only <code>custom</code>; any other plugin only <code>plugin</code>.</li>
+      <li><b>models</b> the connected agents are set to, as provider id and vendor model id (<code>deepseek/deepseek-v4</code>). On a key’s provider, a model id that <a href="https://models.dev">models.dev</a> doesn’t list (a local model, a fine-tune) is only <code>&lt;provider&gt;/other</code>; a model on your own provider is <code>custom</code>; a routing group is <code>group</code>.</li>
+    </ul>
+    <p>With them go <code>Agent Link partner</code> events: for each partner listed first in the add sheet, by its id, how many times on a day that has ended the sheet showed it, its row was opened, its key page was opened, and a provider was added from it (<code>what</code>: <code>shown</code>, <code>opened</code>, <code>keys</code>, <code>added</code>; at most 20 a day each, 5 adds). Counts only, never a provider of your own.</p>
+    <p>Every event carries <code>$process_person_profile: false</code>, so PostHog keeps no person profile for the id. No names, base URLs, accounts, keys, prompts, replies or usage are sent. A whole batch looks like this:</p>
+    <div class="code">
+      <span class="lang">POST https://us.i.posthog.com/batch/</span>
+      <button class="copy" data-copy="ex-payload">Copy</button>
+      <pre id="ex-payload">{
+  &quot;api_key&quot;: &quot;phc_nyDyYyrUTRGvNq5U7FBesCyM2j4GdKeqGp8ko7DBerTC&quot;,
+  &quot;batch&quot;: [
+    {
+      &quot;event&quot;: &quot;Agent Link active&quot;,
+      &quot;distinct_id&quot;: &quot;3f9c…(32 hex)&quot;,
+      &quot;timestamp&quot;: &quot;2026-10-13T08:00:00Z&quot;,
+      &quot;properties&quot;: {
+        &quot;version&quot;: &quot;0.1.1190&quot;, &quot;kind&quot;: &quot;app&quot;, &quot;$os&quot;: &quot;Mac OS X&quot;, &quot;arch&quot;: &quot;arm64&quot;,
+        &quot;agents&quot;: 2, &quot;providers&quot;: 3, &quot;models&quot;: 2, &quot;groups&quot;: 1,
+        &quot;$process_person_profile&quot;: false, &quot;distinct_id&quot;: &quot;3f9c…&quot;
+      }
+    },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;distinct_id&quot;: &quot;3f9c…&quot;, &quot;timestamp&quot;: &quot;2026-10-13T08:00:00Z&quot;,
+      &quot;properties&quot;: { &quot;kind&quot;: &quot;agent&quot;, &quot;id&quot;: &quot;claude&quot;, &quot;$process_person_profile&quot;: false, &quot;distinct_id&quot;: &quot;3f9c…&quot; } },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;properties&quot;: { &quot;kind&quot;: &quot;provider&quot;, &quot;id&quot;: &quot;custom&quot;, … } },
+    { &quot;event&quot;: &quot;Agent Link uses&quot;, &quot;properties&quot;: { &quot;kind&quot;: &quot;model&quot;, &quot;id&quot;: &quot;deepseek/deepseek-v4&quot;, … } },
+    { &quot;event&quot;: &quot;Agent Link partner&quot;, &quot;timestamp&quot;: &quot;2026-10-12T12:00:00Z&quot;,
+      &quot;properties&quot;: { &quot;id&quot;: &quot;&lt;partner id&gt;&quot;, &quot;what&quot;: &quot;shown&quot;, &quot;count&quot;: 3, &quot;day&quot;: &quot;2026-10-12&quot;, … } }
+  ]
+}</pre>
+    </div>
+    <p>The <code>api_key</code> is the project’s PostHog key; it can only send events, not read them. The code is <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/stats/stats.go">internal/stats</a> and <a href="https://github.com/crazymsn/Agent-Link/blob/main/internal/provider/partner_events.go">partner_events.go</a>.</p>
+
+    <h2 id="off"><a class="anchor" href="#off">Turning it off</a></h2>
+    <p>Each of these switches stops part or all of it:</p>
+    <ul>
+      <li><span class="ui">Settings</span> → <span class="ui">Privacy</span> → <span class="ui">Count me as a user</span> off, or <code>"noStats": true</code> in <code>settings.json</code> stops the whole daily count.</li>
+      <li><code>DO_NOT_TRACK=1</code> or <code>AGENT_LINK_NO_STATS=1</code> in Agent Link’s environment (any value but empty, <code>0</code> or <code>false</code>) stops the whole daily count, whatever the settings say.</li>
+      <li><span class="ui">Settings</span> → <span class="ui">Privacy</span> → <span class="ui">Share the agents, providers and models I use</span> off, or <code>"noUsageStats": true</code> leaves out the <code>Agent Link uses</code> and <code>Agent Link partner</code> events and the counts in <code>Agent Link active</code>; the id, version and system are still sent. Partner counts stop being kept too.</li>
+      <li><span class="ui">Settings</span> → <span class="ui">About</span> → <span class="ui">Automatic updates</span> off, or <code>"noAutoUpdate": true</code> stops Agent Link asking <code>useAgent Link.ai</code> for a newer version by itself (it asks every 6 hours otherwise). This is not part of the count.</li>
+    </ul>
+    <p>A change in Settings takes effect at the next hourly look; no restart is needed. <code>settings.json</code> sits in Agent Link’s folder (see <a href="#files">below</a>):</p>
+    <div class="code">
+      <span class="lang">settings.json</span>
+      <button class="copy" data-copy="ex-settings">Copy</button>
+      <pre id="ex-settings">{
+  "noStats": true,
+  "noUsageStats": true,
+  "noAutoUpdate": true
+}</pre>
+    </div>
+    <p><code>AGENT_LINK_STATS_HOST</code> sends the count to another host instead (it is for testing, and also makes a build from source send).</p>
+
+    <h2 id="files"><a class="anchor" href="#files">Files on your computer</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>File</th><th>What it is</th></tr>
+      <tr><td><code>install-id</code></td><td>The random id, made the first time the count is sent</td></tr>
+      <tr><td><code>stats-sent</code></td><td>The last day (UTC) the count went, so a day is sent once</td></tr>
+      <tr><td><code>partner-counts.json</code> (in the cache folder)</td><td>Partner counts not yet sent, at most 14 days</td></tr>
+    </table></div>
+    <p><code>install-id</code> and <code>stats-sent</code> are in Agent Link’s folder: <code>~/.config/Agent Link</code> on macOS and Linux, <code>%USERPROFILE%\.config\Agent Link</code> on Windows, <code>$XDG_CONFIG_HOME/Agent Link</code> when that is set, and the data folder of a portable Agent Link. <code>partner-counts.json</code> is in <code>~/.cache/Agent Link</code> (<code>$XDG_CACHE_HOME/Agent Link</code>, or <code>cache</code> in a portable Agent Link’s data folder). You can delete any of them: a deleted <code>install-id</code> is replaced by a new random one at the next send, so you are counted as a new user; with the count off, none of them is written again.</p>
+
+    <h2 id="site"><a class="anchor" href="#site">What useAgent Link.ai sees</a></h2>
+    <p>Agent Link asks its own site for a few things, whatever the privacy settings say, as any app asks its update server. None of these requests carries the install id or an account.</p>
+    <ul>
+      <li><code>/api/latest</code>: the update feed, every 6 hours unless <code>noAutoUpdate</code> is on, with <code>?lang=</code> for the notes in your language. <code>/api/notes</code> gives What’s new after an update.</li>
+      <li><code>/api/partners</code>: the add sheet’s partner list, every 6 hours. One fetch in ten is counted as a <code>Agent Link partners fetch</code> event, with the country Cloudflare gives, while a partner is listed.</li>
+      <li><code>/go/&lt;partner&gt;/site</code> and <code>/go/&lt;partner&gt;/keys</code>: a partner’s website and key-page links, opened in your browser, are counted (the partner, which link, a region, a country) as <code>Agent Link partner go</code> before you are sent on.</li>
+      <li><code>/api/icon?url=…</code>: icons named by a plugin, an import link or the library are fetched through it, so their hosts see Cloudflare’s address, not yours. The worker passes the picture on and counts and keeps nothing.</li>
+    </ul>
+    <p>The site’s own pages (these docs, the home page) carry Cloudflare Web Analytics, which counts page views without cookies. The app doesn’t load it. The code is <a href="https://github.com/crazymsn/Agent-Link/blob/main/site/worker.js">site/worker.js</a>.</p>
+
+    <h2 id="lists"><a class="anchor" href="#lists">Public lists Agent Link fetches</a></h2>
+    <p>To price and name models Agent Link fetches the <a href="https://models.dev">models.dev</a> catalog (<code>models.dev/api.json</code>), and for prices in your currency the USD exchange rate from <code>open.er-api.com</code> (kept 12 hours). Plugins and their updates come from the npm registry, and the library’s items from GitHub. These are plain downloads of public data: nothing about you, your providers or your usage is sent, though, as with any request, those hosts see your IP address (or your proxy’s). Agent Link also asks each of your providers for your allowance and model list, with your own key or sign-in; <span class="ui">Settings</span> → <span class="ui">Allowances</span> → <span class="ui">Allowance reads</span> → <span class="ui">When I ask</span> limits those to when you ask.</p>
+
+    <h2 id="otel"><a class="anchor" href="#otel">OTLP export</a></h2>
+    <p>Agent Link can export each gateway request to an OpenTelemetry collector of yours (Langfuse, for example). It is <b>off by default</b>, and goes only to the endpoint you set, never to us. When on, it sends per-request spans: agent, provider, model, token counts, status, timing and estimated cost. Optional switches add metrics, local agent conversations, and the request and reply bodies (secrets masked). Turn it on in <span class="ui">Settings</span> → <span class="ui">Observability</span>, or for <code>Agent Link serve</code> with <code>AGENT_LINK_OTEL_ENABLED</code>, <code>AGENT_LINK_OTEL_ENDPOINT</code>, <code>AGENT_LINK_OTEL_HEADERS</code>, <code>AGENT_LINK_OTEL_METRICS</code>, <code>AGENT_LINK_OTEL_SESSIONS</code>, <code>AGENT_LINK_OTEL_BODIES</code> and <code>AGENT_LINK_OTEL_BODIES_WHOLE</code>. An endpoint alone doesn’t turn it on. The <a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#otlp-export">reference</a> has the details.</p>
+
+    <h2 id="why"><a class="anchor" href="#why">Why the count is on</a></h2>
+    <p>Agent Link works with dozens of agents and providers, and is maintained by a small team. The daily count is how we know which of them people actually use, so they are kept working first. It is on in releases because counts from those who turn it on would be too few to tell that. In exchange it is kept small: a random id, built-in ids, numbers; one switch or <code>DO_NOT_TRACK=1</code> turns it off, builds from source never send it, and this page lists everything that goes.</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 Agent Link · MIT</span>
+  <div class="links">
+    <a href="/">Home</a>
+    <a href="/docs/start">Get started</a>
+    <a href="/docs/intent">Intent routing</a>
+    <a href="/docs/plugins">Plugins</a>
+    <a href="/docs/remote">Remote Agent Link</a>
+    <a href="/docs/docker">Docker</a>
+    <a href="/docs/privacy">Privacy</a>
+    <a href="/docs/import">Add to Agent Link</a>
+    <a href="/docs/integrate">Integrate</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link/releases">Releases</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "Copied"; setTimeout(() => (b.textContent = "Copy"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>

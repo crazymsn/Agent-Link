@@ -1,0 +1,18 @@
+// useagentlink.ai: the static site in public/, plus worker.js for the update
+// feed and the download links. Deploy with `npx wrangler deploy` from here.
+{
+  "name": "useagentlink",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    // every request, so worker.js can send www.useagentlink.ai to useagentlink.ai
+    "run_worker_first": true
+  },
+  "routes": [
+    { "pattern": "useagentlink.ai", "custom_domain": true },
+    { "pattern": "www.useagentlink.ai", "custom_domain": true }
+  ],
+  "observability": { "enabled": true }
+}

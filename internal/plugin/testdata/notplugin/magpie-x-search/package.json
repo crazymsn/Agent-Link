@@ -1,0 +1,33 @@
+{
+  "name": "agentlink-x-search",
+  "version": "1.2.0",
+  "description": "MCP server for native Grok X search through local agentlink OAuth, callable by any model.",
+  "license": "MIT",
+  "author": "cyberElar",
+  "homepage": "https://github.com/cyberElar/agentlink-x-search#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cyberElar/agentlink-x-search.git"
+  },
+  "bugs": {
+    "url": "https://github.com/cyberElar/agentlink-x-search/issues"
+  },
+  "keywords": ["mcp", "x-search", "twitter", "grok", "agentlink", "oauth", "stdio"],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "agentlink-x-search": "launcher.cjs"
+  },
+  "files": ["launcher.cjs", "x_search_mcp.py", "search_backend.py", "search_cache.py"],
+  "scripts": {
+    "start": "node launcher.cjs",
+    "test": "node --test test_launcher.cjs test_package.cjs && node test_python.cjs",
+    "prepack": "node check_package.cjs",
+    "prepublishOnly": "npm test"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

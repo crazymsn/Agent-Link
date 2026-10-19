@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker · agentlink ドキュメント</title>
+<meta name="description" content="サーバーや NAS で agentlink を Docker で動かす：ghcr.io/yetone/agentlink イメージのポート、ボリューム、環境変数、ブラウザ UI、サブスクリプションへのサインイン、ゲートウェイキーでの共有、Compose の例。">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafafa">
+<script>
+(() => {
+  let mode = "system";
+  try { mode = localStorage.getItem("theme") || "system"; } catch {}
+  const q = matchMedia("(prefers-color-scheme: dark)");
+  const apply = () => {
+    const t = mode === "system" ? (q.matches ? "dark" : "light") : mode;
+    document.documentElement.dataset.theme = t;
+    document.querySelector('meta[name="theme-color"]').content = t === "dark" ? "#0b0b0c" : "#fafafa";
+    document.querySelectorAll("button.theme").forEach((b) => { b.dataset.mode = mode; b.title = "Theme: " + mode; });
+  };
+  q.addEventListener("change", () => mode === "system" && apply());
+  window.setTheme = (m) => { mode = m; try { m === "system" ? localStorage.removeItem("theme") : localStorage.setItem("theme", m); } catch {} apply(); };
+  window.themeMode = () => mode;
+  apply();
+})();
+</script>
+<script>try{if(/Linux/.test(navigator.userAgent)&&!/Android/.test(navigator.userAgent)||localStorage.getItem("omarchy")||/[?&]omarchy=/.test(location.search))document.write('<script src="/omarchy.js"><\/script>')}catch(e){}</script>
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/img/icon-256.png">
+<link rel="alternate" hreflang="en" href="https://useagentlink.ai/docs/docker">
+<link rel="alternate" hreflang="zh" href="https://useagentlink.ai/docs/zh/docker">
+<link rel="alternate" hreflang="ja" href="https://useagentlink.ai/docs/ja/docker">
+<link rel="stylesheet" href="/docs.css">
+<meta property="og:title" content="Docker で agentlink を動かす">
+<meta property="og:description" content="サーバーや NAS で agentlink のゲートウェイを動かし、ブラウザから管理します。">
+<meta property="og:image" content="https://useagentlink.ai/img/og.png">
+<meta property="og:url" content="https://useagentlink.ai/docs/ja/docker">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+<body>
+
+<nav><div class="wrap">
+  <a class="brand" href="/ja/"><img class="bird" src="/img/agentlink-small.svg" alt="">agentlink <small>ドキュメント</small></a>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a class="toc-only" href="/docs/ja/remote">リモート agentlink</a>
+    <a class="toc-only" href="/docs/ja/docker">Docker</a>
+    <a class="toc-only" href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">agentlink に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">リリース</a>
+  </div>
+  <div class="langs">
+    <button class="icon-btn lang" type="button" aria-label="言語" title="言語" aria-haspopup="true" aria-expanded="false" aria-controls="langs"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.25"/><path d="M1.75 8h12.5M8 1.75c1.7 1.75 2.55 3.83 2.55 6.25S9.7 12.5 8 14.25M8 1.75C6.3 3.5 5.45 5.58 5.45 8S6.3 12.5 8 14.25"/></svg></button>
+    <div class="lang-menu" id="langs" hidden>
+      <a href="/docs/docker" hreflang="en" lang="en">English</a>
+      <a href="/docs/zh/docker" hreflang="zh" lang="zh">中文</a>
+      <a href="/docs/ja/docker" hreflang="ja" lang="ja">日本語</a>
+    </div>
+  </div>
+  <a class="icon-btn" href="https://discord.gg/vGSnD3ZKQF" aria-label="Discord の agentlink" title="Discord に参加"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg></a>
+  <a class="icon-btn" href="https://github.com/crazymsn/Agent-Link" aria-label="GitHub の agentlink" title="GitHub のソースコード"><svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg></a>
+  <button class="icon-btn theme" type="button" aria-label="Theme" title="Theme: system"><svg class="i-system" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.75" y="2.75" width="12.5" height="8.5" rx="1.5"/><path d="M5.5 14h5M8 11.25V14"/></svg><svg class="i-light" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="3"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M3 13l1-1M12 4l1-1"/></svg><svg class="i-dark" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M13.5 9.5A5.5 5.5 0 0 1 6.5 2.5a5.5 5.5 0 1 0 7 7Z"/></svg></button>
+  <a class="btn small" href="/#get">ダウンロード</a>
+</div></nav>
+
+<main class="wrap doc">
+  <aside class="toc">
+    <p>Docker</p>
+    <a href="#overview">概要</a>
+    <a href="#run">起動する</a>
+    <a href="#web">ブラウザ UI</a>
+    <a href="#signin">サブスクリプションにサインイン</a>
+    <a href="#volume">保存されるもの</a>
+    <a href="#env">環境変数</a>
+    <a href="#share">ゲートウェイキーとほかのマシン</a>
+    <a href="#compose">NAS で Docker Compose</a>
+    <a href="#ops">ヘルスチェック・ターミナル・更新</a>
+  </aside>
+
+  <article>
+    <p class="eyebrow" id="overview">ドキュメント · サーバー</p>
+    <h1>Docker で agentlink を動かす</h1>
+    <p class="lede">デスクトップのないサーバーや NAS で agentlink を動かします。そのゲートウェイがほかのコンピューターのエージェントにモデルを提供し、プロバイダの追加やサブスクリプションへのサインインはブラウザのページから行います。</p>
+
+    <div class="table-wrap"><table>
+      <tr><td><b>イメージ</b></td><td><code>ghcr.io/yetone/agentlink</code>（<code>linux/amd64</code> と <code>linux/arm64</code>）</td></tr>
+      <tr><td><b>タグ</b></td><td><code>latest</code>（最新リリース）、<code>0.1.1150</code>（特定のリリース）、<code>0.1</code>、<code>edge</code>（<code>main</code> の変更ごと）</td></tr>
+      <tr><td><b>ポート</b></td><td><code>3425</code> はエージェントが呼ぶゲートウェイ、<code>3430</code> はコンテナが <code>agentlink web</code> を動かすときのブラウザ UI</td></tr>
+      <tr><td><b>ボリューム</b></td><td><code>/config</code>：プロバイダ、キー、サインイン、プラグイン、使用量</td></tr>
+      <tr><td><b>ユーザー</b></td><td>nonroot（uid 65532）</td></tr>
+    </table></div>
+    <p>イメージに入っているのはターミナル専用ビルドの agentlink で、Debian 12 slim をベースに、コンテナ内でターミナルを使うための bash と、一部のサブスクリプションのサインインに必要な CLI（Cursor、Devin、Grok Build）をインストールするための curl を含みます。コマンドを指定しなければ <code>agentlink serve</code>（ゲートウェイのみ）を実行します。コンテナ内には設定するエージェントがないので、ここでの agentlink はゲートウェイです。それを使うエージェントはほかのマシンで動きます。</p>
+
+    <h2 id="run"><a class="anchor" href="#run">起動する</a></h2>
+    <p>ブラウザ UI 付きで、再起動しても変わらないページ用のキーを渡し、両方のポートをホストのループバックだけに公開して起動します。</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-run">コピー</button>
+      <pre id="ex-run">docker run -d --name agentlink --restart unless-stopped \
+  -p 127.0.0.1:3425:3425 -p 127.0.0.1:3430:3430 \
+  -e AGENT_LINK_WEB_KEY=$(openssl rand -hex 16) \
+  -v agentlink-config:/config \
+  ghcr.io/yetone/agentlink:latest web --addr 0.0.0.0:3430 --no-open
+
+docker logs agentlink</pre>
+    </div>
+    <p>ログにキー付きのページのアドレスが出ます。</p>
+    <div class="code">
+      <span class="lang">出力</span>
+      <pre>● agentlink web on http://127.0.0.1:3430/?k=0f3c9a1e…
+  on the network http://172.17.0.2:3430/?k=0f3c9a1e…
+  these are the container's own addresses: other machines use the host's, and AGENT_LINK_PUBLIC_URL=http://&lt;host&gt;:&lt;port&gt; puts it here
+! anyone with the link can change agentlink and see its keys, and the network carries it unencrypted
+  the link carries AGENT_LINK_WEB_KEY · gateway http://127.0.0.1:3425 · Ctrl-C to stop</pre>
+    </div>
+    <div class="callout"><b>コンテナの外のエージェントにはゲートウェイキーが必要です。</b>コンテナ内ではどんなキーでも通ります。ホストやほかのマシンからのリクエストは、有効なゲートウェイキーがあるときだけ応答され、ないものは 401 になります。<a href="#share">ゲートウェイキー</a>の手順で作ってください。<code>-p</code> の <code>127.0.0.1:</code> はポートをホストだけに置きます。ほかのマシンから届くようにするには、それを外すか、ホストの LAN や VPN のアドレスにします。</div>
+    <p><code>web --addr 0.0.0.0:3430 --no-open</code> を付けなければコンテナはゲートウェイだけを動かし、設定はコンテナ内のターミナルから行います（<code>docker exec -it agentlink agentlink provider add …</code>）。名前付きボリュームの代わりにフォルダを <code>/config</code> にバインドマウントすることもできます。uid 65532 が書き込める必要があります：<code>sudo chown -R 65532:65532 /volume1/docker/agentlink/config</code>。</p>
+
+    <h2 id="web"><a class="anchor" href="#web">ブラウザ UI</a></h2>
+    <p>ログのリンクを開きます。リンクのキーは cookie に置き換わり、アドレスから消えます。キーなしで開いたページは拒否されます（401）。<code>AGENT_LINK_WEB_KEY</code>（英数字か <code>- . _ ~</code> で 16 文字以上。<code>openssl rand -hex 16</code> で作れます）を設定すると、再起動してもキーは変わらず、ブラウザは 400 日サインインしたままです。設定しなければ起動のたびに新しいキーができ、cookie はそのブラウザセッションの間だけ有効です。</p>
+    <p>ページは<b>ゲートウェイモード</b>で開きます：<span class="ui">プロバイダ</span>、<span class="ui">ゲートウェイ</span>、<span class="ui">ルーティング</span>、<span class="ui">使用量</span>、<span class="ui">プラグイン</span>、<span class="ui">設定</span>だけで、コンテナにはエージェントがないのでエージェント、セッション、ライブラリはありません。<span class="ui">設定</span> → <span class="ui">一般</span> → <span class="ui">ゲートウェイモード</span>でオフにできます。</p>
+    <p>NAS や SSH で入るサーバーでは、3430 を公開せずにトンネル経由でページを開きます：<code>ssh -L 3430:127.0.0.1:3430 you@nas</code> を実行してから、自分のコンピューターでログのリンクを開きます。</p>
+    <div class="callout"><b>リンクを持つ人は誰でも agentlink を変更し、そのキーを見られます。</b>3430 はループバックか VPN 上に置いてください。ネットワーク越しなら HTTPS で：<code>AGENT_LINK_TLS_CERT</code> と <code>AGENT_LINK_TLS_KEY</code> で agentlink に証明書を渡すか、Caddy のような TLS 付きのリバースプロキシの後ろに置きます。</div>
+
+    <h2 id="signin"><a class="anchor" href="#signin">サブスクリプションにサインイン</a></h2>
+    <p>API キーはデスクトップと同じく<span class="ui">プロバイダ</span>で追加します。サブスクリプション（ChatGPT、Claude…）のサインインはブラウザでベンダーのページを開き、終わるとベンダーはそのブラウザを <code>localhost</code> に戻します。ChatGPT なら <code>http://localhost:1455/auth/callback?code=…</code> です。これはコンテナではなく自分のコンピューターなので、ページは開けません。アドレスバーのアドレスを丸ごとコピーし、サインインの <span class="ui">コールバック URL</span> 欄に貼り付けます。</p>
+    <p>ターミナルからも同じことができます。</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-signin">コピー</button>
+      <pre id="ex-signin">docker exec -it agentlink agentlink accounts add codex</pre>
+    </div>
+    <p>表示されたリンクを開いてサインインし、ブラウザが最後に表示したアドレスを貼り付けます。ブラウザ UI からはファイルからサインインを取り込むこともできます。</p>
+    <p>Claude サブスクリプションのサインインとリクエストは Claude Code を通りますが、イメージには入っていません。先に agentlink に Anthropic 公式のビルドをダウンロードさせます。バージョン、ダウンロード元、保存先を示して確認してからダウンロードし、Anthropic のマニフェストにある SHA-256 で検証します。<code>/config/cache</code> に保存され、もう一度実行すると新しいバージョンになります。Claude Code がないときは <code>agentlink accounts add claude</code> もダウンロードを提案します。</p>
+    <div class="code">
+      <span class="lang">Shell</span>
+      <button class="copy" data-copy="ex-claude-code">コピー</button>
+      <pre id="ex-claude-code">docker exec -it agentlink agentlink claude-code install</pre>
+    </div>
+    <p>Grok（SuperGrok）サブスクリプションは xAI の Grok Build CLI でサインインしますが、これもイメージにはありません。ブラウザ UI や <code>agentlink plugin login grok</code> でサインインすると、agentlink が xAI のインストーラーと同じ方法で先にインストールします。<code>x.ai/cli</code> の stable 版を <code>/config/home/.grok</code> に置きます。自分でボリュームに置いた Grok Build を使うときは、<code>GROK_BIN_DIR</code> にそのフォルダを指定します。</p>
+
+    <h2 id="volume"><a class="anchor" href="#volume">保存されるもの</a></h2>
+    <p>agentlink が書くものはすべて <code>/config</code> の下にあるので、再起動しても、同じボリュームで新しいコンテナを作っても、プロバイダ、キー、サインイン、プラグインは残ります。</p>
+    <div class="table-wrap"><table>
+      <tr><th>パス</th><th>中身</th></tr>
+      <tr><td><code>/config/agentlink</code></td><td>agentlink 自身のファイル：<code>settings.json</code>、プロバイダ、ゲートウェイキー、ルーティンググループ</td></tr>
+      <tr><td><code>/config/home</code></td><td>コンテナの <code>HOME</code>：サインインは各エージェントが保存する場所（<code>~/.codex</code>、<code>~/.claude</code>…）に保存されます</td></tr>
+      <tr><td><code>/config/cache</code></td><td>モデルカタログ、プラグインが動く Bun（初めてプラグインを使うときにダウンロード）、<code>agentlink claude-code install</code> がダウンロードした Claude Code</td></tr>
+      <tr><td><code>/config/data</code>、<code>/config/state</code></td><td>agentlink が保存するその他のもの</td></tr>
+    </table></div>
+    <p>古いイメージで作ったボリュームもそのまま使えます。agentlink は起動時に足りないフォルダを作ります。古いイメージで行ったサインイン（ボリュームの外に保存されていたもの）だけはやり直しが必要です。</p>
+
+    <h2 id="env"><a class="anchor" href="#env">環境変数</a></h2>
+    <div class="table-wrap"><table>
+      <tr><th>変数</th><th>役割</th></tr>
+      <tr><td><code>AGENT_LINK_ADDR</code></td><td>ゲートウェイが待ち受けるアドレス。イメージでは <code>0.0.0.0:3425</code> に設定され、公開したポートから届きます。</td></tr>
+      <tr><td><code>AGENT_LINK_PUBLIC_URL</code></td><td>ほかのマシンがゲートウェイに届くアドレス。例：<code>http://192.168.1.20:3425</code>（ホストや NAS のアドレスと公開ポート）、またはリバースプロキシのベース URL。コンテナ内の agentlink には Docker 自身の <code>172.17.x</code> のアドレスしか見えません。これを設定すると、表示されるアドレスが使うべきものになります。</td></tr>
+      <tr><td><code>AGENT_LINK_WEB_KEY</code></td><td>ブラウザ UI のキー。再起動しても変わりません（16 文字以上）</td></tr>
+      <tr><td><code>AGENT_LINK_TLS_CERT</code>、<code>AGENT_LINK_TLS_KEY</code></td><td>コンテナにマウントした PEM の証明書（後ろにチェーン）と秘密鍵。ほかのマシンはゲートウェイとブラウザ UI に <code>https://</code> でだけ届き、平文の HTTP は 400 になります。ファイルが変わると読み直すので、更新に再起動はいりません。片方だけ、または読めないファイルでは agentlink は起動しません。<code>AGENT_LINK_PUBLIC_URL</code> も <code>https://</code> にしてください。</td></tr>
+      <tr><td><code>AGENT_LINK_ALLOW_IPS</code></td><td>ほかのマシンがゲートウェイとブラウザ UI に接続できるアドレス。IP または CIDR 範囲で書きます：<code>203.0.113.7,10.0.0.0/8,2001:db8::/32</code>。ほかのアドレスからは、ゲートウェイキーがあっても 403 になります。設定しなければすべてのアドレスから接続でき、それぞれキーが要ります。<a href="#allow">許可するアドレス</a>を参照。</td></tr>
+      <tr><td><code>HOME</code>、<code>XDG_CONFIG_HOME</code>、<code>XDG_CACHE_HOME</code>、<code>XDG_DATA_HOME</code>、<code>XDG_STATE_HOME</code></td><td>イメージが上の <code>/config</code> 配下のフォルダに設定しています。変えないでください</td></tr>
+    </table></div>
+
+    <h2 id="share"><a class="anchor" href="#share">ゲートウェイキーとほかのマシン</a></h2>
+    <ol class="steps">
+      <li><b>クライアントごとにキーを作る</b><span class="ui">ゲートウェイ</span> → <span class="ui">ゲートウェイキー</span>、またはターミナルで <code>docker exec agentlink agentlink gateway-key add "Laptop"</code>。新しい <code>sk-agentlink-key-…</code> が表示されます。コンテナの外からのリクエストは、ホスト自身のものも含め、有効なゲートウェイキーが必要で、ないものは 401 になります。キーごとに日・週・月、N 日ごと、または N 時間ごとの上限と使えるモデルを決められます（<code>agentlink gateway-key limit</code>、<code>agentlink gateway-key models</code>）。</li>
+      <li><b>ポートを公開する</b><code>-p 3425:3425</code>（または NAS の LAN や VPN のアドレスに限定して <code>-p 192.168.1.20:3425:3425</code>）と <code>-e AGENT_LINK_PUBLIC_URL=http://192.168.1.20:3425</code> を付けてコンテナを作り直します。</li>
+    </ol>
+    <p>ほかのコンピューターでは、エージェントをゲートウェイに向け、そのキーのどれかを API キーにします：OpenAI クライアントなら <code>http://192.168.1.20:3425/v1</code>、Anthropic や Gemini なら <code>http://192.168.1.20:3425</code>。モデル ID は <code>provider/model</code> かルーティンググループの名前で、<code>GET /v1/models</code> が一覧を返します。そのコンピューターでも agentlink を動かしているなら、コンテナを<a href="/docs/ja/remote">リモート agentlink</a> として追加すれば、agentlink がエージェントを設定します。</p>
+    <p>コンテナでは <span class="ui">設定</span> → <span class="ui">ローカルネットワークで共有</span> は不要です。オンにすると <span class="ui">Agent Link</span> という名前のゲートウェイキーも作られますが、ゲートウェイはどちらでもコンテナの外からのリクエストにキーを求めます。</p>
+    <p><b>以前のイメージからの更新。</b>コンテナの外から <code>agentlink</code> や、有効なゲートウェイキーではないキーを送るエージェントは、401（“the API key sent is not an enabled agentlink gateway key”）を受け取るようになります。上の手順でキーを作り、エージェントの設定に入れてください。すでにゲートウェイキーを送っているエージェントや、ゲートウェイキーで追加したリモート agentlink はそのまま動きます。</p>
+    <p id="allow"><b>許可するアドレス。</b>公開ホストでは <code>-e AGENT_LINK_ALLOW_IPS=203.0.113.7,10.0.0.0/8</code> にクライアントのアドレスを書きます。ほかのアドレスからのリクエストはキーを見る前に 403 で拒否されるので、漏れたキーもよそからは使えません。拒否のメッセージとコンテナのログには、リクエスト元のアドレスが出ます。agentlink が見るのは接続そのもののアドレスで、<code>X-Forwarded-For</code> ヘッダーは信用しません。書き間違えた項目は、すべてを通すのではなく、何も通しません。Docker 既定の bridge ネットワークはクライアント自身のアドレスをコンテナに渡しますが、ホスト自身からのリクエストは bridge のゲートウェイ（<code>172.17.0.1</code>）から届き、Docker Desktop や rootless Docker ではすべてのクライアントがそれ自身のひとつのアドレスに見えます。それを追加するか、403 に書かれたアドレスを確かめてください。リバースプロキシやトンネルの後ろでは、すべてのリクエストがプロキシのアドレスから届くので、接続できる人はプロキシで制限してください。デスクトップ版では同じリストが <span class="ui">設定</span> → <span class="ui">ネットワークと共有</span> → <span class="ui">許可するアドレス</span> にあります。</p>
+    <div class="callout"><b>インターネット越しなら VPN を</b>（Tailscale や WireGuard など）。3425 を開けるより安全です。コンテナの前に置くリバースプロキシやトンネルもネットワークです。そのクライアントにも、ほかのマシンと同じくゲートウェイキーが必要です。</div>
+
+    <h2 id="compose"><a class="anchor" href="#compose">NAS で Docker Compose</a></h2>
+    <div class="code">
+      <span class="lang">compose.yaml</span>
+      <button class="copy" data-copy="ex-compose">コピー</button>
+      <pre id="ex-compose">services:
+  agentlink:
+    image: ghcr.io/yetone/agentlink:latest
+    restart: unless-stopped
+    ports:
+      <span class="c"># 127.0.0.1: ホストのみ。コンテナの外の呼び出しにはゲートウェイキーが必要</span>
+      - "127.0.0.1:3425:3425"
+      - "127.0.0.1:3430:3430"
+    environment:
+      AGENT_LINK_PUBLIC_URL: http://&lt;nas-address&gt;:3425
+      AGENT_LINK_WEB_KEY: &lt;random-key&gt;
+    volumes:
+      - ./config:/config
+    command: [web, --addr, 0.0.0.0:3430, --no-open]</pre>
+    </div>
+    <p>続いて <code>sudo chown -R 65532:65532 ./config</code>、<code>docker compose up -d</code> を実行し、SSH トンネル経由で <code>http://127.0.0.1:3430/?k=&lt;random-key&gt;</code> を開いて、プロバイダを追加し、マシンごとにゲートウェイキーを作ります。ほかのマシンからゲートウェイに届くようにするには、その行を <code>"3425:3425"</code>（または NAS の LAN や VPN のアドレス）に変えて、もう一度 <code>docker compose up -d</code> を実行します。</p>
+
+    <h2 id="ops"><a class="anchor" href="#ops">ヘルスチェック・ターミナル・更新</a></h2>
+    <ul>
+      <li><b>ヘルスチェック。</b>イメージには <code>HEALTHCHECK</code> があります。ゲートウェイが応答している間 <code>agentlink healthcheck</code> は 0 で終わり、<code>serve</code> でも <code>web</code> でも同じです。<code>docker ps</code> は healthy と表示し、Compose は <code>depends_on: condition: service_healthy</code> で待てます。</li>
+      <li><b>ターミナル。</b><code>docker exec -it agentlink bash</code> や NAS の管理画面のターミナルで、<code>agentlink</code> が PATH にあるシェルが開きます：<code>agentlink providers</code>、<code>agentlink models</code>、<code>agentlink usage</code>、<code>agentlink quota</code> など、<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md">CLI</a> のすべてが使えます。</li>
+      <li><b>更新。</b>新しいイメージを取得し、同じボリュームでコンテナを作り直します：<code>docker pull ghcr.io/yetone/agentlink:latest</code> のあと <code>docker rm -f agentlink</code> と同じ <code>docker run</code>、または <code>docker compose pull &amp;&amp; docker compose up -d</code>。</li>
+      <li><b>自分でビルドする。</b><a href="https://github.com/crazymsn/Agent-Link">リポジトリ</a>のチェックアウトで <code>docker build -t agentlink .</code> を実行すると同じイメージができます。</li>
+    </ul>
+
+    <p style="margin-top:48px">質問や共有したいセットアップがあれば <a href="https://discord.gg/vGSnD3ZKQF">Discord</a> へどうぞ。詳細は<a href="https://github.com/crazymsn/Agent-Link/blob/main/docs/reference.md#docker">リファレンス</a>（英語）にあります。</p>
+  </article>
+</main>
+
+<footer><div class="wrap">
+  <span>© 2026 agentlink · MIT</span>
+  <div class="links">
+    <a href="/ja/">ホーム</a>
+    <a href="/docs/ja/start">はじめに</a>
+    <a href="/docs/ja/intent">インテントルーティング</a>
+    <a href="/docs/ja/plugins">プラグイン</a>
+    <a href="/docs/ja/remote">リモート agentlink</a>
+    <a href="/docs/ja/docker">Docker</a>
+    <a href="/docs/ja/privacy">プライバシー</a>
+    <a href="/docs/ja/import">agentlink に追加</a>
+    <a href="/docs/integrate">アプリ連携</a>
+    <a href="https://github.com/crazymsn/Agent-Link">GitHub</a>
+    <a href="https://discord.gg/vGSnD3ZKQF">Discord</a>
+    <a href="https://github.com/crazymsn/Agent-Link-releases/releases">リリース</a>
+  </div>
+</div></footer>
+
+<script>
+(() => {
+  const next = { system: "light", light: "dark", dark: "system" };
+  document.querySelectorAll("button.theme").forEach((b) => {
+    b.dataset.mode = themeMode();
+    b.title = "Theme: " + themeMode();
+    b.addEventListener("click", () => setTheme(next[themeMode()]));
+  });
+
+  document.querySelectorAll(".copy").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent);
+      b.textContent = "コピーしました"; setTimeout(() => (b.textContent = "コピー"), 1400);
+    } catch {}
+  }));
+})();
+</script>
+<script src="/docs.js"></script>
+</body>
+</html>
