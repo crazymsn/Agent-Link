@@ -43,10 +43,10 @@ static gboolean magpie_font_dpi_idle(gpointer data) {
 	return G_SOURCE_REMOVE;
 }
 
-// magpie_font_dpi_first runs magpie_font_dpi as the GTK main loop starts.
+// agentlink_font_dpi_first runs magpie_font_dpi as the GTK main loop starts.
 // GtkApplication has initialised GTK by then, with the program name Wails
 // set, and Wails makes each window from an idle callback of default idle
 // priority; one of G_PRIORITY_HIGH runs before all of them.
-static void magpie_font_dpi_first(void) {
+static void agentlink_font_dpi_first(void) {
 	g_idle_add_full(G_PRIORITY_HIGH, magpie_font_dpi_idle, NULL, NULL);
 }

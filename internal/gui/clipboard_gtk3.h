@@ -23,17 +23,17 @@
 #include <time.h>
 #include <unistd.h>
 
-// magpie_clipboard_set puts text on PRIMARY and then CLIPBOARD. It runs on
+// agentlink_clipboard_set puts text on PRIMARY and then CLIPBOARD. It runs on
 // GTK's main thread.
-static void magpie_clipboard_set(const char *text) {
+static void agentlink_clipboard_set(const char *text) {
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_PRIMARY), text, -1);
 	gtk_clipboard_set_text(gtk_clipboard_get(GDK_SELECTION_CLIPBOARD), text, -1);
 }
 
-// magpie_clipboard_wayland gives GDK's Wayland display and seat, for
-// magpie_clipboard_read, or returns 0 when GDK isn't on Wayland. It runs on
+// agentlink_clipboard_wayland gives GDK's Wayland display and seat, for
+// agentlink_clipboard_read, or returns 0 when GDK isn't on Wayland. It runs on
 // GTK's main thread.
-static int magpie_clipboard_wayland(void **display, void **seat) {
+static int agentlink_clipboard_wayland(void **display, void **seat) {
 #ifdef GDK_WINDOWING_WAYLAND
 	GdkDisplay *d = gdk_display_get_default();
 	if (d && GDK_IS_WAYLAND_DISPLAY(d)) {
@@ -129,7 +129,7 @@ static long magpie_ms_since(struct timespec *t0) {
 }
 #endif
 
-// magpie_clipboard_read reads the clipboard the way another program
+// agentlink_clipboard_read reads the clipboard the way another program
 // pasting would: from the compositor, through a data device of its own on
 // its own event queue. It runs off GTK's main thread, which has to be free
 // to answer when magpie holds the clipboard itself. It returns 1 with the
@@ -146,7 +146,7 @@ static long magpie_ms_since(struct timespec *t0) {
 // id, the next object the compositor creates is then out of sequence, and
 // the display connection fails with EINVAL: GTK prints "Error reading
 // events from display: Invalid argument" and the app exits.
-static int magpie_clipboard_read(void *display, void *seat, int timeout_ms, char **out, size_t *len) {
+static int agentlink_clipboard_read(void *display, void *seat, int timeout_ms, char **out, size_t *len) {
 	*out = NULL;
 	*len = 0;
 #ifdef GDK_WINDOWING_WAYLAND

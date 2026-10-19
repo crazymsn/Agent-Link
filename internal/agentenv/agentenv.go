@@ -104,8 +104,11 @@ var Vars = []string{
 	// whose installs hold the Node versions it is under
 	"MISE_DATA_DIR", "ASDF_DIR",
 	// Google Cloud's credentials file and gcloud's folder, which Vertex AI's
-	// tokens are minted from (and Gemini CLI's own, on Vertex AI)
+	// tokens are minted from (and Gemini CLI's own, on Vertex AI); the OAuth
+	// client values used by Gemini and Antigravity must be isolated too.
 	"GOOGLE_APPLICATION_CREDENTIALS", "CLOUDSDK_CONFIG",
+	"AGENT_LINK_GEMINI_CLIENT_ID", "AGENT_LINK_GEMINI_CLIENT_SECRET",
+	"AGENT_LINK_ANTIGRAVITY_CLIENT_ID", "AGENT_LINK_ANTIGRAVITY_CLIENT_SECRET",
 }
 
 // NotPaths are the Vars that name no folder or file under the working
@@ -118,7 +121,7 @@ var NotPaths = map[string]bool{
 	"WINDSURF_API_SERVER_URL": true, "ZCODE_CREDENTIAL_SECRET": true,
 	"PI_CONFIG_DIR": true, "OPENCODE_DB": true,
 	"STEPCODE_CONFIG_DIR": true,
-	"AGENT_LINK_ZED_BIN":      true, "AGENT_LINK_ZED_PROCESS_NAMES": true,
+	"AGENT_LINK_ZED_BIN":  true, "AGENT_LINK_ZED_PROCESS_NAMES": true,
 }
 
 // ClaudeProviders are Claude Code's switches that send its requests to a
