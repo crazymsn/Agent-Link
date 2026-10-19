@@ -23,10 +23,10 @@ function install(t, { termux = true, arch = "aarch64", override = false, prefixO
   writeFileSync(join(bin, "magpie"), "old installation");
   const payload = "test binary\n";
   const cpu = arch === "aarch64" ? "arm64" : "amd64";
-  const file = termux ? `agentlink-cli-android-${cpu}` : desktop ? `magpie-linux-${cpu}` : `magpie-cli-linux-${cpu}`;
+  const file = termux ? `agentlink-cli-android-${cpu}` : desktop ? `agentlink-linux-${cpu}` : `agentlink-cli-linux-${cpu}`;
   const assets = {};
-  // A Linux asset is present even when Android's is missing: never use it.
-  for (const name of [file, `magpie-cli-linux-${cpu}`]) {
+  // A CLI asset is present even when the desktop one is missing: never use it.
+  for (const name of [file, `agentlink-cli-linux-${cpu}`]) {
     if (missing && name === file) continue;
     assets[name] = { url: github ? `https://github.com/crazymsn/Agent-Link/releases/download/vtest/${name}` : `https://download.invalid/${name}`, sha256: corrupt ? "0".repeat(64) : createHash("sha256").update(payload).digest("hex") };
   }
@@ -112,7 +112,7 @@ test("ordinary Linux still selects its CLI or desktop build", (t) => {
   for (const desktop of [false, true]) {
     const r = install(t, { termux: false, desktop });
     assert.equal(r.status, 0, r.stderr);
-    assert.match(r.requests, desktop ? /magpie-linux-arm64/ : /magpie-cli-linux-arm64/);
+    assert.match(r.requests, desktop ? /agentlink-linux-arm64/ : /agentlink-cli-linux-arm64/);
     assert.equal(existsSync(join(r.share, "applications/magpie.desktop")), desktop);
     // the dock binds the window (app_id/WM_CLASS "magpie") to the entry (#2626)
     if (desktop) assert.match(readFileSync(join(r.share, "applications/magpie.desktop"), "utf8"), /^StartupWMClass=magpie$/m);
@@ -150,7 +150,7 @@ test("--mirror fetches the file through the mirror, the feed and its checksum fr
   assert.equal(r.status, 0, r.stderr);
   const [feed, file] = r.requests.trim().split("\n");
   assert.equal(feed, "https://useagentlink.ai/api/latest");
-  assert.equal(file, "https://gh.mirror.example/https://github.com/crazymsn/Agent-Link/releases/download/vtest/magpie-cli-linux-arm64");
+  assert.equal(file, "https://gh.mirror.example/https://github.com/crazymsn/Agent-Link/releases/download/vtest/agentlink-cli-linux-arm64");
   assert.equal(readFileSync(join(r.bin, "magpie"), "utf8"), r.payload);
   assert.match(r.stdout, /through https:\/\/gh\.mirror\.example\//);
 
