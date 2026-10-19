@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const installer = fileURLToPath(new URL("./public/install.sh", import.meta.url));
 
 function install(t, { termux = true, arch = "aarch64", override = false, prefixOnly = false, missing = false, corrupt = false, desktop = false, github = false, args = [], env: extra = {}, tamper = "" } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), "magpie-install-"));
+  const dir = mkdtempSync(join(tmpdir(), "agent-link-install-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const tools = join(dir, "tools");
   const home = join(dir, "home");
@@ -33,8 +33,8 @@ function install(t, { termux = true, arch = "aarch64", override = false, prefixO
   const requests = join(dir, "requests");
   writeFileSync(join(tools, "uname"), `#!/bin/sh\ncase "$1" in -m) echo '${arch}';; -s) echo Linux;; esac\n`, { mode: 0o755 });
   writeFileSync(join(tools, "ldconfig"), "#!/bin/sh\necho libwebkit2gtk-4.1.so.0\n", { mode: 0o755 });
-  writeFileSync(join(tools, "curl"), `#!${process.execPath}
-const fs = require("node:fs");
+  const curlScript = join(tools, "curl.js");
+  writeFileSync(curlScript, `const fs = require("node:fs");
 const args = process.argv.slice(2);
 const url = args.at(-1);
 fs.appendFileSync(process.env.INSTALL_REQUESTS, url + String.fromCharCode(10));
@@ -42,14 +42,18 @@ fs.appendFileSync(process.env.INSTALL_ARGS, JSON.stringify(args) + String.fromCh
 const tamper = process.env.INSTALL_TAMPER;
 if (url.endsWith("/api/latest")) process.stdout.write(process.env.INSTALL_FEED);
 else fs.writeFileSync(args[args.indexOf("-o") + 1], tamper && url.startsWith(tamper) ? "changed by the mirror" : process.env.INSTALL_PAYLOAD);
+`);
+  const shellPath = (p) => p.replaceAll("\\\\", "/").replace(/^([A-Za-z]):/, (_, drive) => `/${drive.toLowerCase()}`);
+  writeFileSync(join(tools, "curl"), `#!/bin/sh
+exec "${shellPath(process.execPath)}" "${shellPath(curlScript)}" "$@"
 `, { mode: 0o755 });
   const env = {
     ...process.env,
     HOME: home,
     PREFIX: termux ? prefix : "",
     TERMUX_VERSION: termux && !prefixOnly ? "test" : "",
-    MAGPIE_BIN_DIR: override ? bin : "",
-    MAGPIE_CLI: desktop ? "" : "1",
+    AGENT_LINK_BIN_DIR: override ? bin : "",
+    AGENT_LINK_CLI: desktop ? "" : "1",
     PATH: tools + ":" + process.env.PATH,
     XDG_CONFIG_HOME: join(dir, "config"),
     XDG_DATA_HOME: join(dir, "share"),
@@ -58,8 +62,8 @@ else fs.writeFileSync(args[args.indexOf("-o") + 1], tamper && url.startsWith(tam
     INSTALL_PAYLOAD: payload,
     INSTALL_ARGS: join(dir, "args"),
     INSTALL_TAMPER: tamper,
-    MAGPIE_PROXY: "",
-    MAGPIE_MIRROR: "",
+    AGENT_LINK_PROXY: "",
+    AGENT_LINK_MIRROR: "",
     ...extra,
   };
   const result = spawnSync("sh", [installer, ...args], { env, encoding: "utf8" });
@@ -77,7 +81,7 @@ test("Termux downloads Android arm64 into PREFIX/bin even with WebKit installed"
   assert.match(r.requests, /agentlink-cli-android-arm64/);
   assert.doesNotMatch(r.requests, /magpie-linux-|icon-256/);
   assert.equal(existsSync(join(r.share, "applications/agentlink.desktop")), false);
-  assert.match(r.stdout, /run it: agentlink web/);
+  assert.match(r.stdout, /run it: agent-link web/);
   assert.doesNotMatch(r.stdout, /install WebKit/);
 });
 
@@ -132,12 +136,16 @@ test("--proxy takes every download through it, as does MAGPIE_PROXY", (t) => {
   for (const [opts, want] of [
     [{ args: ["--proxy", "socks5h://127.0.0.1:1080"] }, "socks5h://127.0.0.1:1080"],
     [{ args: ["--proxy=http://127.0.0.1:7890"] }, "http://127.0.0.1:7890"],
-    [{ env: { MAGPIE_PROXY: "http://10.0.0.1:3128" } }, "http://10.0.0.1:3128"],
+    [{ env: { AGENT_LINK_PROXY: "http://10.0.0.1:3128" } }, "http://10.0.0.1:3128"],
   ]) {
     const r = install(t, { termux: false, desktop: true, github: true, ...opts });
     assert.equal(r.status, 0, r.stderr);
     assert.equal(r.calls.length, 3); // the feed, the file, the icon
-    for (const a of r.calls) assert.equal(a[a.indexOf("--proxy") + 1], want, JSON.stringify(a));
+    for (const a of r.calls) {
+      const i = a.indexOf("--proxy");
+      assert.notEqual(i, -1, JSON.stringify(a));
+      assert.equal(a[i + 1], want, JSON.stringify(a));
+    }
   }
   const bad = install(t, { termux: false, args: ["--proxy", "ftp://x"] });
   assert.notEqual(bad.status, 0);
@@ -154,12 +162,12 @@ test("--mirror fetches the file through the mirror, the feed and its checksum fr
   assert.equal(readFileSync(join(r.bin, "agentlink"), "utf8"), r.payload);
   assert.match(r.stdout, /through https:\/\/gh\.mirror\.example\//);
 
-  const env = install(t, { termux: false, github: true, env: { MAGPIE_MIRROR: "https://gh.mirror.example/" } });
+  const env = install(t, { termux: false, github: true, env: { AGENT_LINK_MIRROR: "https://gh.mirror.example/" } });
   assert.equal(env.status, 0, env.stderr);
   assert.match(env.requests, /^https:\/\/gh\.mirror\.example\/https:\/\/github\.com\//m);
 });
 
-test("a file the mirror changed is refused and the installed magpie kept", (t) => {
+test("a file the mirror changed is refused and the installed Agent Link kept", (t) => {
   const r = install(t, { termux: false, github: true, args: ["--mirror", "https://gh.mirror.example/"], tamper: "https://gh.mirror.example/" });
   assert.notEqual(r.status, 0);
   assert.match(r.stderr, /from https:\/\/gh\.mirror\.example\/ does not match its checksum from https:\/\/useagentlink\.ai; not installed/);
