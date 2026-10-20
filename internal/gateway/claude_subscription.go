@@ -2799,7 +2799,7 @@ func bridgeToolName(name string) string {
 	sum := sha256.Sum256([]byte(name))
 	short := bridgeToolNameBad.ReplaceAllString(name, "_")
 	if len(short) > 38 {
-		short = short[:38]
+		short = short[:34]
 	}
 	return short + "_" + hex.EncodeToString(sum[:6])
 }
@@ -2835,9 +2835,10 @@ func declaredName(names map[string]string, name string) string {
 // is told under bridgeName: a conversation told in text with hundreds of
 // calls of the bare names had the model call those, not the run's.
 func offeredTools(tools []Tool) map[string]bool {
-	offered := make(map[string]bool, len(tools))
+	offered := make(map[string]bool, len(tools)*2)
 	for _, t := range tools {
 		offered[t.Name] = true
+		offered[bridgeToolName(t.Name)] = true
 	}
 	return offered
 }

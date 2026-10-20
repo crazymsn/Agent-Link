@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/crazymsn/Agent-Link/internal/testenv"
 )
 
 // The Bun agentlink downloads is kept as agentlink-bun, the name a proxy app's
@@ -59,10 +61,7 @@ func TestBunDownloadedBeforeTakesTheName(t *testing.T) {
 // The plugin host runs as agentlink-bun: the process name the system reports
 // for it is agentlink-bun, not bun.
 func TestHostRunsAsAgentLinkBun(t *testing.T) {
-	real, err := exec.LookPath("bun")
-	if err != nil {
-		t.Skip("no bun on PATH")
-	}
+	real := testenv.Bun(t)
 	bunHome(t, BunVersion, time.Now())
 	t.Cleanup(Settle)
 	// a real Bun as agentlink downloaded it before, at the old name: a hard
@@ -98,7 +97,7 @@ func TestHostRunsAsAgentLinkBun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := filepath.Base(strings.TrimSpace(string(out))); got != "agentlink-bun" {
+	if got := filepath.Base(strings.TrimSpace(string(out))); got != agentLinkBun() {
 		t.Fatalf("ps says the host is %q", got)
 	}
 }
