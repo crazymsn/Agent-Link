@@ -81,10 +81,20 @@ func tellWorkPlace(h http.Header, to provider.Protocol, body []byte) {
 	h.Del(provider.WorkDirHeader)
 	h.Del(provider.WorkGitHeader)
 	req, err := parse(to, body)
-	if err != nil {
+	var dir, git string
+	if err == nil {
+		dir, git = workPlace(req)
+	}
+	if dir == "" {
+		// Plugin metadata must survive even when the protocol parser rejects an
+		// agent-specific request shape; the raw text still carries its cwd.
+		if d := workDirIn(string(body), ""); d != "" {
+			dir, git = d, provider.GitSaid(string(body))
+		}
+	}
+	if dir == "" {
 		return
 	}
-	dir, git := workPlace(req)
 	if dir == "" {
 		return
 	}
