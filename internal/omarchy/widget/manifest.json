@@ -1,18 +1,18 @@
 {
   "schemaVersion": 1,
   "id": "useagentlink.agentlink",
-  "name": "agentlink",
+  "name": "Agent Link",
   "version": "1.0.0",
-  "author": "agentlink",
+  "author": "Agent Link",
   "license": "MIT",
-  "description": "agentlink's icon in the bar: a click drops down its panel, a right click opens its window.",
+  "description": "Agent Link's icon in the bar: a click drops down its panel, a right click opens its window.",
   "kinds": ["bar-widget"],
   "entryPoints": {
     "barWidget": "Widget.qml"
   },
   "barWidget": {
-    "displayName": "agentlink",
-    "description": "Pick every agent's model from the bar: a click drops down agentlink's panel, a right click opens its window.",
+    "displayName": "Agent Link",
+    "description": "Pick every agent's model from the bar: a click drops down Agent Link's panel, a right click opens its window.",
     "category": "AI",
     "aliases": ["agentlink"],
     "allowMultiple": false,

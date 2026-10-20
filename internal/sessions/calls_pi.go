@@ -50,7 +50,9 @@ func piCallFiles() []file {
 }
 
 // piGateway is whether a provider is agentlink's own entry.
-func piGateway(provider string) bool { return provider == "agentlink" || provider == "dial" }
+func piGateway(provider string) bool {
+	return provider == "agentlink" || provider == "dial" || provider == "magpie"
+}
 
 type piCallLine struct {
 	Type      string   `json:"type"`

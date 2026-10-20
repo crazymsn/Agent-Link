@@ -37,7 +37,7 @@ func TestAskedLang(t *testing.T) {
 func TestWhatsNewInPageLang(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
-	dir := filepath.Join(home, "agentlink")
+	dir := filepath.Join(home, "agent-link")
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, lastRunFile), []byte("0.1.603\n"), 0o644)
 	var mu sync.Mutex

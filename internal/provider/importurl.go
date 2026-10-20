@@ -40,7 +40,14 @@ const Scheme = "agentlink"
 
 // ParseImport reads an import link into the provider it describes.
 func ParseImport(link string) (Provider, error) {
-	u, err := url.Parse(strings.TrimSpace(link))
+	link = strings.TrimSpace(link)
+	// Accept the current hyphenated scheme, the legacy compact scheme, and the
+	// underscore spelling emitted by early Agent Link builds.
+	link = strings.Replace(link, "agent-link:", Scheme+":", 1)
+	link = strings.Replace(link, "AGENT-LINK:", Scheme+":", 1)
+	link = strings.Replace(link, "agent_link:", Scheme+":", 1)
+	link = strings.Replace(link, "AGENT_LINK:", Scheme+":", 1)
+	u, err := url.Parse(link)
 	if err != nil || !strings.EqualFold(u.Scheme, Scheme) {
 		return Provider{}, errors.New("not a agentlink:// link")
 	}

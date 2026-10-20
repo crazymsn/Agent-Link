@@ -245,9 +245,6 @@ func run(args []string) error {
 	update.AwaitPredecessor()
 	makeDirs()
 	settings.Migrate()
-	if err := provider.MigrateFixedProvider(); err != nil {
-		fmt.Fprintf(os.Stderr, "Agent Link: provider migration: %v\n", err)
-	}
 	// every built-in plugin starts on (plugins.yml), on a new install too
 	if _, err := pluginrt.Settle(); err != nil {
 		fmt.Fprintf(os.Stderr, "agentlink: plugins.yml: %v\n", err)

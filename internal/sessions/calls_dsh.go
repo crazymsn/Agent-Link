@@ -208,7 +208,7 @@ func dshGatewayProvider(src dshSource) bool {
 		return false
 	}
 	switch p {
-	case "agentlink", "agentlink-responses", "agentlink-anthropic", "dial":
+	case "agentlink", "agentlink-responses", "agentlink-anthropic", "dial", "magpie", "magpie-responses", "magpie-anthropic":
 		return true
 	}
 	return false

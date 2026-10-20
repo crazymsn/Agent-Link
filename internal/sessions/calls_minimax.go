@@ -43,8 +43,13 @@ func MiniMaxDir() string {
 
 func minimaxSessions() string { return filepath.Join(MiniMaxDir(), "v2", "sessions") }
 
-// mcodeGateway is the provider MiniMax Code names a call to agentlink's entry by.
-const mcodeGateway = "custom_provider:agentlink"
+// mcodeGateways are the provider names MiniMax Code has used for Agent Link's
+// entry. Keep the old Magpie spelling so historical sessions aren't counted a
+// second time after an upgrade.
+var mcodeGateways = map[string]bool{
+	"custom_provider:agentlink": true,
+	"custom_provider:magpie":    true,
+}
 
 // minimaxCallFiles are each session's messages files: messages.jsonl, and
 // any other generation of it the session's history-catalog.json keeps
@@ -131,7 +136,7 @@ func readMiniMaxCalls(f file) (*callFile, bool) {
 // minimaxCall is an assistant message as a call.
 func minimaxCall(st *callFile, l mcodeLine) (Call, bool) {
 	m := l.Message
-	if m == nil || m.Role != "assistant" || m.Usage == nil || m.Provider == mcodeGateway {
+	if m == nil || m.Role != "assistant" || m.Usage == nil || mcodeGateways[m.Provider] {
 		return Call{}, false
 	}
 	at := ms(m.Timestamp)

@@ -234,7 +234,7 @@ func TestFeaturedSkills(t *testing.T) {
 
 	list, _ := MarketSkills("")
 	if len(list) != 2 || list[0].ID != "magpie-community/plugins/agentlink-quota" || !list[0].Official || !list[0].Featured ||
-		list[0].Description == "" || list[0].Icon != gh("agentlink-community") || !offered(list[0].Icon) || list[1].ID != "o/r/pdf" {
+		list[0].Description == "" || list[0].Icon != gh("magpie-community") || !offered(list[0].Icon) || list[1].ID != "o/r/pdf" {
 		t.Fatalf("market: %+v", list)
 	}
 	if list, _ := MarketSkills("quota"); len(list) == 0 || list[0].SkillID != "agentlink-quota" {

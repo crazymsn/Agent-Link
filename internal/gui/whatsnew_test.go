@@ -19,7 +19,7 @@ import (
 func TestWhatsNewAfterUpgrade(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
-	dir := filepath.Join(home, "agentlink")
+	dir := filepath.Join(home, "agent-link")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{"releases": []update.Note{
 			{Version: "0.1.604", Notes: "- four (#464)\n\n### Install\n\nlinks"},
@@ -99,7 +99,7 @@ func TestUpdateNotesWithoutInstall(t *testing.T) {
 func TestWhatsNewFromBefore(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
-	dir := filepath.Join(home, "agentlink")
+	dir := filepath.Join(home, "agent-link")
 	os.MkdirAll(dir, 0o755)
 	os.WriteFile(filepath.Join(dir, "settings.json"), []byte("{}"), 0o644)
 	os.Chtimes(filepath.Join(dir, "settings.json"), started.Add(-time.Hour), started.Add(-time.Hour))
@@ -125,7 +125,7 @@ func TestWhatsNewFromBefore(t *testing.T) {
 func TestWhatsNewQuietAfterRestartToUpdate(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", home)
-	dir := filepath.Join(home, "agentlink")
+	dir := filepath.Join(home, "agent-link")
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]any{"releases": []update.Note{
 			{Version: "0.1.606", Notes: "- six"},

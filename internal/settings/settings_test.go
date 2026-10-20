@@ -140,11 +140,11 @@ func TestMigrate(t *testing.T) {
 		t.Fatal(err)
 	}
 	Migrate()
-	fi, err := os.Stat(filepath.Join(cfg, "agentlink", "providers.json"))
+	fi, err := os.Stat(filepath.Join(cfg, "agent-link", "providers.json"))
 	if err != nil || runtime.GOOS != "windows" && fi.Mode().Perm() != 0o600 { // Windows has no such bits
 		t.Fatalf("providers.json not copied with its mode: %v %v", fi, err)
 	}
-	if _, err := os.Stat(filepath.Join(cfg, "agentlink", "sub", "x")); err != nil {
+	if _, err := os.Stat(filepath.Join(cfg, "agent-link", "sub", "x")); err != nil {
 		t.Fatal("nested file not copied")
 	}
 	if _, err := os.Stat(old); err != nil {
@@ -154,11 +154,11 @@ func TestMigrate(t *testing.T) {
 		t.Fatal("no old cache, so no new one")
 	}
 	// a second run must not touch an existing folder
-	if err := os.WriteFile(filepath.Join(cfg, "agentlink", "providers.json"), []byte("new"), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(cfg, "agent-link", "providers.json"), []byte("new"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	Migrate()
-	if b, _ := os.ReadFile(filepath.Join(cfg, "agentlink", "providers.json")); string(b) != "new" {
+	if b, _ := os.ReadFile(filepath.Join(cfg, "agent-link", "providers.json")); string(b) != "new" {
 		t.Fatal("existing folder overwritten")
 	}
 }

@@ -112,7 +112,7 @@ func TestFor(t *testing.T) {
 	if err := settings.Save(settings.Settings{Proxy: "ftp://x"}); err == nil {
 		t.Fatal("ftp proxy accepted")
 	}
-	if settings.Save(settings.Settings{Proxy: "127.0.0.1:7890"}) != nil || filepath.Dir(settings.Path()) != filepath.Join(dir, "agentlink") {
+	if settings.Save(settings.Settings{Proxy: "127.0.0.1:7890"}) != nil || filepath.Dir(settings.Path()) != filepath.Join(dir, "agent-link") {
 		t.Fatal("host:port proxy refused")
 	}
 }
