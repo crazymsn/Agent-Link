@@ -25,17 +25,11 @@ Agent Link 由深度云创科技（DeepCloud）维护，把多个 AI coding agen
 
 ## API 分发站
 
-Agent Link 内置固定的 **API 分发站** 订阅提供商，Base URL 为：
-
-```text
-https://api.meding.site/v1
-```
-
 使用步骤：
 
 1. 打开 [https://api.meding.site](https://api.meding.site) 创建 API 令牌。
 2. 打开 Agent Link 的 **Providers / 提供商** 页面。
-3. 在排在 Claude 前面的 **API 分发站** provider 中填入 API 令牌。
+3. **API 分发站** provider 中填入 API 令牌。
 4. 保存后即可通过该 provider 获取 API 分发站提供的全部模型。
 
 该 provider 的名称、Base URL 和 DeepCloud 图标由 Agent Link 固定维护；用户只需要填写令牌并选择模型。默认网关端口是 `7500`，已有配置中的自定义端口会继续生效。
@@ -72,7 +66,7 @@ API 令牌只写入本机受保护的 provider 配置，并用于你选择的上
 
 <img src="site/public/img/contact-qr.png" width="220" alt="DeepCloud 联系二维码">
 
-如需产品支持、部署协助或商务合作，请扫描二维码联系深度云创科技（DeepCloud）。
+如需产品支持、个人及企业智能体部署协助或商务合作，请扫描二维码联系深度云创科技（DeepCloud）。
 
 ## 许可证
 
