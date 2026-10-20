@@ -159,13 +159,15 @@ func (l *rpms) wait(ctx context.Context, who string, limit int, longest time.Dur
 	if d <= 0 {
 		return 0, nil
 	}
-	defer notePhase(ctx, "rpm")()
+	restore := notePhase(ctx, "rpm")
+	defer restore()
 	t := time.NewTimer(d)
 	defer t.Stop()
 	select {
 	case <-t.C:
 		return d, nil
 	case <-ctx.Done():
+		restore()
 		l.giveBack(who, at)
 		return time.Since(now), ctx.Err()
 	}

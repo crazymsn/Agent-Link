@@ -434,7 +434,7 @@ func silentAssistantsOut(body []byte) []byte {
 		return body
 	}
 	var q map[string]json.RawMessage
-	if decodeJSON(body, &q) != nil {
+	if decodeJSON(body, &q) != nil || !anySilentAssistant(q["messages"]) {
 		return body
 	}
 	dec := json.NewDecoder(bytes.NewReader(q["messages"]))
@@ -453,6 +453,68 @@ func silentAssistantsOut(body []byte) []byte {
 		return body
 	}
 	return nb
+}
+
+func anySilentAssistant(msgs json.RawMessage) bool {
+	if len(msgs) == 0 || msgs[0] != '[' {
+		return false
+	}
+	found := false
+	eachElement(msgs, func(el []byte) bool {
+		if len(el) == 0 || el[0] != '{' {
+			return true
+		}
+		assistant, said := false, false
+		eachMember(el, func(key, val []byte) bool {
+			switch {
+			case jsonStringIs(key, "role"):
+				assistant = jsonStringIs(val, "assistant")
+			case jsonStringIs(key, "content"):
+				said = textSaysSomething(val)
+			}
+			return true
+		})
+		if !assistant || said {
+			return true
+		}
+		var m map[string]any
+		dec := json.NewDecoder(bytes.NewReader(el))
+		dec.UseNumber()
+		found = dec.Decode(&m) == nil && silentAssistant(m)
+		return !found
+	})
+	return found
+}
+
+func textSaysSomething(q []byte) bool {
+	if len(q) < 2 || q[0] != '"' {
+		return false
+	}
+	for i := 1; i < len(q)-1; i++ {
+		if q[i] == '\\' {
+			if i+1 < len(q) && q[i+1] == 'u' {
+				i += 5
+			} else {
+				i++
+			}
+			continue
+		}
+		if q[i] > ' ' && q[i] < 0x7f {
+			return true
+		}
+	}
+	return false
+}
+
+func jsonStringIs(q []byte, s string) bool {
+	if len(q) == len(s)+2 && q[0] == '"' && string(q[1:len(q)-1]) == s {
+		return true
+	}
+	if len(q) == 0 || q[0] != '"' || !bytes.Contains(q, []byte{'\\'}) {
+		return false
+	}
+	u, ok := unquoteJSON(q)
+	return ok && u == s
 }
 
 // reasoningDetailsAsContent leaves reasoning_details out of every message
