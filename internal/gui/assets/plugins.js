@@ -16,7 +16,8 @@
   const npm = {};        // /api/plugins/npm: npm answers arrive after listings
   let failedList = "";  // why the market list couldn't be loaded
   let tagged = null;     // /api/plugins/github: repositories their authors tagged agentlink-plugin, as listings
-  let taggedErr = "";    // why they couldn't be asked for, while none were had
+  let taggedErr = "";    // why the GitHub answer is incomplete
+  let taggedMissing = 0;  // repositories named but not readable
   let topic = "agentlink-plugin";
   const heads = {};      // /api/plugins/git: a git plugin's spec → the commit its repository is at
   let failed = "";       // why what's installed couldn't be loaded
@@ -170,14 +171,16 @@
     summary: r.description ? { en: r.description } : undefined,
     npm: { version: r.version || "", publisher: r.owner, repository: r.url, license: r.license, weekly: 0 },
   });
-  async function loadTagged() {
+  async function loadTagged(again = false) {
     try {
-      const r = await api("plugins/github");
+      const r = await api("plugins/github" + (again ? "?again=1" : ""));
       tagged = (r.repos || []).map(ghListing);
-      taggedErr = "";
+      taggedErr = r.error || "";
+      taggedMissing = r.missing || 0;
       if (r.topic) topic = r.topic;
     } catch (e) {
-      if (!tagged) taggedErr = e.message || String(e);
+      taggedErr = e.message || String(e);
+      taggedMissing = 0;
       tagged = tagged || [];
     }
   }
@@ -652,7 +655,10 @@
     replaceKeeping(ghSec, [ghHead, skeleton(3)]);
     return ghSec;
   }
-  // and one GitHub couldn't be asked of says so, with another go
+  function ghWhy(kept) {
+    if (taggedMissing) return t(kept ? "{n} more on GitHub couldn't be read: {error}" : "GitHub found {n} repositories, but none of them could be read: {error}", { n: taggedMissing, error: taggedErr });
+    return t(kept ? "Couldn't ask GitHub, so these are from before: {error}" : "Couldn't ask GitHub: {error}", { error: taggedErr });
+  }
   function ghFailed() {
     ghHead.replaceChildren(...ghTitle());
     ghSec.removeAttribute("aria-busy");
@@ -660,14 +666,23 @@
     const again = el("button", "text", t("Try again"));
     again.type = "button";
     again.onclick = () => {
-      tagged = null;
       taggedErr = "";
+      taggedMissing = 0;
       drawBody();
-      loadTagged().then(drawBody);
+      loadTagged(true).then(drawBody);
     };
-    box.append(el("span", "", t("Couldn't ask GitHub: {error}", { error: taggedErr })), again);
+    box.append(el("span", "", ghWhy(false)), again);
     replaceKeeping(ghSec, [ghHead, box]);
     return ghSec;
+  }
+  function ghNote() {
+    const note = el("div", "pm-ghwarn");
+    note.setAttribute("role", "status");
+    const again = el("button", "text", t("Try again"));
+    again.type = "button";
+    again.onclick = () => loadTagged(true).then(drawBody);
+    note.append(el("span", "", ghWhy(true)), again);
+    return note;
   }
   function ghSection(list) {
     ghList = list;
@@ -687,7 +702,7 @@
   function drawGh() {
     if ((tagged || []).length <= 6) {
       ghGrid.replaceChildren(...ghList.map(card));
-      replaceKeeping(ghSec, [ghHead, ghGrid]);
+      replaceKeeping(ghSec, taggedErr ? [ghHead, ghNote(), ghGrid] : [ghHead, ghGrid]);
       return;
     }
     // the kinds there are, in the market's order, each with how many the
@@ -900,6 +915,7 @@
     if (ls.length) out.push(section(t("Suggested"), "", ls));
     if (gh.length) out.push(ghSection(gh));
     else if (!tagged) out.push(ghWaiting());
+    else if (taggedErr) out.push(ghFailed());
     const known = new Set([...listings.map((l) => l.package), ...(tagged || []).map((l) => l.github.package).filter(Boolean)]);
     const box = el("section", "pm-sec");
     const h = el("div", "pm-sechead");

@@ -3,6 +3,7 @@ package gui
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"regexp"
@@ -504,7 +505,8 @@ func pluginRoutes(mux *http.ServeMux, w Windows) {
 	mux.HandleFunc("GET /api/plugins/github", func(rw http.ResponseWriter, r *http.Request) {
 		// each one's own picture as the page can show it, kept here as an
 		// installed plugin's is (a data URI isn't sent on to the page)
-		repos := append([]plugin.Tagged(nil), plugin.TaggedRepos(r.Context())...)
+		repos, taggedErr := plugin.TaggedReposWithError(r.Context())
+		repos = append([]plugin.Tagged(nil), repos...)
 		said := make([]string, len(repos))
 		for i := range repos {
 			said[i] = repos[i].Icon
@@ -512,7 +514,16 @@ func pluginRoutes(mux *http.ServeMux, w Windows) {
 		for i, ic := range provider.RepoIcons(said, 3*time.Second) {
 			repos[i].Icon = ic
 		}
-		writeJSON(rw, map[string]any{"repos": repos, "topic": plugin.Topic})
+		out := map[string]any{"repos": repos, "topic": plugin.Topic}
+		if taggedErr != nil {
+			out["error"] = taggedErr.Error()
+			var missing *plugin.TaggedMissing
+			if errors.As(taggedErr, &missing) {
+				out["error"] = missing.Why.Error()
+				out["missing"] = missing.Missing
+			}
+		}
+		writeJSON(rw, out)
 	})
 	// the commit each installed git plugin's repository is at now (asked
 	// at most every ten minutes), by spec; one that didn't answer is left

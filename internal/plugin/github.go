@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -75,9 +76,10 @@ var (
 )
 
 var (
-	taggedMu sync.Mutex
-	taggedL  []Tagged
-	taggedAt time.Time
+	taggedMu  sync.Mutex
+	taggedL   []Tagged
+	taggedAt  time.Time
+	taggedWhy error // why the last GitHub answer is incomplete
 	// owner/repo@pushed → what its package.json and npm made of it, nil
 	// when it was left out
 	readMu   sync.Mutex
@@ -104,22 +106,37 @@ func taggedOnDisk() []Tagged {
 // couldn't install either. A repository whose package.json didn't come in
 // time is as the list had it last, and the list is asked again in
 // taggedRetry. AGENT_LINK_PLUGIN_MARKET=off keeps to none.
+type TaggedMissing struct {
+	Missing int
+	Why     error
+}
+
+func (e *TaggedMissing) Error() string {
+	return fmt.Sprintf("%d GitHub plugins could not be read: %v", e.Missing, e.Why)
+}
+func (e *TaggedMissing) Unwrap() error { return e.Why }
+
 func TaggedRepos(ctx context.Context) []Tagged {
+	l, _ := TaggedReposWithError(ctx)
+	return l
+}
+
+func TaggedReposWithError(ctx context.Context) ([]Tagged, error) {
 	taggedMu.Lock()
 	defer taggedMu.Unlock()
 	if taggedL != nil && time.Since(taggedAt) < taggedTTL {
-		return taggedL
+		return taggedL, taggedWhy
 	}
 	if os.Getenv("AGENT_LINK_PLUGIN_MARKET") == "off" {
-		return []Tagged{}
+		return []Tagged{}, nil
 	}
 	// a agentlink started again within the ten minutes: what GitHub said then,
 	// without the wait of asking (a package.json read for each)
 	if taggedL == nil {
 		if fi, err := os.Stat(taggedCache()); err == nil && time.Since(fi.ModTime()) < taggedTTL {
 			if l := taggedOnDisk(); l != nil {
-				taggedL, taggedAt = l, fi.ModTime()
-				return l
+				taggedL, taggedAt, taggedWhy = l, fi.ModTime(), nil
+				return l, nil
 			}
 		}
 	}
@@ -127,8 +144,9 @@ func TaggedRepos(ctx context.Context) []Tagged {
 	if last == nil {
 		last = taggedOnDisk()
 	}
-	if l, whole, err := askTagged(ctx, last); err == nil {
-		taggedL, taggedAt = l, time.Now()
+	l, whole, askErr := askTagged(ctx, last)
+	if askErr == nil {
+		taggedL, taggedAt, taggedWhy = l, time.Now(), nil
 		if !whole {
 			taggedAt = time.Now().Add(-taggedTTL + taggedRetry)
 		}
@@ -138,15 +156,15 @@ func TaggedRepos(ctx context.Context) []Tagged {
 			// a agentlink started again meanwhile asks again too
 			_ = os.Chtimes(taggedCache(), taggedAt, taggedAt)
 		}
-		return l
+		return l, nil
 	}
 	// GitHub didn't answer: what it said last, asked again in a minute
-	l := last
+	l = last
 	if l == nil {
 		l = []Tagged{}
 	}
-	taggedL, taggedAt = l, time.Now().Add(-taggedTTL+time.Minute)
-	return l
+	taggedL, taggedAt, taggedWhy = l, time.Now().Add(-taggedTTL+time.Minute), askErr
+	return l, askErr
 }
 
 // askTagged asks GitHub's search, and reads each repository it names
