@@ -6255,20 +6255,22 @@ func conversationID(in http.Header, body []byte) string {
 		}
 	}
 	var m struct {
-		Messages []json.RawMessage `json:"messages"`
-		Input    json.RawMessage   `json:"input"`
-		Contents []json.RawMessage `json:"contents"`
+		Messages json.RawMessage `json:"messages"`
+		Input    json.RawMessage `json:"input"`
+		Contents json.RawMessage `json:"contents"`
 	}
 	// An undecodable body still gets an id: the hash of the whole body.
 	_ = decodeJSON(body, &m)
-	items := m.Messages
-	geminiContents := len(items) == 0 && len(m.Contents) > 0
+	// The turns are the body's own bytes, not a copy of each: this runs on
+	// every request, and a 1.5 MB conversation's copy was ~2.8 MB of each
+	// request's allocations (yg6888 on X).
+	items, contents := elementsOf(m.Messages), elementsOf(m.Contents)
+	geminiContents := len(items) == 0 && len(contents) > 0
 	if geminiContents {
-		items = m.Contents // Gemini generateContent repeats the first user turn.
+		items = contents // Gemini generateContent repeats the first user turn.
 	}
-	if len(items) == 0 && len(m.Input) > 0 && m.Input[0] == '[' {
-		// A malformed input array leaves items empty, and the whole body is hashed.
-		_ = decodeJSON(m.Input, &items)
+	if len(items) == 0 {
+		items = elementsOf(m.Input)
 	}
 	first := []byte(m.Input)
 	if len(items) > 0 {

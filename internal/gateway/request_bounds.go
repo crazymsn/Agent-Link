@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"github.com/crazymsn/Agent-Link/internal/provider"
+	"github.com/klauspost/compress/zstd"
 )
 
 // Bound a single body and its read time without limiting how long a client
@@ -48,6 +48,7 @@ func (s *Server) readRequestBody(w http.ResponseWriter, r *http.Request, from pr
 		writeError(w, from, status, err.Error())
 		return nil, false
 	}
+	holdBody(r.Context(), body)
 	return body, true
 }
 

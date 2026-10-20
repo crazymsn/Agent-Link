@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"bytes"
+	"context"
 	"encoding"
 	"encoding/binary"
 	"encoding/json"
@@ -14,6 +15,7 @@ import (
 	"unicode"
 	"unicode/utf16"
 	"unicode/utf8"
+	"unsafe"
 )
 
 // decodeJSON is json.Unmarshal(data, dst), made for a request body: one
@@ -54,6 +56,86 @@ func decodeJSON(data []byte, dst any) error {
 		return json.Unmarshal(data, dst)
 	}
 	return nil
+}
+
+// heldBodies are the request bodies being served (holdBody). A raw value
+// decodeJSON finds inside one of them is that body's own bytes, not a
+// copy. Each reader of a request decodes its messages into raw values —
+// the images, the conversation's id, the prompt, the edits, the chat
+// parse — and each copied every message: a 1.5 MB body allocated ~60 MB
+// on its way through a group, and three agents sending such bodies at once
+// held the heap at ~310 MB (yg6888 on X: ~1 GB). A copy is still made of
+// anything else decoded — a buffer a stream fills again, a scanner's line,
+// a body built and changed in place — since a raw value of it could be
+// written over under its holder.
+var heldBodies struct {
+	sync.Mutex
+	list atomic.Pointer[[][]byte]
+}
+
+// heldBodiesMost bounds heldBodies: a body past it is decoded with copies, as
+// before, rather than the list growing with requests whose context never
+// ends (a test's, a caller's own).
+const heldBodiesMost = 64
+
+// heldShareMost bounds how much bigger than a shared value the body it
+// keeps alive may be (inHeldBody).
+const heldShareMost = 16
+
+// holdBody shares body's bytes with what decodeJSON reads from it until
+// ctx is done. body must be the request's as read, which nothing writes
+// to: a request body is read whole once (readRequestBody) and only read
+// after. The list keeps body itself, not its address, so its memory can't
+// be handed to another allocation while it is listed.
+func holdBody(ctx context.Context, body []byte) {
+	if len(body) < validMemoMin || ctx.Done() == nil {
+		return // a short body's copies cost little; one never released would stay listed
+	}
+	heldBodies.Lock()
+	old := heldBodies.list.Load()
+	var cur [][]byte
+	if old != nil {
+		cur = *old
+	}
+	if len(cur) >= heldBodiesMost {
+		heldBodies.Unlock()
+		return
+	}
+	next := append(slices.Clip(cur), body)
+	heldBodies.list.Store(&next)
+	heldBodies.Unlock()
+	context.AfterFunc(ctx, func() {
+		heldBodies.Lock()
+		defer heldBodies.Unlock()
+		cur := *heldBodies.list.Load()
+		i := slices.IndexFunc(cur, func(b []byte) bool { return unsafe.SliceData(b) == unsafe.SliceData(body) })
+		if i < 0 {
+			return
+		}
+		next := slices.Delete(slices.Clone(cur), i, i+1)
+		heldBodies.list.Store(&next)
+	})
+}
+
+// inHeldBody says whether raw lies within a body holdBody holds and is
+// at least 1/heldShareMost of it. A value kept past its request — a
+// cache's entry, a remembered signature — keeps the whole body it shares
+// alive, so a small one is still copied: a kept value holds at most
+// heldShareMost times its own size. The values worth sharing are the big
+// ones, the messages and the long turns, which each reader copied whole.
+func inHeldBody(raw []byte) bool {
+	l := heldBodies.list.Load()
+	if l == nil || len(raw) == 0 {
+		return false
+	}
+	p := uintptr(unsafe.Pointer(unsafe.SliceData(raw)))
+	for _, b := range *l {
+		s := uintptr(unsafe.Pointer(unsafe.SliceData(b)))
+		if p >= s && p+uintptr(len(raw)) <= s+uintptr(len(b)) {
+			return len(raw)*heldShareMost >= len(b)
+		}
+	}
+	return false
 }
 
 // misfit is the closing bracket of the array or object that open starts
@@ -173,7 +255,13 @@ func (f *fastFields) field(key []byte) int {
 func fillJSON(raw []byte, v reflect.Value) error {
 	t := v.Type()
 	if t == rawMessageType {
-		v.SetBytes(bytes.Clone(raw)) // a copy, as encoding/json makes
+		if inHeldBody(raw) {
+			// The request body is immutable while it is served. Cap the
+			// slice so an append cannot write into the held body.
+			v.SetBytes(raw[:len(raw):len(raw)])
+		} else {
+			v.SetBytes(bytes.Clone(raw)) // a copy, as encoding/json makes
+		}
 		return nil
 	}
 	if t.Kind() != reflect.Pointer && (t.Implements(jsonUnmarshalerType) || t.Implements(textUnmarshalerType) ||
@@ -395,6 +483,23 @@ func eachElement(arr []byte, f func(el []byte) bool) {
 		}
 		i = skipJSONSpace(arr, i+1)
 	}
+}
+
+// elementsOf is the elements of raw, a valid JSON value, when it is an array
+// (nil otherwise), each a capped slice of raw so an append never writes
+// into it. A reader that only looks at a list's items takes them this way
+// rather than decoding a []json.RawMessage, which copies each one that
+// doesn't share a held body.
+func elementsOf(raw []byte) []json.RawMessage {
+	if len(raw) == 0 || raw[0] != '[' {
+		return nil
+	}
+	var out []json.RawMessage
+	eachElement(raw, func(el []byte) bool {
+		out = append(out, el)
+		return true
+	})
+	return out
 }
 
 // skipJSONString is the end of the valid JSON string at i.

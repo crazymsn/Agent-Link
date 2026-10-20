@@ -17896,7 +17896,10 @@ function computerOpts(cs) {
     ...(others.length > 1 ? [{ v: "others", name: t("Other computers"), note: "" }] : []),
     ...others.map((c) => ({ v: c.id, name: c.name || c.id, note: "" }))];
 }
-const ledNum = (n) => (n || 0).toLocaleString(intlLang());
+// one formatter a language: toLocaleString makes one a call (~1 s of 40)
+let ledFmt, ledFmtLang;
+const ledNum = (n) => { const l = intlLang(); return typeof (n ||= 0) != "number" ? n.toLocaleString(l)
+  : (l == ledFmtLang ? ledFmt : (ledFmtLang = l, ledFmt = new Intl.NumberFormat(l))).format(n); };
 // what x's credited requests cost in their plan's credits, as the replies
 // said (WorkBuddy's usage.credit, #2512): nothing when none said
 function ledCredits(x) {

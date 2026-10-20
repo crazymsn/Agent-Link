@@ -107,7 +107,7 @@ func TestURLOfWildcard(t *testing.T) {
 		t.Fatal(u)
 	}
 	t.Setenv("AGENT_LINK_ADDR", "")
-	if u := URL(); u != "http://127.0.0.1:3425" {
+	if u := URL(); u != "http://127.0.0.1:7500" {
 		t.Fatal(u)
 	}
 }

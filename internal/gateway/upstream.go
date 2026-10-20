@@ -15,22 +15,53 @@ import (
 // stream's message_start, as message.provider (seen 2026-10-05: DeepInfra,
 // StreamLake). Its Responses replies name none.
 func upstreamOf(b []byte) string {
-	if !bytes.Contains(b, []byte(`"provider"`)) {
+	if !bytes.Contains(b, []byte(`"provider"`)) && !bytes.Contains(b, []byte(`"provider_metadata"`)) {
 		return ""
 	}
 	var v struct {
 		Provider json.RawMessage `json:"provider"`
 		Message  struct {
-			Provider json.RawMessage `json:"provider"`
+			Provider         json.RawMessage `json:"provider"`
+			ProviderMetadata struct {
+				Gateway struct {
+					Routing struct {
+						FinalProvider json.RawMessage `json:"finalProvider"`
+					} `json:"routing"`
+				} `json:"gateway"`
+			} `json:"provider_metadata"`
 		} `json:"message"`
 		Response struct {
 			Provider json.RawMessage `json:"provider"`
 		} `json:"response"`
+		Choices []struct {
+			Delta struct {
+				ProviderMetadata struct {
+					Gateway struct {
+						Routing struct {
+							FinalProvider json.RawMessage `json:"finalProvider"`
+						} `json:"routing"`
+					} `json:"gateway"`
+				} `json:"provider_metadata"`
+			} `json:"delta"`
+			Message struct {
+				ProviderMetadata struct {
+					Gateway struct {
+						Routing struct {
+							FinalProvider json.RawMessage `json:"finalProvider"`
+						} `json:"routing"`
+					} `json:"gateway"`
+				} `json:"provider_metadata"`
+			} `json:"message"`
+		} `json:"choices"`
 	}
 	if json.Unmarshal(b, &v) != nil {
 		return ""
 	}
-	for _, raw := range []json.RawMessage{v.Provider, v.Message.Provider, v.Response.Provider} {
+	raws := []json.RawMessage{v.Provider, v.Message.Provider, v.Message.ProviderMetadata.Gateway.Routing.FinalProvider, v.Response.Provider}
+	for _, c := range v.Choices {
+		raws = append(raws, c.Delta.ProviderMetadata.Gateway.Routing.FinalProvider, c.Message.ProviderMetadata.Gateway.Routing.FinalProvider)
+	}
+	for _, raw := range raws {
 		var s string // a request's provider options echoed back are an object
 		if json.Unmarshal(raw, &s) == nil {
 			if s = strings.TrimSpace(s); s != "" && len(s) <= 64 {
