@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/crazymsn/Agent-Link/internal/webview2env"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // wailsBrowserArgs is the command line Wails v3.0.0-beta.24 makes from the
@@ -39,6 +40,9 @@ func wailsBrowserArgs(o application.WindowsOptions) []string {
 // lists (Chromium keeps only the last of two), one --enable-features, and
 // every other argument as written.
 func TestWebView2ArgsMergeTheUsers(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("WebView2 is Windows-only")
+	}
 	for _, c := range []struct {
 		name, env string
 		want      []string
@@ -90,6 +94,9 @@ func TestWebView2KeepsCodeIntegrityByDefault(t *testing.T) {
 // starts its own binary with the variable set, where the loader's init has
 // run as in the app.
 func TestWebView2ArgsSurviveWailsInit(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("WebView2 is Windows-only")
+	}
 	if os.Getenv("AGENT_LINK_TEST_WEBVIEW2_CHILD") == "1" {
 		fmt.Printf("os=%q disabled=%q\n", os.Getenv(webview2env.Name), windowsOptions().DisabledFeatures)
 		return

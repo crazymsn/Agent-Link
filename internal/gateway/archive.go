@@ -27,6 +27,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -221,10 +222,14 @@ func upload(j archiveJob) {
 	if j.w.query != "" {
 		path += "?" + scrubQuery(j.w.query)
 	}
+	resHead := j.resHead.Clone()
+	if _, ok := resHead[ArchiveHeader]; !ok {
+		resHead.Set(ArchiveHeader, j.w.name[strings.LastIndex(j.w.name, "/")+1:])
+	}
 	a := Archived{ID: j.w.name, Call: c,
 		Request: ArchivePart{Method: j.w.method, Path: path, Headers: scrubHeaders(j.w.req),
 			Body: string(redact.ScrubJSON(reqBody)), Size: j.req.size, Truncated: j.req.cut()},
-		Response: ArchivePart{Status: c.Status, Headers: scrubHeaders(j.resHead),
+		Response: ArchivePart{Status: c.Status, Headers: scrubHeaders(resHead),
 			Body: string(redact.ScrubJSON(resBody)), Size: j.res.size, Truncated: j.res.cut()},
 	}
 	// as it reads in the bucket: a query's & and a body's <tags> as they are
@@ -266,11 +271,15 @@ func ArchiveError() (string, time.Time) {
 func scrubHeaders(h http.Header) map[string][]string {
 	out := make(map[string][]string, len(h))
 	for k, vs := range h {
+		outKey := k
+		if strings.EqualFold(k, ArchiveHeader) {
+			outKey = ArchiveHeader
+		}
 		s := make([]string, len(vs))
 		for i, v := range vs {
 			s[i] = redact.ScrubHeader(k, v)
 		}
-		out[k] = s
+		out[outKey] = s
 	}
 	return out
 }

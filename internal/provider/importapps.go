@@ -18,15 +18,16 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
-	"github.com/tidwall/jsonc"
 	"github.com/crazymsn/Agent-Link/internal/appdir"
 	"github.com/crazymsn/Agent-Link/internal/edit"
 	"github.com/crazymsn/Agent-Link/internal/plugin"
 	"github.com/crazymsn/Agent-Link/internal/settings"
 	_ "github.com/crazymsn/Agent-Link/internal/sqlitedb"
+	"github.com/tidwall/jsonc"
 )
 
 // AppSource is one app agentlink can import from, with what it holds.
@@ -111,6 +112,9 @@ func importSources(asked bool) []AppSource {
 			if err != nil {
 				s.Error = err.Error()
 			}
+			items = slices.DeleteFunc(items, func(it AppImport) bool {
+				return IsFixedProvider(it.Provider.ID) || strings.EqualFold(it.Provider.Name, AgentLinkProviderName)
+			})
 			s.Items = append(s.Items, settle(items, have, used)...) // [] rather than null when there is nothing
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			// there, as far as anyone can tell, but not to be looked at: not
@@ -426,7 +430,9 @@ func gatewayURL(u *url.URL) bool {
 			return true
 		}
 	}
-	return false
+	// Agent Link used 3425 before the current 7500 default. Existing app
+	// configurations can still point there and must not be imported as relays.
+	return u.Port() == "3425"
 }
 
 // presetAt finds the preset serving an entry's host, the region of it the

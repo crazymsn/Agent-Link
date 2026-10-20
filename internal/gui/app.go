@@ -29,6 +29,7 @@ import (
 	"github.com/crazymsn/Agent-Link/internal/shortcut"
 	"github.com/crazymsn/Agent-Link/internal/stats"
 	"github.com/crazymsn/Agent-Link/internal/update"
+	"github.com/crazymsn/Agent-Link/internal/webview2env"
 )
 
 //go:embed tray.png
@@ -283,9 +284,13 @@ func (h *host) zoomWindows() {
 // a folder a portable agentlink must not leave behind (#508). Installed, it
 // stays there, so what the pages kept isn't lost.
 func windowsOptions() application.WindowsOptions {
+	disabled, enabled, other := webView2Args(webview2env.Args)
 	return application.WindowsOptions{
 		DisableQuitOnLastWindowClosed: true,
 		WebviewUserDataPath:           appdir.WebView(),
+		DisabledFeatures:              disabled,
+		EnabledFeatures:               enabled,
+		AdditionalBrowserArgs:         other,
 	}
 }
 

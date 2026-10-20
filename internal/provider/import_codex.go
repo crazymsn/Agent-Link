@@ -112,7 +112,9 @@ func codexImportModels(configPath, catalogPath string) []string {
 	} else if !filepath.IsAbs(catalogPath) {
 		catalogPath = filepath.Join(filepath.Dir(configPath), catalogPath)
 	}
-	if filepath.Clean(catalogPath) == filepath.Join(appdir.CodexHomeIn(home), "agentlink-models.json") {
+	clean := filepath.Clean(catalogPath)
+	codexHome := appdir.CodexHomeIn(home)
+	if clean == filepath.Join(codexHome, "agent-link-models.json") || clean == filepath.Join(codexHome, "agentlink-models.json") {
 		return nil
 	}
 	b, err := os.ReadFile(catalogPath)

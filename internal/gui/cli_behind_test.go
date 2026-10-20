@@ -54,7 +54,7 @@ func TestCLIBehindIsLstatOnlyAndDismissible(t *testing.T) {
 	if got := cliBehind(); got != "" {
 		t.Fatalf("cliBehind = %q after dismiss, want empty", got)
 	}
-	b, err := os.ReadFile(filepath.Join(home, "agentlink", cliQuietFile))
+	b, err := os.ReadFile(filepath.Join(home, "agent-link", cliQuietFile))
 	if err != nil || string(b) != Version+"\n" {
 		t.Fatalf("dismiss file = %q, %v; want this version, so the next one asks again", b, err)
 	}

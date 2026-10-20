@@ -97,11 +97,17 @@ func googleSandbox(t *testing.T, f *fakeGoogle) {
 	srv := httptest.NewServer(f)
 	t.Cleanup(srv.Close)
 	oldToken, oldProd, oldDaily, oldVer, oldPoll := googleTokenURL, codeAssistProd, codeAssistDaily, antigravityVersionURL, onboardPoll
+	oldGeminiID, oldGeminiSecret := geminiApp.clientID, geminiApp.clientSecret
+	oldAntigravityID, oldAntigravitySecret := antigravityApp.clientID, antigravityApp.clientSecret
+	geminiApp.clientID, geminiApp.clientSecret = "gemini-test-client", "gemini-test-secret"
+	antigravityApp.clientID, antigravityApp.clientSecret = "antigravity-test-client", "antigravity-test-secret"
 	googleTokenURL, codeAssistProd, codeAssistDaily = srv.URL+"/token", srv.URL+"/prod", srv.URL+"/daily"
 	antigravityVersionURL, onboardPoll = srv.URL+"/latest-arm64-mac.yml", time.Millisecond
 	resetGoogleState()
 	t.Cleanup(func() {
 		googleTokenURL, codeAssistProd, codeAssistDaily, antigravityVersionURL, onboardPoll = oldToken, oldProd, oldDaily, oldVer, oldPoll
+		geminiApp.clientID, geminiApp.clientSecret = oldGeminiID, oldGeminiSecret
+		antigravityApp.clientID, antigravityApp.clientSecret = oldAntigravityID, oldAntigravitySecret
 		resetGoogleState()
 	})
 }
@@ -159,6 +165,9 @@ func TestGeminiOwnLoginRefreshesInMemory(t *testing.T) {
 // minted for another client (Antigravity's) can't be refreshed as Gemini
 // CLI's and isn't listed; one without an ID token is taken as Gemini CLI's.
 func TestGeminiOwnLoginOnlyGeminiCLIsClient(t *testing.T) {
+	oldGeminiID, oldAntigravityID := geminiApp.clientID, antigravityApp.clientID
+	geminiApp.clientID, antigravityApp.clientID = "gemini-test-client", "antigravity-test-client"
+	t.Cleanup(func() { geminiApp.clientID, antigravityApp.clientID = oldGeminiID, oldAntigravityID })
 	idToken := func(claims map[string]any) string {
 		b, _ := json.Marshal(claims)
 		return "e30." + base64.RawURLEncoding.EncodeToString(b) + ".sig"

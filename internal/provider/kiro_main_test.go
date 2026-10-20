@@ -19,6 +19,10 @@ import (
 func TestMain(m *testing.M) {
 	os.Exit(testenv.RunIn(m, func(home string) {
 		testenv.Offline()
+		os.Setenv("AGENT_LINK_GEMINI_CLIENT_ID", "")
+		os.Setenv("AGENT_LINK_GEMINI_CLIENT_SECRET", "")
+		os.Setenv("AGENT_LINK_ANTIGRAVITY_CLIENT_ID", "")
+		os.Setenv("AGENT_LINK_ANTIGRAVITY_CLIENT_SECRET", "")
 		kiroCLIDB = func() string { return filepath.Join(home, "kiro-test", "kiro-cli", "data.sqlite3") }
 		kiroIDEDir = func() string { return filepath.Join(home, "kiro-test", "sso") }
 		askKiroIdentity = func(string, string) (string, string) { return "", "" }

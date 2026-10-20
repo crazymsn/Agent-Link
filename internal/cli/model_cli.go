@@ -17,7 +17,7 @@ import (
 const modelUsage = `usage:
   agentlink model name <provider/model>             the name the model goes by
   agentlink model name <provider/model> <name>      name it so everywhere: in agentlink, in the gateway's
-                                                 model list, and in the lists agentlink writes into the agents
+                                                    model list, and in the lists agentlink writes into the agents
   agentlink model name <provider/model> --reset     give it back its own name
   agentlink model efforts <provider/model>          the reasoning levels it offers, and those it has
   agentlink model efforts <provider/model> <l>,<l>  offer only these of them, e.g. low,medium,high
@@ -25,18 +25,18 @@ const modelUsage = `usage:
   agentlink model efforts <provider/model> off      send it no reasoning field at all
   agentlink model price <provider/model>            what the model costs you, and what you said it costs
   agentlink model price <provider/model> <in>,<out>,<cache read>,<cache write>
-                                                 say what it costs, in USD per million tokens, all four parts as
-                                                 0.12,1.20,0.01,0.15; 0 is a model served for nothing, which is
-                                                 a price, not the absence of one; a fifth part is a 1-hour cache
-                                                 write's (not given: a Claude model's is 2× input, any other's the 4th)
+                                                    say what it costs, in USD per million tokens, all four parts as
+                                                    0.12,1.20,0.01,0.15; 0 is a model served for nothing, which is
+                                                    a price, not the absence of one; a fifth part is a 1-hour cache
+                                                    write's (not given: a Claude model's is 2× input, any other's the 4th)
   agentlink model price <provider/model> <in>,<out>,<cache read>,<cache write> --tier 272k <in>,<out>,<cr>,<cw>
-                                                 and what a request whose input, cached tokens included, is over
-                                                 272K costs, the whole request; --tier may be given again
+                                                    and what a request whose input, cached tokens included, is over
+                                                    272K costs, the whole request; --tier may be given again
   agentlink model price <provider/model> --reset    take your price off this model
   agentlink model price <model> <in>,<out>,<cache read>,<cache write>
-                                                 what the model costs from any provider you have not priced it
-                                                 for, kept as '*/<model>': for usage whose provider is gone, or
-                                                 a model models.dev doesn't price, e.g. gemini-3-pro-preview
+                                                    what the model costs from any provider you have not priced it
+                                                    for, kept as '*/<model>': for usage whose provider is gone, or
+                                                    a model models.dev doesn't price, e.g. gemini-3-pro-preview
   agentlink model prices                            the models you priced
   agentlink model context <provider/model>          how long a request it takes, and what you said it takes
   agentlink model context <provider/model> <n>      say how long, as 200000 or 1m; '<provider>/*' is every model
@@ -47,32 +47,32 @@ const modelUsage = `usage:
   agentlink model wire <provider/model>             the name the vendor is asked for, and the one you gave
   agentlink model wire <provider/model> <name>      ask for the model by this name, for a relay that serves it
   agentlink model wire '<provider>/*' <name>        ask for every model of that provider by this name; a * in
-                                                 it is the model, so vendor-c/* asks for model-3 as
-                                                 vendor-c/model-3. Quote it: a shell reads a bare * as a glob
+                                                    it is the model, so vendor-c/* asks for model-3 as
+                                                    vendor-c/model-3. Quote it: a shell reads a bare * as a glob
   agentlink model wire <provider/model> --reset     ask for it by the name agentlink knows it by again, under an
-                                                 id of its own for a provider that has since been deleted,
-                                                 and says when there was no name of its own to take away
+                                                    id of its own for a provider that has since been deleted,
+                                                    and says when there was no name of its own to take away
   agentlink model wires                             the names your vendors are asked for models by
   agentlink model names                             the models you named or narrowed
   agentlink model disable <model> [<model>...]      turn models off for every request through agentlink: each an id
-                                                 (provider/model or a bare model id) or a glob, * any run of
-                                                 characters and ? one, as '*fable*'. A disabled model leaves
-                                                 every list and routing group, and the gateway refuses it on
-                                                 every route (403). Quote a glob: a shell reads a bare *
+                                                    (provider/model or a bare model id) or a glob, * any run of
+                                                    characters and ? one, as '*fable*'. A disabled model leaves
+                                                    every list and routing group, and the gateway refuses it on
+                                                    every route (403). Quote a glob: a shell reads a bare *
   agentlink model enable <model> [<model>...]       take them off the disabled list, as written there
   agentlink model disabled                          the disabled list, and the models each one turns off now
   agentlink model suffix [on|own|off]               whether the agents' lists name each model with its provider
-                                                 (or "routing group") after it: on, as by default, "Sol · OpenAI";
-                                                 own, a name you gave a model just as you wrote it, "Opus 5.5",
-                                                 the others as on; off, "Sol" alone — but two a list would name
-                                                 the same keep it
+                                                    (or "routing group") after it: on, as by default, "Sol · OpenAI";
+                                                    own, a name you gave a model just as you wrote it, "Opus 5.5",
+                                                    the others as on; off, "Sol" alone — but two a list would name
+                                                    the same keep it
   agentlink model compact [on|off|<size>]           whether Codex and Claude Code compact a long conversation at
-                                                 272K: on, as by default, for a model of a longer window (in
-                                                 Claude Code, a Claude model runs to its own); off, at the
-                                                 model's whole window, 1M for a [1m] one; a size such as 500k
-                                                 compacts there instead. The app's Settings → Long
-                                                 conversations is the same switch; a provider's own Compact
-                                                 at (its editor) comes before it
+                                                    272K: on, as by default, for a model of a longer window (in
+                                                    Claude Code, a Claude model runs to its own); off, at the
+                                                    model's whole window, 1M for a [1m] one; a size such as 500k
+                                                    compacts there instead. The app's Settings → Long
+                                                    conversations is the same switch; a provider's own Compact
+                                                    at (its editor) comes before it
 
   Each is looked for in this order: this model, then <provider id>/*, then the provider's own
   list, then models.dev. --reset removes only the first, and says so when a <provider id>/* value
