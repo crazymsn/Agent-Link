@@ -88,8 +88,9 @@ func tellWorkPlace(h http.Header, to provider.Protocol, body []byte) {
 	if dir == "" {
 		// Plugin metadata must survive even when the protocol parser rejects an
 		// agent-specific request shape; the raw text still carries its cwd.
-		if d := workDirIn(string(body), ""); d != "" {
-			dir, git = d, provider.GitSaid(string(body))
+		rawText := strings.NewReplacer(`\n`, "\n", `\r`, "\r", `\t`, "\t", `\"`, `"`).Replace(string(body))
+		if d := workDirIn(rawText, ""); d != "" {
+			dir, git = d, provider.GitSaid(rawText)
 		}
 	}
 	if dir == "" {
