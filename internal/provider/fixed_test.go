@@ -22,7 +22,7 @@ func TestAgentLinkProviderIsCanonicalAndFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Responses != AgentLinkProviderURL || p.Anthropic != AgentLinkProviderURL || p.Gemini != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon || !slices.Equal(p.EnabledProtocols, allProtocols) || p.Base(Chat) != AgentLinkProviderURL || p.Base(Responses) != AgentLinkProviderURL || p.Base(Anthropic) != "https://api.meding.site" || p.Base(Gemini) != AgentLinkProviderURL {
+	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Responses != AgentLinkProviderURL || p.Anthropic != "https://api.meding.site" || p.Gemini != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon || !slices.Equal(p.EnabledProtocols, allProtocols) || p.Base(Chat) != AgentLinkProviderURL || p.Base(Responses) != AgentLinkProviderURL || p.Base(Anthropic) != "https://api.meding.site" || p.Base(Gemini) != AgentLinkProviderURL {
 		t.Fatalf("fixed provider: %#v", p)
 	}
 	ids := make([]string, 0, len(All()))
