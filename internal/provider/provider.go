@@ -44,6 +44,8 @@ const (
 // Protocols in the order agentlink prefers them when it has to translate.
 var Protocols = []Protocol{Chat, Responses, Anthropic}
 
+var allProtocols = []Protocol{Chat, Responses, Anthropic, Gemini}
+
 // Provider is one configured vendor.
 type Provider struct {
 	ID   string `json:"id"`
@@ -75,6 +77,11 @@ type Provider struct {
 	KeyProtocol Protocol `json:"keyProtocol,omitempty"`
 	// KeyWeight is the first key's weight (see KeyAccount.Weight).
 	KeyWeight int `json:"keyWeight,omitempty"`
+
+	// EnabledProtocols is used by the fixed API distribution provider to choose
+	// which wire APIs its single canonical endpoint accepts. Custom providers
+	// keep using their protocol URL fields directly.
+	EnabledProtocols []Protocol `json:"enabledProtocols,omitempty"`
 
 	// Base URLs, one per protocol the vendor serves natively. agentlink appends
 	// the usual paths: chat/responses bases end in /v1 (OpenAI style),
@@ -584,6 +591,7 @@ func (p Provider) clone() Provider {
 	p.Keys = slices.Clone(p.Keys)
 	p.Fallback = slices.Clone(p.Fallback)
 	p.Models = slices.Clone(p.Models)
+	p.EnabledProtocols = slices.Clone(p.EnabledProtocols)
 	p.PickedFrom = slices.Clone(p.PickedFrom)
 	p.AutoInclude = slices.Clone(p.AutoInclude)
 	p.Headers = maps.Clone(p.Headers)
@@ -1400,6 +1408,9 @@ func (p Provider) baseOf(api string) string {
 
 // Base returns the base URL for a protocol, or "" when the vendor lacks it.
 func (p Provider) Base(proto Protocol) string {
+	if IsFixedProvider(p.ID) && !slices.Contains(p.EnabledProtocols, proto) {
+		return ""
+	}
 	switch proto {
 	case Chat:
 		return p.Chat

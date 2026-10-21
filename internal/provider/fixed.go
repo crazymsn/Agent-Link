@@ -20,10 +20,14 @@ var errFixedProvider = errors.New("the API 分发站 provider is built in and ca
 // material and model picks are merged from providers.json by allProviders.
 func AgentLinkProvider() Provider {
 	return Provider{
-		ID:   AgentLinkProviderID,
-		Name: AgentLinkProviderName,
-		Icon: AgentLinkProviderIcon,
-		Chat: AgentLinkProviderURL,
+		ID:               AgentLinkProviderID,
+		Name:             AgentLinkProviderName,
+		Icon:             AgentLinkProviderIcon,
+		Chat:             AgentLinkProviderURL,
+		Responses:        AgentLinkProviderURL,
+		Anthropic:        AgentLinkProviderURL,
+		Gemini:           AgentLinkProviderURL,
+		EnabledProtocols: slices.Clone(allProtocols),
 	}
 }
 
@@ -40,8 +44,24 @@ func mergeAgentLinkProvider(saved Provider) Provider {
 	p.Key = saved.Key
 	p.Models = slices.Clone(saved.Models)
 	p.NoModels = saved.NoModels
+	p.EnabledProtocols = validFixedProtocols(saved.EnabledProtocols)
+	if len(p.EnabledProtocols) == 0 {
+		p.EnabledProtocols = slices.Clone(allProtocols)
+	}
 	p.Off = saved.Off
 	return p
+}
+
+func validFixedProtocols(in []Protocol) []Protocol {
+	seen := map[Protocol]bool{}
+	out := make([]Protocol, 0, len(allProtocols))
+	for _, pr := range in {
+		if slices.Contains(allProtocols, pr) && !seen[pr] {
+			seen[pr] = true
+			out = append(out, pr)
+		}
+	}
+	return out
 }
 
 // MigrateFixedProvider removes user-defined custom providers and normalizes the

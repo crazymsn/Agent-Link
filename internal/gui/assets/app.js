@@ -8720,7 +8720,7 @@ function baseAPIOf(p) {
 
 // draftOf is a saved provider as its editor's form holds it.
 function draftOf(p) {
-  return { id: p.id, name: p.name, preset: p.preset, chat: p.chat, responses: p.responses, anthropic: p.anthropic, gemini: p.gemini || "", catalog: p.catalog, decide: p.decide || "", key: "", api: baseAPIOf(p), chosen: pickedOf(p), none: !!p.noModels, extra: [], headers: headerRows(p.headers), extraBody: extraBodyText(p.extraBody), icon: p.icon || "", fallback: [...(p.fallback || [])], unlisted: !!p.unlisted, searches: !!p.searches, unredacted: !!p.unredacted, insecureTLS: !!p.insecureTLS, nativeCompaction: !!p.nativeCompaction, passUserAgent: !!p.passUserAgent, pinUpstream: !!p.pinUpstream, authHeader: p.authHeader || "", balanceURL: p.balanceURL || "", balancePath: p.balancePath || "", balanceMethod: p.balanceMethod || "", modelsURL: p.modelsURL || "", contexts: contextsText(p.contexts), outputs: contextsText(p.outputs), compacts: contextsText(p.compacts), keysUrl: p.keysUrl || "", ...proxyDraft(p), ...concurrencyDraft(p) };
+  return { id: p.id, name: p.name, preset: p.preset, chat: p.chat, responses: p.responses, anthropic: p.anthropic, gemini: p.gemini || "", enabledProtocols: [...(p.enabledProtocols || [])], catalog: p.catalog, decide: p.decide || "", key: "", api: baseAPIOf(p), chosen: pickedOf(p), none: !!p.noModels, extra: [], headers: headerRows(p.headers), extraBody: extraBodyText(p.extraBody), icon: p.icon || "", fallback: [...(p.fallback || [])], unlisted: !!p.unlisted, searches: !!p.searches, unredacted: !!p.unredacted, insecureTLS: !!p.insecureTLS, nativeCompaction: !!p.nativeCompaction, passUserAgent: !!p.passUserAgent, pinUpstream: !!p.pinUpstream, authHeader: p.authHeader || "", balanceURL: p.balanceURL || "", balancePath: p.balancePath || "", balanceMethod: p.balanceMethod || "", modelsURL: p.modelsURL || "", contexts: contextsText(p.contexts), outputs: contextsText(p.outputs), compacts: contextsText(p.compacts), keysUrl: p.keysUrl || "", ...proxyDraft(p), ...concurrencyDraft(p) };
 }
 
 // duplicateProvider opens the Add form on a copy of p (#268): its URLs,
@@ -8792,7 +8792,23 @@ function drawEditor(p, presetID) {
     if (p?.off) ed.append(el("div", "hint off-note", t("Switched off: agents aren't given its models and no request goes to it. Its keys and settings are kept; switch it on to use it again.")));
   }
 
-  // a vendor's global and China endpoints are presets of their own, one row
+  const fixedProtocols = [
+    ["chat", "OpenAI Chat"], ["responses", "OpenAI Responses"], ["anthropic", "Anthropic Messages"], ["gemini", "Gemini"],
+  ];
+  if (fixed) {
+    const enabled = new Set(draft.enabledProtocols?.length ? draft.enabledProtocols : fixedProtocols.map(([k]) => k));
+    const box = el("div", "fixed-protocols");
+    for (const [proto, label] of fixedProtocols) {
+      const cb = el("input"); cb.type = "checkbox"; cb.checked = enabled.has(proto);
+      cb.onchange = () => {
+        if (!cb.checked && enabled.size === 1) { cb.checked = true; return; }
+        if (cb.checked) enabled.add(proto); else enabled.delete(proto);
+        draft.enabledProtocols = fixedProtocols.map(([k]) => k).filter((k) => enabled.has(k));
+      };
+      const lab = el("label", "check"); lab.append(cb, el("span", "", t(label))); box.append(lab);
+    }
+    ed.append(...field(t("Supported protocols"), box, t("Choose which APIs this distribution station exposes. All selected protocols use its fixed endpoint.")));
+  }
   // in the add sheet: here the new provider picks between them, the key kept
   const pair = isNew && pr ? (globalOf(pr) ? [globalOf(pr), pr] : chinaOf(pr) ? [pr, chinaOf(pr)] : null) : null;
   if (pair) {
@@ -9533,7 +9549,7 @@ function drawEditor(p, presetID) {
     const row = field(t("Endpoints"), ebox, "");
     refreshEndpoints = () => {
       const base = p || pr || {};
-      const src = { chat: draft.chat || base.chat || "", responses: draft.responses || base.responses || "", anthropic: draft.anthropic || base.anthropic || "", decide: base.decide || "" };
+      const src = { chat: draft.chat || base.chat || "", responses: draft.responses || base.responses || "", anthropic: draft.anthropic || base.anthropic || "", gemini: draft.gemini || base.gemini || "", decide: base.decide || "" };
       // Vertex AI's is the address its project and location make, shown
       // with its Test once a project is typed, saved one or not: with none
       // there is nowhere to ask
@@ -9650,7 +9666,7 @@ function drawEditor(p, presetID) {
   const saveBtn = el("button", "text primary", t(isNew ? "Add" : "Save"));
   const save = () => {
     // new: an Add never replaces a provider that has the id already
-    const body = { id: p ? slug(draft.id) || p.id : draft.id, from: p?.id, name: draft.name, preset: draft.preset, key: draft.key || "", chat: draft.chat, responses: draft.responses, anthropic: draft.anthropic, gemini: (draft.gemini || "").trim(), catalog: draft.catalog, models: p ? chosenIds() : draft.extra, headers: headersOf(draft.headers), new: isNew, off: !!p?.off };
+    const body = { id: p ? slug(draft.id) || p.id : draft.id, from: p?.id, name: draft.name, preset: draft.preset, key: draft.key || "", chat: draft.chat, responses: draft.responses, anthropic: draft.anthropic, gemini: (draft.gemini || "").trim(), enabledProtocols: fixed ? [...(draft.enabledProtocols || [])] : undefined, catalog: draft.catalog, models: p ? chosenIds() : draft.extra, headers: headersOf(draft.headers), new: isNew, off: !!p?.off };
     if (isNew && draft.copyOf) body.copyOf = draft.copyOf;
     const xb = extraBodyOf(draft.extraBody);
     if (xb.error) { shown(ed.querySelector(".extra-body textarea"))?.focus({ preventScroll: true }); return editorError(t("Extra body: {why}", { why: xb.error }), "warn"); }

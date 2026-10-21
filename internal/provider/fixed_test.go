@@ -88,7 +88,7 @@ func TestAgentLinkProviderSaveAcceptsEditorPayload(t *testing.T) {
 	if err != nil || got.Key != "sk-editor-token" || !slices.Equal(got.Models, []string{"model-a"}) {
 		t.Fatalf("saved fixed provider = %#v, err %v", got, err)
 	}
-	if got.Name != AgentLinkProviderName || got.Icon != AgentLinkProviderIcon || got.Chat != AgentLinkProviderURL || got.Responses != "" || got.Anthropic != "" || got.Decide != "" || got.Proxy != "" || got.Headers != nil {
+	if got.Name != AgentLinkProviderName || got.Icon != AgentLinkProviderIcon || got.Chat != AgentLinkProviderURL || got.Responses != AgentLinkProviderURL || got.Anthropic != AgentLinkProviderURL || got.Gemini != AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider accepted mutable routing fields: %#v", got)
 	}
 }

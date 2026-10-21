@@ -77,21 +77,22 @@ type modelJSON struct {
 }
 
 type providerJSON struct {
-	ID        string            `json:"id"`
-	Name      string            `json:"name"`
-	Fixed     bool              `json:"fixed"`
-	Icon      string            `json:"icon"`
-	Preset    string            `json:"preset"`
-	Host      string            `json:"host"`
-	Chat      string            `json:"chat"`
-	Responses string            `json:"responses"`
-	Anthropic string            `json:"anthropic"`
-	Gemini    string            `json:"gemini,omitempty"` // a Gemini API's base (#1346)
-	Decide    string            `json:"decide,omitempty"` // a decision API: it only routes groups
-	Catalog   string            `json:"catalog"`
-	Website   string            `json:"website"`
-	KeysURL   string            `json:"keysUrl"`
-	Headers   map[string]string `json:"headers,omitempty"`
+	ID               string              `json:"id"`
+	Name             string              `json:"name"`
+	Fixed            bool                `json:"fixed"`
+	Icon             string              `json:"icon"`
+	Preset           string              `json:"preset"`
+	Host             string              `json:"host"`
+	Chat             string              `json:"chat"`
+	Responses        string              `json:"responses"`
+	Anthropic        string              `json:"anthropic"`
+	Gemini           string              `json:"gemini,omitempty"` // a Gemini API's base (#1346)
+	Decide           string              `json:"decide,omitempty"` // a decision API: it only routes groups
+	EnabledProtocols []provider.Protocol `json:"enabledProtocols,omitempty"`
+	Catalog          string              `json:"catalog"`
+	Website          string              `json:"website"`
+	KeysURL          string              `json:"keysUrl"`
+	Headers          map[string]string   `json:"headers,omitempty"`
 	// JSON fields added to each request's body (provider.ExtraBody, #1604)
 	ExtraBody provider.ExtraBody `json:"extraBody,omitempty"`
 	// the API the user gave a custom provider's Base URL as (BaseAPI)
@@ -590,7 +591,7 @@ func providerInfo(p provider.Provider, agents []agentUse) providerJSON {
 func providerInfoWith(p provider.Provider, agents []agentUse, desktop map[string]string) providerJSON {
 	out := providerJSON{
 		ID: p.ID, Name: p.Name, Fixed: provider.IsFixedProvider(p.ID), Icon: p.Icon, Preset: p.Preset, Host: p.Host(),
-		Chat: p.Chat, Responses: p.Responses, Anthropic: p.Anthropic, Gemini: p.Gemini, Decide: p.Decide, BaseAPI: p.BaseAPI, ModelTest: p.ModelTest(), TestsAs: p.TestClients(), DecideTest: p.AsksDecideModels(), MarksKinds: p.MarksKinds(),
+		Chat: p.Chat, Responses: p.Responses, Anthropic: p.Anthropic, Gemini: p.Gemini, Decide: p.Decide, EnabledProtocols: p.EnabledProtocols, BaseAPI: p.BaseAPI, ModelTest: p.ModelTest(), TestsAs: p.TestClients(), DecideTest: p.AsksDecideModels(), MarksKinds: p.MarksKinds(),
 		Catalog: p.Catalog, Website: p.Website, KeysURL: p.KeysURL,
 		Proxy: p.Proxy, AccountProxies: p.AccountProxies, AccountModels: p.AccountModels, AccountCaps: p.AccountCaps, AccountWindowCaps: p.AccountWindowCaps, AccountNames: p.AccountNames, Headers: p.Headers, ExtraBody: p.ExtraBody, Searches: p.Searches, Cline: p.ClinePinnable(), PinUpstream: p.PinUpstream, Unredacted: p.Unredacted, InsecureTLS: p.InsecureTLS, TakesInsecureTLS: p.TakesInsecureTLS(), NativeCompaction: p.NativeCompaction, CarriesCompaction: p.CarriesCompaction(), PassUserAgent: p.PassUserAgent, OwnClient: p.OwnClient(), AuthHeader: p.AuthHeader, BothAuth: p.BothAuth(), BalanceURL: p.BalanceURL, BalancePath: p.BalancePath, BalanceMethod: p.BalanceMethod, ModelsURL: p.ModelsURL,
 		Ready: p.Ready(), Chosen: p.Picks(), Models: []modelJSON{}, Agents: []providerAgent{},
