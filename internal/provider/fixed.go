@@ -39,7 +39,7 @@ func AgentLinkProvider() Provider {
 		Icon:             AgentLinkProviderIcon,
 		Chat:             AgentLinkProviderURL,
 		Responses:        AgentLinkProviderURL,
-		Anthropic:        strings.TrimSuffix(AgentLinkProviderURL, "/v1"),
+		Anthropic:        AgentLinkProviderURL,
 		Gemini:           AgentLinkProviderURL,
 		EnabledProtocols: slices.Clone(allProtocols),
 	}

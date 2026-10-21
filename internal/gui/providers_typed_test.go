@@ -74,7 +74,7 @@ func TestFixedProviderModelsRequestKeepsCanonicalSettings(t *testing.T) {
 		Headers:   map[string]string{"Authorization": "attacker"},
 	}
 	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
-	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != "https://api.meding.site" || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != provider.AgentLinkProviderURL || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider model request was mutable: %#v", got)
 	}
 }
@@ -89,7 +89,7 @@ func TestFixedProviderTestRequestKeepsCanonicalSettings(t *testing.T) {
 		Headers: map[string]string{"Authorization": "attacker"},
 	}
 	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
-	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != "https://api.meding.site" || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != provider.AgentLinkProviderURL || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider test request was mutable: %#v", got)
 	}
 }

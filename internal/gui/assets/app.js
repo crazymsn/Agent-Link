@@ -8792,18 +8792,6 @@ function drawEditor(p, presetID) {
     if (p?.off) ed.append(el("div", "hint off-note", t("Switched off: agents aren't given its models and no request goes to it. Its keys and settings are kept; switch it on to use it again.")));
   }
 
-  const fixedProtocols = [
-    ["chat", "OpenAI Chat"], ["responses", "OpenAI Responses"], ["anthropic", "Anthropic Messages"], ["gemini", "Gemini"],
-  ];
-  if (fixed) {
-    const box = el("div", "fixed-protocols");
-    for (const [, label] of fixedProtocols) {
-      const row = el("span", "fixed-protocol");
-      row.append(svg(CHECK, 10, 2.2), el("span", "", t(label)));
-      box.append(row);
-    }
-    ed.append(...field(t("Supported protocols"), box, t("The API distribution station always supports Chat, Responses, Anthropic Messages, and Gemini; users do not choose them.")));
-  }
   // in the add sheet: here the new provider picks between them, the key kept
   const pair = isNew && pr ? (globalOf(pr) ? [globalOf(pr), pr] : chinaOf(pr) ? [pr, chinaOf(pr)] : null) : null;
   if (pair) {
