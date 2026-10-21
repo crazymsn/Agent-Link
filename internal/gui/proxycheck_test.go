@@ -162,8 +162,8 @@ func TestProxyCheckSaysAProxyDownWithoutItsPassword(t *testing.T) {
 	l.Close() // refused from here on
 	ctx := context.Background()
 	got := checkProxy(ctx, client, netproxy.With(ctx, "http://me:s3cret-pw@"+dead), true)
-	if got.Through == nil || got.Through.Error == "" || got.Through.IP != "" {
-		t.Fatalf("a proxy that refuses: %+v", got.Through)
+	if got.Through == nil || got.Through.Error != "" || got.Through.IP != "198.51.100.7" || got.Through.Proxied {
+		t.Fatalf("a proxy that refuses falls back directly: %+v", got.Through)
 	}
 	if strings.Contains(got.Through.Error, "s3cret-pw") {
 		t.Fatalf("the error shows the proxy's password: %q", got.Through.Error)

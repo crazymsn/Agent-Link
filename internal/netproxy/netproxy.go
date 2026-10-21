@@ -217,7 +217,17 @@ func proxyFallbackAllowed(req *http.Request) bool {
 		}
 		return For(req.URL)
 	}()
-	return err == nil && p != nil && loopback(p.Hostname()) && !onLAN(req.URL.Hostname())
+	if err != nil || p == nil || onLAN(req.URL.Hostname()) {
+		return false
+	}
+	// A provider/account choice and an explicit Settings proxy are strict
+	// unless they point at this computer. The automatic system proxy is
+	// different: users commonly run Clash on another LAN device, and stopping
+	// it must still leave reachable vendors usable.
+	if choiceOf(req.Context()) != "" {
+		return loopback(p.Hostname())
+	}
+	return strings.TrimSpace(settings.Load().Proxy) == ""
 }
 
 func proxyUnavailable(err error) bool {
