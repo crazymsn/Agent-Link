@@ -31,6 +31,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
 
       # The GUI links GTK 3 and WebKitGTK 4.1 through cgo on Linux (see the
       # Makefile), so vet and test need their headers and the gtk3 tag.
@@ -91,22 +92,9 @@ jobs:
           bun --version
           go test -timeout 10m -tags "${{ steps.tags.outputs.tags }}" ./internal/plugin/... -run '^TestFlowBigReplyProd$' -count=1
 
-      # The redaction tests reuse this binary in fresh processes to check
-      # first-use races, so it must include the race detector. The gateway's
-      # tests can't call t.Parallel (t.Setenv), so its suite runs split over
-      # one process per core (#923); each process isolates its own home.
-      - name: Race
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          go test -race -c -o "$RUNNER_TEMP/gateway.race" -tags "${{ steps.tags.outputs.tags }}" ./internal/gateway/
-          build/race-shards.sh internal/gateway "$RUNNER_TEMP/gateway.race" "$(getconf _NPROCESSORS_ONLN)" -test.timeout=20m
-          go test -race -tags "${{ steps.tags.outputs.tags }}" ./internal/redact/
-
-      # Account usage mixes cached results with concurrent fetches.
-      - name: Race account usage
-        if: runner.os != 'Windows'
-        run: go test -race -tags "${{ steps.tags.outputs.tags }}" ./internal/provider/ -run '^Test(LoginUsage|SubscriptionUsageEachAccount)'
+      # Race coverage runs in the parallel race job below. Keeping the main
+      # platform test focused on the full suite shortens Ubuntu/macOS feedback
+      # without dropping any coverage.
 
       # Some tests fake a home through $HOME, which Windows doesn't read
       # (USERPROFILE), or assume Unix file modes. Compile the full suite
@@ -151,8 +139,40 @@ jobs:
         if: runner.os == 'Windows'
         run: go test -v -count=1 ./internal/agent -run '^TestVSCodeDetected$'
 
+
+  race:
+    name: race (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Install GTK and WebKitGTK
+        if: runner.os == 'Linux'
+        timeout-minutes: 15
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+      - name: Race gateway and redaction
+        shell: bash
+        run: |
+          tags=""
+          if [ "$RUNNER_OS" = Linux ]; then tags="gtk3"; fi
+          go test -race -c -o "$RUNNER_TEMP/gateway.race" -tags "$tags" ./internal/gateway/
+          build/race-shards.sh internal/gateway "$RUNNER_TEMP/gateway.race" "$(getconf _NPROCESSORS_ONLN)" -test.timeout=20m
+          go test -race -tags "$tags" ./internal/redact/
+      - name: Race account usage
+        run: go test -race -tags "${{ runner.os == 'Linux' && 'gtk3' || '' }}" ./internal/provider/ -run '^Test(LoginUsage|SubscriptionUsageEachAccount)'
+
+
   cli:
-    name: cli (${{ matrix.goos }}/${{ matrix.goarch }}, nogui)
+    name: cli (${{ matrix.goos }}/${{ matrix.goarch }})
     strategy:
       fail-fast: false
       matrix:
@@ -167,6 +187,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
       - name: Build the terminal-only release
         env:
           CGO_ENABLED: '0'
