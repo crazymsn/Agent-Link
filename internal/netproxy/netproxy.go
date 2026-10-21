@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -154,7 +155,10 @@ var HTTP1 func(u *url.URL) bool
 // for HTTP/1.1 (http1Only), and one to a host whose certificate the
 // provider's user said not to check (WithUncheckedTLS) through a clone
 // kept for that host alone (uncheckTLS). A host whose IPv6 is taken but
-// goes nowhere is dialed over IPv4 (v4Fallback).
+// goes nowhere is dialed over IPv4 (v4Fallback). When a local environment,
+// system or settings proxy is selected and its connection is refused, the
+// request is retried directly once; a remote or provider-owned proxy remains
+// authoritative.
 func Dispatch(base *http.Transport) http.RoundTripper {
 	v4Fallback(base)
 	return &dispatch{base: base, own: map[route]*http.Transport{}}
@@ -177,10 +181,64 @@ type route struct {
 
 func (d *dispatch) RoundTrip(req *http.Request) (*http.Response, error) {
 	r := route{choice: choiceOf(req.Context()), h1: HTTP1 != nil && HTTP1(req.URL), unchecked: uncheckedHost(req)}
-	if r == (route{}) {
-		return v4Retry(d.base, req)
+	t := d.base
+	if r != (route{}) {
+		t = d.transport(r)
 	}
-	return v4Retry(d.transport(r), req)
+	res, err := v4Retry(t, req)
+	if err == nil || !r.global() || !proxyFallbackAllowed(req) || !proxyUnavailable(err) {
+		return res, err
+	}
+	// A local proxy is advisory: when its process has gone away, a direct
+	// attempt lets a network that is reachable without it continue. Remote
+	// and provider-owned proxies stay authoritative. The request is cloned
+	// with a fresh body so a failed proxy dial can never turn a retry into an
+	// empty POST.
+	again, ok := retryRequest(req)
+	if !ok {
+		return res, err
+	}
+	direct := t.Clone()
+	direct.Proxy = nil
+	return v4Retry(direct, again)
+}
+
+func (r route) global() bool { return r.choice == "" }
+
+// proxyFallbackAllowed reports whether req's global route uses a local
+// proxy. A stopped local proxy is commonly left enabled in system settings;
+// a direct retry is safe there. A provider-owned or remote proxy remains
+// authoritative and is never bypassed.
+func proxyFallbackAllowed(req *http.Request) bool {
+	if req == nil || req.URL == nil || choiceOf(req.Context()) != "" {
+		return false
+	}
+	p, err := For(req.URL)
+	return err == nil && p != nil && loopback(p.Hostname()) && !onLAN(req.URL.Hostname())
+}
+
+func proxyUnavailable(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToLower(err.Error())
+	return strings.Contains(s, "proxyconnect ") || strings.Contains(s, "socks connect ")
+}
+
+func retryRequest(req *http.Request) (*http.Request, bool) {
+	again := req.Clone(req.Context())
+	if req.Body == nil || req.Body == http.NoBody {
+		return again, true
+	}
+	if req.GetBody == nil {
+		return nil, false
+	}
+	body, err := req.GetBody()
+	if err != nil {
+		return nil, false
+	}
+	again.Body = body
+	return again, true
 }
 
 func (d *dispatch) transport(r route) *http.Transport {
@@ -287,7 +345,10 @@ func EnvWith(choice string, env []string) []string {
 		for _, e := range env {
 			k, v, _ := strings.Cut(e, "=")
 			if proxyVar(k) && !strings.EqualFold(k, "NO_PROXY") && strings.TrimSpace(v) != "" {
-				return env
+				// Keep the user's proxy for vendor requests, but make the
+				// loopback gateway a hard bypass. Returning env unchanged here
+				// sent a CLI's callback to a stopped proxy and surfaced as 502.
+				return withLoopbackBypass(env)
 			}
 		}
 		sys := System()
@@ -336,6 +397,48 @@ func withProxy(env []string, p string, bypass []string) []string {
 	nos := strings.Join(no, ",")
 	return append(out, "HTTPS_PROXY="+p, "https_proxy="+p, "HTTP_PROXY="+p, "http_proxy="+p,
 		"ALL_PROXY="+p, "all_proxy="+p, "NO_PROXY="+nos, "no_proxy="+nos)
+}
+
+// withLoopbackBypass keeps the proxy variables already present in env and
+// adds the local gateway hosts to NO_PROXY. It is used when an agent already
+// has a proxy in its environment: that proxy remains the route to vendors,
+// while callbacks to magpie stay on this computer.
+func withLoopbackBypass(env []string) []string {
+	const loopbackNo = "localhost,127.0.0.1,::1"
+	out := slices.Clone(env)
+	found := map[string]bool{}
+	for i, e := range out {
+		k, v, ok := strings.Cut(e, "=")
+		if !ok || !strings.EqualFold(k, "NO_PROXY") {
+			continue
+		}
+		v = appendLoopback(v)
+		out[i] = k + "=" + v
+		found[strings.ToUpper(k)] = true
+	}
+	if !found["NO_PROXY"] {
+		out = append(out, "NO_PROXY="+loopbackNo, "no_proxy="+loopbackNo)
+	}
+	return out
+}
+
+func appendLoopback(v string) string {
+	if strings.TrimSpace(v) == "*" {
+		return v
+	}
+	have := map[string]bool{}
+	for _, e := range strings.Split(v, ",") {
+		have[strings.ToLower(strings.TrimSpace(e))] = true
+	}
+	for _, host := range []string{"localhost", "127.0.0.1", "::1"} {
+		if !have[host] {
+			if strings.TrimSpace(v) != "" {
+				v += ","
+			}
+			v += host
+		}
+	}
+	return v
 }
 
 // Parse reads a proxy address; a bare host:port is an HTTP proxy.

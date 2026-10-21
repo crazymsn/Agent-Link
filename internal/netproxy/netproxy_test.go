@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -139,7 +141,8 @@ func TestEnv(t *testing.T) {
 	}
 	// one the environment names is kept
 	env = Env([]string{"https_proxy=http://10.0.0.1:1", "NO_PROXY=x"})
-	if len(env) != 2 || get(env, "https_proxy") != "http://10.0.0.1:1" {
+	if len(env) != 2 || get(env, "https_proxy") != "http://10.0.0.1:1" ||
+		get(env, "NO_PROXY") != "x,localhost,127.0.0.1,::1" {
 		t.Fatalf("environment: %v", env)
 	}
 	// agentlink's own replaces the environment's
@@ -156,8 +159,115 @@ func TestEnv(t *testing.T) {
 	}
 }
 
+func TestExistingProxyEnvironmentAlwaysBypassesLoopback(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	if err := settings.Save(settings.Settings{}); err != nil {
+		t.Fatal(err)
+	}
+	env := Env([]string{"HTTP_PROXY=http://127.0.0.1:7890", "PATH=/bin"})
+	get := func(k string) string {
+		for _, e := range env {
+			key, value, _ := strings.Cut(e, "=")
+			if key == k {
+				return value
+			}
+		}
+		return ""
+	}
+	if get("HTTP_PROXY") != "http://127.0.0.1:7890" ||
+		get("NO_PROXY") != "localhost,127.0.0.1,::1" ||
+		get("no_proxy") != "localhost,127.0.0.1,::1" {
+		t.Fatalf("proxy environment: %v", env)
+	}
+}
+
 var farFuture = time.Now().Add(time.Hour)
 var zero time.Time
+
+// When Auto follows an environment proxy that has been turned off, a failed
+// proxy dial must not turn a reachable direct request into a 502. The body is
+// checked too: gateway requests are POSTs and the direct retry must preserve
+// them exactly.
+func TestAutomaticProxyDownFallsBackToDirect(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	for _, k := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"} {
+		t.Setenv(k, "")
+	}
+	settings.Save(settings.Settings{})
+	sysCache.at, sysCache.p = farFuture, Proxy{}
+	t.Cleanup(func() { sysCache.at = zero })
+	oldLookup := lanLookup
+	lanLookup = func(context.Context, string) ([]net.IPAddr, error) { return nil, io.ErrUnexpectedEOF }
+	t.Cleanup(func() { lanLookup = oldLookup; clear(lanCache.m) })
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		if string(b) != `{"message":"hello"}` {
+			t.Errorf("direct retry body = %q", b)
+		}
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, "direct")
+	}))
+	defer server.Close()
+	upstream := server.Listener.Addr().String()
+	dead := netproxyDeadAddr(t, upstream)
+	t.Setenv("HTTP_PROXY", "http://"+dead)
+
+	var d net.Dialer
+	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if host, _, _ := net.SplitHostPort(addr); host == "vendor.test" {
+			addr = upstream
+		}
+		return d.DialContext(ctx, network, addr)
+	}
+	c := &http.Client{Transport: Dispatch(&http.Transport{Proxy: Func, DialContext: dial})}
+	req, _ := http.NewRequest(http.MethodPost, "http://vendor.test/v1/chat/completions", strings.NewReader(`{"message":"hello"}`))
+	res, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK || string(b) != "direct" {
+		t.Fatalf("fallback = %d %q, want direct 200", res.StatusCode, b)
+	}
+}
+
+func netproxyDeadAddr(t *testing.T, taken ...string) string {
+	t.Helper()
+	for range 20 {
+		l, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		a := l.Addr().String()
+		l.Close()
+		if !slices.Contains(taken, a) {
+			return a
+		}
+	}
+	t.Fatal("no free loopback port for dead proxy")
+	return ""
+}
+
+func TestRemoteExplicitProxyDoesNotFallBackToDirect(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	for _, k := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"} {
+		t.Setenv(k, "")
+	}
+	if err := settings.Save(settings.Settings{Proxy: "http://proxy.example:7890"}); err != nil {
+		t.Fatal(err)
+	}
+	var dialed bool
+	c := &http.Client{Transport: Dispatch(&http.Transport{Proxy: Func, DialContext: func(context.Context, string, string) (net.Conn, error) {
+		dialed = true
+		return nil, errors.New("proxy should not be bypassed")
+	}})}
+	req, _ := http.NewRequest(http.MethodGet, "http://vendor.test/", nil)
+	if _, err := c.Do(req); err == nil || !strings.Contains(err.Error(), "proxy should not be bypassed") || !dialed {
+		t.Fatalf("remote explicit proxy error = %v, dialed=%v", err, dialed)
+	}
+}
 
 // A provider's own proxy (#237) wins over the global one, "direct" over
 // both, and each proxy is given one transport of its own, kept.
