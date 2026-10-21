@@ -249,9 +249,8 @@ func For(u *url.URL) (*url.URL, error) {
 	default:
 		return Parse(s)
 	}
-	if p, err := fromEnv(u); p != nil || err != nil {
-		return p, err
-	}
+	// System proxy off means the user is not using a proxy: environment
+	// variables (HTTPS_PROXY, HTTP_PROXY, ALL_PROXY) must not override that.
 	sys := System()
 	if sys.URL == "" || bypassed(u.Hostname(), sys.Bypass) {
 		return nil, nil
