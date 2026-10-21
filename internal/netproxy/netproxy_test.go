@@ -233,6 +233,42 @@ func TestAutomaticProxyDownFallsBackToDirect(t *testing.T) {
 	}
 }
 
+func TestProviderLocalProxyDownFallsBackToDirect(t *testing.T) {
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	for _, k := range []string{"HTTPS_PROXY", "https_proxy", "HTTP_PROXY", "http_proxy", "ALL_PROXY", "all_proxy", "NO_PROXY", "no_proxy"} {
+		t.Setenv(k, "")
+	}
+	if err := settings.Save(settings.Settings{}); err != nil {
+		t.Fatal(err)
+	}
+	oldLookup := lanLookup
+	lanLookup = func(context.Context, string) ([]net.IPAddr, error) { return nil, io.ErrUnexpectedEOF }
+	t.Cleanup(func() { lanLookup = oldLookup; clear(lanCache.m) })
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "direct") }))
+	defer server.Close()
+	upstream := server.Listener.Addr().String()
+	dead := netproxyDeadAddr(t, upstream)
+	var d net.Dialer
+	dial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if host, _, _ := net.SplitHostPort(addr); host == "vendor.test" {
+			addr = upstream
+		}
+		return d.DialContext(ctx, network, addr)
+	}
+	ctx := With(context.Background(), "http://"+dead)
+	c := &http.Client{Transport: Dispatch(&http.Transport{Proxy: Func, DialContext: dial})}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, "http://vendor.test/v1/chat/completions", strings.NewReader(`{"message":"hello"}`))
+	res, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := io.ReadAll(res.Body)
+	res.Body.Close()
+	if res.StatusCode != http.StatusOK || string(b) != "direct" {
+		t.Fatalf("provider proxy fallback = %d %q, want direct 200", res.StatusCode, b)
+	}
+}
+
 func netproxyDeadAddr(t *testing.T, taken ...string) string {
 	t.Helper()
 	for range 20 {

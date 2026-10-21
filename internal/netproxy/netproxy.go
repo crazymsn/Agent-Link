@@ -186,7 +186,7 @@ func (d *dispatch) RoundTrip(req *http.Request) (*http.Response, error) {
 		t = d.transport(r)
 	}
 	res, err := v4Retry(t, req)
-	if err == nil || !r.global() || !proxyFallbackAllowed(req) || !proxyUnavailable(err) {
+	if err == nil || !proxyFallbackAllowed(req) || !proxyUnavailable(err) {
 		return res, err
 	}
 	// A local proxy is advisory: when its process has gone away, a direct
@@ -203,17 +203,20 @@ func (d *dispatch) RoundTrip(req *http.Request) (*http.Response, error) {
 	return v4Retry(direct, again)
 }
 
-func (r route) global() bool { return r.choice == "" }
-
-// proxyFallbackAllowed reports whether req's global route uses a local
-// proxy. A stopped local proxy is commonly left enabled in system settings;
-// a direct retry is safe there. A provider-owned or remote proxy remains
+// proxyFallbackAllowed reports whether req's selected proxy is on this
+// computer. A stopped local proxy is commonly left enabled in system or
+// provider settings, so a direct retry is safe there. A remote proxy remains
 // authoritative and is never bypassed.
 func proxyFallbackAllowed(req *http.Request) bool {
-	if req == nil || req.URL == nil || choiceOf(req.Context()) != "" {
+	if req == nil || req.URL == nil {
 		return false
 	}
-	p, err := For(req.URL)
+	p, err := func() (*url.URL, error) {
+		if choice := choiceOf(req.Context()); choice != "" {
+			return forChoice(choice)
+		}
+		return For(req.URL)
+	}()
 	return err == nil && p != nil && loopback(p.Hostname()) && !onLAN(req.URL.Hostname())
 }
 
