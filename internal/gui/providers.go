@@ -1148,7 +1148,8 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 			AccountOrder []string        `json:"accountOrder"`
 			// New is set by the editor's Add: the provider is one more, never
 			// one replacing the provider that has its id or name
-			New bool `json:"new"`
+			New      bool `json:"new"`
+			ClearKey bool `json:"clearKey"`
 			// ClearBalanceToken drops the saved balance token, which a
 			// blank one in the form otherwise keeps
 			ClearBalanceToken bool `json:"clearBalanceToken"`
@@ -1628,7 +1629,7 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 					fail(rw, fmt.Errorf("%s can't carry Codex's native compaction: only a provider with a Responses API, a ChatGPT account or GitHub Copilot can", cmp.Or(in.Name, in.ID)))
 					return
 				}
-				if err := provider.Save(in); err != nil {
+				if err := provider.SaveFixed(in, req.ClearKey); err != nil {
 					fail(rw, err)
 					return
 				}

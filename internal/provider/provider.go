@@ -765,6 +765,19 @@ func Slug(name string) string {
 
 // Save adds or replaces a provider.
 func Save(p Provider) error {
+	return saveProvider(p, false)
+}
+
+// SaveFixed saves the protected API distribution provider. clearKey is an
+// explicit user action; an empty key in an ordinary save keeps the old key.
+func SaveFixed(p Provider, clearKey bool) error {
+	if !IsFixedProvider(p.ID) {
+		return Save(p)
+	}
+	return saveProvider(p, clearKey)
+}
+
+func saveProvider(p Provider, clearKey bool) error {
 	if IsFixedProvider(p.ID) {
 		f, err := read()
 		if err != nil {
@@ -772,7 +785,7 @@ func Save(p Provider) error {
 		}
 		for i := range f.Providers {
 			if f.Providers[i].ID == AgentLinkProviderID {
-				if p.Key == "" {
+				if p.Key == "" && !clearKey {
 					p.Key = f.Providers[i].Key
 				}
 				f.Providers[i] = mergeAgentLinkProvider(p)
@@ -782,6 +795,7 @@ func Save(p Provider) error {
 		f.Providers = append(f.Providers, mergeAgentLinkProvider(p))
 		return store(f)
 	}
+
 	// a key given a Vertex AI provider is refused here, before normalize
 	// drops it: it would never be sent
 	if p.IsVertex() && (strings.TrimSpace(p.Key) != "" || len(p.Keys) > 0) {

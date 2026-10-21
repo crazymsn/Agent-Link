@@ -93,6 +93,22 @@ func TestAgentLinkProviderSaveAcceptsEditorPayload(t *testing.T) {
 	}
 }
 
+func TestAgentLinkProviderClearKey(t *testing.T) {
+	isolate(t)
+	if err := MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	if err := Save(Provider{ID: AgentLinkProviderID, Key: "sk-old"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveFixed(Provider{ID: AgentLinkProviderID, Key: ""}, true); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Find(AgentLinkProviderID)
+	if err != nil || p.Key != "" {
+		t.Fatalf("fixed key = %q, err %v", p.Key, err)
+	}
+}
 func TestMigrateFixedProviderRemovesCustomProviders(t *testing.T) {
 	isolate(t)
 	home := t.TempDir()
