@@ -8802,7 +8802,7 @@ function drawEditor(p, presetID) {
       row.append(svg(CHECK, 10, 2.2), el("span", "", t(label)));
       box.append(row);
     }
-    ed.append(...field(t("Supported protocols"), box, t("API 分发站固定支持这四类协议，用户无需选择。")));
+    ed.append(...field(t("Supported protocols"), box, t("The API distribution station always supports Chat, Responses, Anthropic Messages, and Gemini; users do not choose them.")));
   }
   // in the add sheet: here the new provider picks between them, the key kept
   const pair = isNew && pr ? (globalOf(pr) ? [globalOf(pr), pr] : chinaOf(pr) ? [pr, chinaOf(pr)] : null) : null;

@@ -1563,7 +1563,7 @@ func providerRoutes(mux *http.ServeMux, w Windows) {
 				if in.Vertex == nil && old != nil {
 					in.Vertex = old.Vertex
 				}
-				if in.Key == "" && old != nil {
+				if in.Key == "" && old != nil && !req.ClearKey {
 					in.Key = old.Key
 				}
 				if in.BalanceToken == "" && old != nil && !req.ClearBalanceToken {

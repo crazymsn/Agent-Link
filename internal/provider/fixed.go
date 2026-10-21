@@ -39,7 +39,7 @@ func AgentLinkProvider() Provider {
 		Icon:             AgentLinkProviderIcon,
 		Chat:             AgentLinkProviderURL,
 		Responses:        AgentLinkProviderURL,
-		Anthropic:        AgentLinkProviderURL,
+		Anthropic:        strings.TrimSuffix(AgentLinkProviderURL, "/v1"),
 		Gemini:           AgentLinkProviderURL,
 		EnabledProtocols: slices.Clone(allProtocols),
 	}
@@ -61,6 +61,7 @@ func mergeAgentLinkProvider(saved Provider) Provider {
 	p.KeyProtocol = saved.KeyProtocol
 	p.KeyWeight = saved.KeyWeight
 	p.EnabledProtocols = slices.Clone(allProtocols)
+	p.PickedFrom = filterAgentLinkModels(saved.PickedFrom)
 	p.Models = filterAgentLinkModels(saved.Models)
 	p.NoModels = saved.NoModels
 	p.Off = saved.Off

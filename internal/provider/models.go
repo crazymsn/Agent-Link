@@ -152,7 +152,11 @@ func (p Provider) live() ([]catalog.Model, time.Time, bool) {
 		ok bool
 	}
 	l := heldOf("fetched:"+p.ID, func() live { ms, at, ok := catalog.Live(p.ID); return live{ms, at, ok} })
-	return l.ms, l.at, l.ok
+	ms := l.ms
+	if IsFixedProvider(p.ID) {
+		ms = p.filterFetchedModels(ms)
+	}
+	return ms, l.at, l.ok && len(ms) > 0
 }
 
 // liveByID are the models of live with this id: what a look at one
@@ -161,7 +165,11 @@ func (p Provider) liveByID(model string) []catalog.Model {
 	if !p.lists() {
 		return nil
 	}
-	return catalog.LiveByID(p.ID, model)
+	ms := catalog.LiveByID(p.ID, model)
+	if IsFixedProvider(p.ID) {
+		ms = p.filterFetchedModels(ms)
+	}
+	return ms
 }
 
 // lists says whether the provider's fetched list is its own to read: not
@@ -194,6 +202,9 @@ func (p Provider) liveAll() ([]catalog.Model, bool) {
 		ok bool
 	}
 	l := heldOf("fetched-all:"+p.ID, func() live { ms, ok := catalog.LiveAll(p.ID); return live{ms, ok} })
+	if IsFixedProvider(p.ID) {
+		l.ms = p.filterFetchedModels(l.ms)
+	}
 	return l.ms, l.ok
 }
 

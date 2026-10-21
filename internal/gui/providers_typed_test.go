@@ -74,7 +74,7 @@ func TestFixedProviderModelsRequestKeepsCanonicalSettings(t *testing.T) {
 		Headers:   map[string]string{"Authorization": "attacker"},
 	}
 	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
-	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != provider.AgentLinkProviderURL || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != "https://api.meding.site" || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider model request was mutable: %#v", got)
 	}
 }
@@ -89,7 +89,7 @@ func TestFixedProviderTestRequestKeepsCanonicalSettings(t *testing.T) {
 		Headers: map[string]string{"Authorization": "attacker"},
 	}
 	got := typedModelsRequest(p, in, stringPtr("http://attacker.example:8080"), boolPtr(true))
-	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != provider.AgentLinkProviderURL || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+	if got.Key != "sk-new" || got.Chat != provider.AgentLinkProviderURL || got.Responses != provider.AgentLinkProviderURL || got.Anthropic != "https://api.meding.site" || got.Gemini != provider.AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider test request was mutable: %#v", got)
 	}
 }
@@ -119,6 +119,30 @@ func TestFixedProviderHTTPSavePersistsEditorKey(t *testing.T) {
 	}
 }
 
+func TestFixedProviderHTTPSaveClearsEditorKey(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", os.Getenv("HOME"))
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	if err := provider.MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	if err := provider.Save(provider.Provider{ID: provider.AgentLinkProviderID, Key: "sk-old"}); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	providerRoutes(mux, nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("POST", "/api/provider/save", strings.NewReader(`{"id":"`+provider.AgentLinkProviderID+`","key":"","clearKey":true}`)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("clear key save: %d %s", rec.Code, rec.Body)
+	}
+	p, err := provider.Find(provider.AgentLinkProviderID)
+	if err != nil || p.Key != "" {
+		t.Fatalf("fixed key after HTTP clear = %q, err %v", p.Key, err)
+	}
+}
+
 func TestFixedProviderClearFetchedModels(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("USERPROFILE", os.Getenv("HOME"))
@@ -141,6 +165,7 @@ func TestFixedProviderClearFetchedModels(t *testing.T) {
 		t.Fatal("fixed provider fetched models survived clear")
 	}
 }
+
 func TestProviderTypedKey(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("USERPROFILE", os.Getenv("HOME"))

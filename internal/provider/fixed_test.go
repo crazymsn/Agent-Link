@@ -22,7 +22,7 @@ func TestAgentLinkProviderIsCanonicalAndFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Responses != AgentLinkProviderURL || p.Anthropic != AgentLinkProviderURL || p.Gemini != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon || !slices.Equal(p.EnabledProtocols, allProtocols) {
+	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Responses != AgentLinkProviderURL || p.Anthropic != "https://api.meding.site" || p.Gemini != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon || !slices.Equal(p.EnabledProtocols, allProtocols) || p.Base(Chat) != AgentLinkProviderURL || p.Base(Responses) != AgentLinkProviderURL || p.Base(Anthropic) != "https://api.meding.site" || p.Base(Gemini) != AgentLinkProviderURL {
 		t.Fatalf("fixed provider: %#v", p)
 	}
 	ids := make([]string, 0, len(All()))
@@ -75,6 +75,7 @@ func TestAgentLinkProviderSaveAcceptsEditorPayload(t *testing.T) {
 	p := AgentLinkProvider()
 	p.Key = "sk-editor-token"
 	p.Models = []string{"model-a"}
+	p.PickedFrom = []string{"model-a", "model-old"}
 	p.Name = "attacker-controlled-name"
 	p.Icon = "attacker-controlled-icon"
 	p.Chat = "https://attacker.example/v1"
@@ -87,10 +88,10 @@ func TestAgentLinkProviderSaveAcceptsEditorPayload(t *testing.T) {
 		t.Fatalf("saving editor payload: %v", err)
 	}
 	got, err := Find(AgentLinkProviderID)
-	if err != nil || got.Key != "sk-editor-token" || !slices.Equal(got.Models, []string{"model-a"}) {
+	if err != nil || got.Key != "sk-editor-token" || !slices.Equal(got.Models, []string{"model-a"}) || !slices.Equal(got.PickedFrom, []string{"model-a", "model-old"}) {
 		t.Fatalf("saved fixed provider = %#v, err %v", got, err)
 	}
-	if got.Name != AgentLinkProviderName || got.Icon != AgentLinkProviderIcon || got.Chat != AgentLinkProviderURL || got.Responses != AgentLinkProviderURL || got.Anthropic != AgentLinkProviderURL || got.Gemini != AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
+	if got.Name != AgentLinkProviderName || got.Icon != AgentLinkProviderIcon || got.Chat != AgentLinkProviderURL || got.Responses != AgentLinkProviderURL || got.Anthropic != "https://api.meding.site" || got.Gemini != AgentLinkProviderURL || got.Proxy != "" || got.Headers != nil {
 		t.Fatalf("fixed provider accepted mutable routing fields: %#v", got)
 	}
 }
@@ -110,14 +111,14 @@ func TestAgentLinkProviderClearKey(t *testing.T) {
 	if err != nil || len(p.KeyList()) != 2 || p.Keys[0].Name != "backup" {
 		t.Fatalf("fixed keys = %#v, err %v", p.KeyList(), err)
 	}
-	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-backup")); err != nil {
+	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-old")); err != nil {
 		t.Fatal(err)
 	}
 	p, err = Find(AgentLinkProviderID)
-	if err != nil || len(p.KeyList()) != 1 || p.Key != "sk-old" {
-		t.Fatalf("fixed keys after remove = %#v, err %v", p.KeyList(), err)
+	if err != nil || p.Key != "sk-backup" || p.KeyName != "backup" {
+		t.Fatalf("fixed primary promotion = %#v, err %v", p, err)
 	}
-	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-old")); err != nil {
+	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-backup")); err != nil {
 		t.Fatal(err)
 	}
 	p, err = Find(AgentLinkProviderID)
@@ -139,7 +140,7 @@ func TestAgentLinkProviderFiltersFetchedModels(t *testing.T) {
 		t.Fatal(err)
 	}
 	ms, _, ok := p.live()
-	if !ok || len(ms) != 2 {
+	if !ok || len(ms) != 1 {
 		t.Fatalf("unexpected fixture: %#v, %v", ms, ok)
 	}
 	if got := p.filterFetchedModels(ms); len(got) != 1 || got[0].ID != "chat-model" {
@@ -153,12 +154,15 @@ func TestAgentLinkProviderFiltersOnlyBlockedModels(t *testing.T) {
 		t.Fatal(err)
 	}
 	fixed := AgentLinkProvider()
-	fixed.Models = []string{"BAAI/bge-m3", "chat-model", "chirp-v3-5", "chat-model"}
+	for _, id := range []string{"BAAI/bge-large-en-v1.5", "BAAI/bge-large-zh-v1.5", "BAAI/bge-m3", "BAAI/bge-reranker-v2-m3", "chirp-v3-5"} {
+		fixed.Models = append(fixed.Models, id)
+	}
+	fixed.Models = append(fixed.Models, " chat-model ", "chirp-v3-50")
 	if err := Save(fixed); err != nil {
 		t.Fatal(err)
 	}
 	got, err := Find(AgentLinkProviderID)
-	if err != nil || !slices.Equal(got.Models, []string{"chat-model"}) {
+	if err != nil || !slices.Equal(got.Models, []string{"chat-model", "chirp-v3-50"}) {
 		t.Fatalf("fixed filtered models = %v, err %v", got.Models, err)
 	}
 	other := Provider{ID: "relay", Name: "Relay", Chat: "https://relay.example/v1", Key: "relay-key", Models: []string{"BAAI/bge-m3", "chirp-v3-5"}}

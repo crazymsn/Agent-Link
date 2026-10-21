@@ -79,7 +79,7 @@ func (p Provider) hasKindable(model string) bool {
 	if p.serves(model) {
 		return true
 	}
-	all, _ := catalog.LiveAll(p.ID)
+	all, _ := p.liveAll()
 	return slices.ContainsFunc(all, func(m catalog.Model) bool { return m.ID == model })
 }
 
