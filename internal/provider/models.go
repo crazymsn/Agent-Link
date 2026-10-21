@@ -333,6 +333,7 @@ func (p Provider) fetch(ctx context.Context) ([]catalog.Model, error) {
 	// theirs from; the API's list has neither, and is asked if that fails
 	if p.IsCline() && strings.TrimSpace(p.ModelsURL) == "" {
 		if ms, base, err := p.clineFeed(ctx); err == nil {
+			ms = p.filterFetchedModels(ms)
 			return catalog.Chat(ms), catalog.SaveLive(p.ID, base, ms)
 		}
 	}
@@ -343,6 +344,7 @@ func (p Provider) fetch(ctx context.Context) ([]catalog.Model, error) {
 		if err != nil {
 			return nil, err
 		}
+		ms = p.filterFetchedModels(ms)
 		return catalog.Chat(ms), catalog.SaveLive(p.ID, base, ms)
 	}
 	// Only keys in use. An off key is not asked, and its list does not
@@ -354,7 +356,24 @@ func (p Provider) fetch(ctx context.Context) ([]catalog.Model, error) {
 	if err != nil {
 		return nil, err
 	}
+	l.models = p.filterFetchedModels(l.models)
+	for base, ms := range l.sides {
+		l.sides[base] = p.filterFetchedModels(ms)
+	}
 	return catalog.Chat(l.models), catalog.SaveLiveSides(p.ID, l.base, l.models, l.sides)
+}
+
+func (p Provider) filterFetchedModels(models []catalog.Model) []catalog.Model {
+	if !IsFixedProvider(p.ID) {
+		return models
+	}
+	out := make([]catalog.Model, 0, len(models))
+	for _, model := range models {
+		if !blockedAgentLinkModel(model.ID) {
+			out = append(out, model)
+		}
+	}
+	return out
 }
 
 // List asks the vendor which models it serves, as Fetch does, and keeps
@@ -1258,6 +1277,10 @@ func (p Provider) fetchPerKey(ctx context.Context, keys []KeyAccount) ([]catalog
 				sides[b] = append(sides[b], m)
 			}
 		}
+	}
+	out = p.filterFetchedModels(out)
+	for base, ms := range sides {
+		sides[base] = p.filterFetchedModels(ms)
 	}
 	return catalog.Chat(out), catalog.SaveLiveSides(p.ID, base, out, sides)
 }

@@ -8,11 +8,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/crazymsn/Agent-Link/internal/catalog"
 	"github.com/crazymsn/Agent-Link/internal/provider"
 )
 
 func TestFixedProviderModelsActionAllowed(t *testing.T) {
-	for _, action := range []string{"models", "off", "on"} {
+	for _, action := range []string{"models", "unfetch", "off", "on"} {
 		if !fixedProviderActionAllowed(action) {
 			t.Fatalf("fixed provider action %q was blocked", action)
 		}
@@ -118,6 +119,28 @@ func TestFixedProviderHTTPSavePersistsEditorKey(t *testing.T) {
 	}
 }
 
+func TestFixedProviderClearFetchedModels(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	t.Setenv("USERPROFILE", os.Getenv("HOME"))
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	if err := provider.MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.SaveLive(provider.AgentLinkProviderID, provider.AgentLinkProviderURL, []catalog.Model{{ID: "model-a"}}); err != nil {
+		t.Fatal(err)
+	}
+	mux := http.NewServeMux()
+	providerRoutes(mux, nil)
+	rec := httptest.NewRecorder()
+	mux.ServeHTTP(rec, httptest.NewRequest("POST", "/api/provider/unfetch", strings.NewReader(`{"id":"`+provider.AgentLinkProviderID+`"}`)))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("clear fetched models: %d %s", rec.Code, rec.Body)
+	}
+	if _, _, ok := catalog.Live(provider.AgentLinkProviderID); ok {
+		t.Fatal("fixed provider fetched models survived clear")
+	}
+}
 func TestProviderTypedKey(t *testing.T) {
 	t.Setenv("HOME", t.TempDir())
 	t.Setenv("USERPROFILE", os.Getenv("HOME"))

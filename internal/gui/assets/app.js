@@ -8796,18 +8796,13 @@ function drawEditor(p, presetID) {
     ["chat", "OpenAI Chat"], ["responses", "OpenAI Responses"], ["anthropic", "Anthropic Messages"], ["gemini", "Gemini"],
   ];
   if (fixed) {
-    const enabled = new Set(draft.enabledProtocols?.length ? draft.enabledProtocols : fixedProtocols.map(([k]) => k));
     const box = el("div", "fixed-protocols");
-    for (const [proto, label] of fixedProtocols) {
-      const cb = el("input"); cb.type = "checkbox"; cb.checked = enabled.has(proto);
-      cb.onchange = () => {
-        if (!cb.checked && enabled.size === 1) { cb.checked = true; return; }
-        if (cb.checked) enabled.add(proto); else enabled.delete(proto);
-        draft.enabledProtocols = fixedProtocols.map(([k]) => k).filter((k) => enabled.has(k));
-      };
-      const lab = el("label", "check"); lab.append(cb, el("span", "", t(label))); box.append(lab);
+    for (const [, label] of fixedProtocols) {
+      const row = el("span", "fixed-protocol");
+      row.append(svg(CHECK, 10, 2.2), el("span", "", t(label)));
+      box.append(row);
     }
-    ed.append(...field(t("Supported protocols"), box, t("Choose which APIs this distribution station exposes. All selected protocols use its fixed endpoint.")));
+    ed.append(...field(t("Supported protocols"), box, t("API 分发站固定支持这四类协议，用户无需选择。")));
   }
   // in the add sheet: here the new provider picks between them, the key kept
   const pair = isNew && pr ? (globalOf(pr) ? [globalOf(pr), pr] : chinaOf(pr) ? [pr, chinaOf(pr)] : null) : null;
@@ -11426,8 +11421,8 @@ function renderModels(p) {
   else if (p.models.length) foot.append(el("span", "hint", t(p.account ? "agentlink's list · Fetch models asks the vendor" : decideOnly(p) ? "Jev's names · Fetch models asks the vendor" : "from models.dev · Fetch models asks the vendor")));
   if (p.fetched && !p.account) {
     // the fetched list stands in for the picks when none are made
-    const forget = el("button", "text action", t("Forget"));
-    forget.title = t("Drop the list fetched from the vendor; the models.dev one is used until models are fetched again");
+    const forget = el("button", "text action", t(p.fixed ? "Clear" : "Forget"));
+    forget.title = t(p.fixed ? "Clear the model list fetched from the vendor; models.dev is used until models are fetched again" : "Drop the list fetched from the vendor; the models.dev one is used until models are fetched again");
     forget.onclick = async () => {
       forget.classList.add("busy");
       try { await api("provider/unfetch", { id: p.id }); await loadProviders(); } // the picks stay in the draft, as on a Fetch models
@@ -14059,7 +14054,7 @@ function renderKeyAccounts(p) {
     // how many requests it has out at once, and waiting (#892)
     row.append(laneLimitPill(p, k.id, p.id + "#" + k.id, k.name || k.masked));
     row.append(el("span", "grow"));
-    if (!k.active || several) {
+    if (!k.active || several || p.fixed) {
       const rm = el("button", "text quiet", t("Remove"));
       rm.onclick = () => accountAction("keys/remove", { id: p.id, ref: k.id }, t("Key removed"));
       row.append(rm);

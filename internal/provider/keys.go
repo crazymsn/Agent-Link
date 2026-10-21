@@ -490,9 +490,13 @@ func RemoveKey(id, keyRef string) error {
 	if i >= 0 {
 		p.Keys = append(p.Keys[:i], p.Keys[i+1:]...)
 	} else if _, ok := promote(p); !ok {
-		return errors.New("that's the only key in use; turn another on before removing it")
+		if !IsFixedProvider(id) {
+			return errors.New("that's the only key in use; turn another key on before removing it")
+		}
+		p.Key = ""
+		p.KeyName, p.KeyProtocol, p.KeyWeight = "", "", 0
 	}
-	return Save(*p)
+	return SaveFixed(*p, IsFixedProvider(id) && p.Key == "")
 }
 
 // RemoveKeys forgets several keys at once (361 on Discord: hundreds of
@@ -527,10 +531,14 @@ func RemoveKeys(id string, refs []string) (removed int, err error) {
 	// the first key is always on: only its removal can leave none in use
 	if firstGone {
 		if _, ok := promote(p); !ok {
-			return 0, errors.New("those are all the keys in use; keep one on")
+			if !IsFixedProvider(id) {
+				return 0, errors.New("those are all the keys in use; keep one on")
+			}
+			p.Key = ""
+			p.KeyName, p.KeyProtocol, p.KeyWeight = "", "", 0
 		}
 	}
-	return removed, Save(*p)
+	return removed, SaveFixed(*p, IsFixedProvider(id) && p.Key == "")
 }
 
 // RenameKey names one of a provider's keys, "Personal", "Team".

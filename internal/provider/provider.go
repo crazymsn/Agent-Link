@@ -1471,10 +1471,10 @@ func (p Provider) Speaks() []Protocol {
 	// A custom provider's Gemini API comes after the others it has.
 	// Vertex AI's, on generateContent alone, at its project.
 	if p.IsVertex() {
-		if p.vertexBase() != "" {
+		if p.vertexBase() != "" && (!IsFixedProvider(p.ID) || slices.Contains(p.EnabledProtocols, Gemini)) {
 			out = append(out, Gemini)
 		}
-	} else if p.FactoryGemini() || p.Gemini != "" {
+	} else if (p.FactoryGemini() || p.Gemini != "") && (!IsFixedProvider(p.ID) || slices.Contains(p.EnabledProtocols, Gemini)) {
 		out = append(out, Gemini)
 	}
 	return out

@@ -27,7 +27,7 @@ import (
 // credential, switching it off, and network operations against its canonical
 // endpoint while rejecting actions that alter, probe or remove it.
 func fixedProviderActionAllowed(action string) bool {
-	return slices.Contains([]string{"save", "key", "test", "models", "off", "on"}, action)
+	return slices.Contains([]string{"save", "key", "test", "models", "unfetch", "off", "on"}, action)
 }
 
 // The providers page: the vendors the user added, the presets they can add

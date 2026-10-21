@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"github.com/crazymsn/Agent-Link/internal/catalog"
 )
 
 func TestAgentLinkProviderIsCanonicalAndFirst(t *testing.T) {
@@ -20,7 +22,7 @@ func TestAgentLinkProviderIsCanonicalAndFirst(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon {
+	if p.Name != AgentLinkProviderName || p.Chat != AgentLinkProviderURL || p.Responses != AgentLinkProviderURL || p.Anthropic != AgentLinkProviderURL || p.Gemini != AgentLinkProviderURL || p.Icon != AgentLinkProviderIcon || !slices.Equal(p.EnabledProtocols, allProtocols) {
 		t.Fatalf("fixed provider: %#v", p)
 	}
 	ids := make([]string, 0, len(All()))
@@ -101,14 +103,74 @@ func TestAgentLinkProviderClearKey(t *testing.T) {
 	if err := Save(Provider{ID: AgentLinkProviderID, Key: "sk-old"}); err != nil {
 		t.Fatal(err)
 	}
-	if err := SaveFixed(Provider{ID: AgentLinkProviderID, Key: ""}, true); err != nil {
+	if err := AddKey(AgentLinkProviderID, "backup", "sk-backup", ""); err != nil {
 		t.Fatal(err)
 	}
 	p, err := Find(AgentLinkProviderID)
+	if err != nil || len(p.KeyList()) != 2 || p.Keys[0].Name != "backup" {
+		t.Fatalf("fixed keys = %#v, err %v", p.KeyList(), err)
+	}
+	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-backup")); err != nil {
+		t.Fatal(err)
+	}
+	p, err = Find(AgentLinkProviderID)
+	if err != nil || len(p.KeyList()) != 1 || p.Key != "sk-old" {
+		t.Fatalf("fixed keys after remove = %#v, err %v", p.KeyList(), err)
+	}
+	if err := RemoveKey(AgentLinkProviderID, KeyID("sk-old")); err != nil {
+		t.Fatal(err)
+	}
+	p, err = Find(AgentLinkProviderID)
 	if err != nil || p.Key != "" {
-		t.Fatalf("fixed key = %q, err %v", p.Key, err)
+		t.Fatalf("fixed primary key after remove = %q, err %v", p.Key, err)
+	}
+
+}
+func TestAgentLinkProviderFiltersFetchedModels(t *testing.T) {
+	isolate(t)
+	if err := MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	if err := catalog.SaveLive(AgentLinkProviderID, AgentLinkProviderURL, []catalog.Model{{ID: "BAAI/bge-m3"}, {ID: "chat-model"}}); err != nil {
+		t.Fatal(err)
+	}
+	p, err := Find(AgentLinkProviderID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ms, _, ok := p.live()
+	if !ok || len(ms) != 2 {
+		t.Fatalf("unexpected fixture: %#v, %v", ms, ok)
+	}
+	if got := p.filterFetchedModels(ms); len(got) != 1 || got[0].ID != "chat-model" {
+		t.Fatalf("filtered fetched models = %#v", got)
 	}
 }
+
+func TestAgentLinkProviderFiltersOnlyBlockedModels(t *testing.T) {
+	isolate(t)
+	if err := MigrateFixedProvider(); err != nil {
+		t.Fatal(err)
+	}
+	fixed := AgentLinkProvider()
+	fixed.Models = []string{"BAAI/bge-m3", "chat-model", "chirp-v3-5", "chat-model"}
+	if err := Save(fixed); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Find(AgentLinkProviderID)
+	if err != nil || !slices.Equal(got.Models, []string{"chat-model"}) {
+		t.Fatalf("fixed filtered models = %v, err %v", got.Models, err)
+	}
+	other := Provider{ID: "relay", Name: "Relay", Chat: "https://relay.example/v1", Key: "relay-key", Models: []string{"BAAI/bge-m3", "chirp-v3-5"}}
+	if err := Save(other); err != nil {
+		t.Fatal(err)
+	}
+	got, err = Find("relay")
+	if err != nil || !slices.Equal(got.Models, other.Models) {
+		t.Fatalf("ordinary provider models changed = %v, err %v", got.Models, err)
+	}
+}
+
 func TestMigrateFixedProviderRemovesCustomProviders(t *testing.T) {
 	isolate(t)
 	home := t.TempDir()
