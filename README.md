@@ -15,6 +15,8 @@ Agent Link 由深度云创科技（DeepCloud）维护，把多个 AI coding agen
 
 </div>
 
+## B 站视频教程：https://www.bilibili.com/video/BV14CnC6sEjG/
+
 ## 核心能力
 
 - **一个模型列表连接多个 Agent**：统一管理 Claude Code、Codex、Gemini CLI、OpenCode 等工具的模型配置。
