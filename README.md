@@ -15,7 +15,7 @@ Agent Link 由深度云创科技（DeepCloud）维护，把多个 AI coding agen
 
 </div>
 
-## B 站视频教程：https://www.bilibili.com/video/BV14CnC6sEjG/
+## B 站视频教程：https://www.bilibili.com/video/BV14CnC6sEjG   YouTube 视频教程：https://youtu.be/ynzcxESlJ0o?si=5JBBiUf8xq_Lmz31
 
 ## 核心能力
 
